@@ -235,16 +235,19 @@ function showTable(courseKey) {
 }
 
 // Boton Vaciar Lista
-document.getElementById('btn-clear-course')?.addEventListener('click', async () => {
-    if (!currentViewedCourse) return;
-    if (confirm(`¿ESTÁ SEGURO DE ELIMINAR TODOS los alumnos de ${currentViewedCourse.toUpperCase()}? Esta acción no se puede deshacer.`)) {
-        const collection = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-        const snapshot = await db.collection(collection).get();
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        alert('Lista vaciada con éxito.');
-        loadStudentsFromFirebase();
+document.addEventListener('click', async (e) => {
+    if (e.target && e.target.id === 'btn-clear-course') {
+        if (!currentViewedCourse) return;
+        const courseName = currentViewedCourse === 'habilidades' ? 'Habilidades Digitales' : 'Software & Videojuegos';
+        if (confirm(`¿ESTÁ SEGURO DE ELIMINAR TODOS los alumnos de ${courseName.toUpperCase()}? Esta acción no se puede deshacer.`)) {
+            const collection = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+            const snapshot = await db.collection(collection).get();
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert('Lista vaciada con éxito.');
+            loadStudentsFromFirebase();
+        }
     }
 });
 
