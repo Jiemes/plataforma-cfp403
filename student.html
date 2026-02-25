@@ -27,7 +27,7 @@
 
             <div class="nav-right">
                 <div class="nav-user">
-                    <span id="student-name">Alumno de Prueba</span>
+                    <span id="student-name">Cargando Alumno...</span>
                     <button id="btn-logout-student" class="btn-logout-sm">Salir</button>
                 </div>
             </div>
@@ -36,63 +36,27 @@
         <header class="course-header">
             <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-gba-logo">
             <div class="header-text">
-                <h1 id="course-title">Formación Profesional en Habilidades Digitales e IA</h1>
+                <h1 id="course-title">Cargando Curso...</h1>
                 <p>Bienvenido a tu espacio de aprendizaje semanal.</p>
             </div>
         </header>
 
         <main class="student-content">
-            <div class="week-list">
-                <!-- Semana 1 -->
-                <div class="card week-card">
-                    <div class="week-header">
-                        <h3>Semana 1: Introducción y Conceptos Básicos</h3>
-                        <span class="badge success">Disponible</span>
-                    </div>
-                    <div class="week-body">
-                        <div class="content-item">
-                            <span class="icon">📄</span>
-                            <div class="item-info">
-                                <strong>Material de Estudio</strong>
-                                <p>Descarga el PDF con la teoría de la semana.</p>
-                            </div>
-                            <button class="btn-view">Ver PDF</button>
-                        </div>
-                        <div class="content-item tarea-section">
-                            <span class="icon">✏️</span>
-                            <div class="item-info">
-                                <strong>Actividades de la Semana</strong>
-                                <p>Sube aquí tu trabajo resuelto.</p>
-                            </div>
-                            <div class="upload-zone" id="upload-zone-1">
-                                <input type="file" id="homework-1" class="hidden-input">
-                                <button class="btn-upload" onclick="document.getElementById('homework-1').click()">Subir
-                                    Archivo</button>
-                                <div id="file-info-1" class="file-info hidden">
-                                    <span class="file-name">archivo.pdf</span>
-                                    <button class="btn-delete-file" onclick="removeFile(1)">🗑️</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="week-footer">
-                        <div class="grade-pill">
-                            <span>Nota: </span>
-                            <strong id="grade-1">Pendiente</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Semana 2 (Ejemplo de bloqueada) -->
-                <div class="card week-card disabled">
-                    <div class="week-header">
-                        <h3>Semana 2: Herramientas Digitales I</h3>
-                        <span class="badge">Próximamente</span>
-                    </div>
-                </div>
+            <div class="week-list" id="weeks-container">
+                <!-- Se poblará dinámicamente -->
+                <div class="loading-spinner">Cargando tus clases...</div>
             </div>
         </main>
     </div>
+
+    <!-- Modal para ver PDF -->
+    <div id="pdf-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" id="close-pdf">&times;</span>
+            <iframe id="pdf-viewer" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+
     <script src="js/firebase-config.js"></script>
     <script src="js/student.js"></script>
 </body>

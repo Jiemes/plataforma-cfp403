@@ -30,6 +30,8 @@
                 <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
                 <a href="#" class="nav-link" data-section="habilidades">Habilidades Digitales & IA</a>
                 <a href="#" class="nav-link" data-section="programacion">Software & Videojuegos</a>
+                <a href="#" class="nav-link" data-section="clases">Gesitón de Clases</a>
+                <a href="#" class="nav-link" data-section="notas">Notas y Promedios</a>
                 <a href="#" class="nav-link" data-section="settings">Configuración</a>
             </nav>
             <div class="sidebar-footer">
@@ -41,6 +43,10 @@
             <header class="content-header">
                 <h2>Bienvenido, Juan Manuel</h2>
                 <div class="header-right">
+                    <div class="notifications">
+                        <span id="notif-bell" class="bell-icon">🔔</span>
+                        <span id="notif-count" class="notif-badge hidden">0</span>
+                    </div>
                     <div class="user-profile">Administrador</div>
                 </div>
             </header>
@@ -105,6 +111,45 @@
                 </div>
             </section>
 
+            <section id="clases-section" class="section hidden">
+                <div class="card">
+                    <h3>Gestión de Clases Semanales</h3>
+                    <p>Sube los PDFs de las clases. El sistema los habilitará semanalmente.</p>
+                    <div class="upload-zone-modern">
+                        <select id="select-curso-clase">
+                            <option value="habilidades">Habilidades Digitales & IA</option>
+                            <option value="programacion">Software & Videojuegos</option>
+                        </select>
+                        <input type="file" id="upload-pdfs" multiple accept=".pdf">
+                        <button class="btn-primary" id="btn-save-clases">Subir Clases Seleccionadas</button>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 20px;">
+                    <h3>Clases Cargadas</h3>
+                    <div id="clases-list-admin"></div>
+                </div>
+            </section>
+
+            <section id="notas-section" class="section hidden">
+                <div class="card">
+                    <h3>Promedios y Calificaciones</h3>
+                    <div class="table-container">
+                        <table id="grades-table">
+                            <thead>
+                                <tr>
+                                    <th>Alumno</th>
+                                    <th>DNI</th>
+                                    <th>Curso</th>
+                                    <th>Promedio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <section id="table-section" class="section hidden">
                 <div class="card">
                     <div class="card-header">
@@ -133,6 +178,13 @@
                 </div>
             </section>
         </main>
+    </div>
+    <div id="grade-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="grade-modal-title">Calificar Trabajo</h3>
+            <div id="student-works-list"></div>
+            <button class="btn-secondary" onclick="closeGradeModal()" style="margin-top: 20px;">Cerrar</button>
+        </div>
     </div>
     <script src="js/firebase-config.js"></script>
     <script src="js/admin.js"></script>

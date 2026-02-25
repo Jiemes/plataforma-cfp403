@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --primary-color: #00B9E8;
     --primary-hover: #0096bc;
     --primary-light: #f0fbff;
@@ -272,3 +272,45 @@ body {
     opacity: 0.5;
     filter: grayscale(1);
 }
+/* Aula Virtual Premium Styles */
+.week-card {
+    transition: transform 0.3s;
+    border-left: 5px solid var(--primary-color);
+}
+
+.week-card:hover { transform: translateX(10px); }
+
+.content-item {
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.status-badge.pendiente { background: #fef9c3; color: #854d0e; }
+.status-badge.calificado { background: #dcfce7; color: #166534; }
+
+.grade-pill {
+    background: var(--primary-light);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px dashed var(--primary-color);
+}
+
+.comment {
+    font-style: italic;
+    color: #64748b;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+

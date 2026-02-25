@@ -1,79 +1,135 @@
-// Recuperar sesión del alumno
-const userSession = JSON.parse(localStorage.getItem('user_session'));
+// Mi Aula Virtual - Lógica del Alumno
+const studentSession = JSON.parse(localStorage.getItem('userSession'));
 
-if (!userSession) {
+if (!studentSession) {
     window.location.href = 'index.html';
-} else {
-    document.getElementById('student-name').innerText = userSession.nombre;
-    document.getElementById('course-title').innerText = userSession.curso;
 }
 
-// Lógica de subida de archivos a Firebase Storage
-document.querySelectorAll('input[type="file"]').forEach(input => {
-    input.addEventListener('change', async function (e) {
-        const file = e.target.files[0];
-        const weekId = e.target.id.split('-')[1]; // Ejemplo: homework-1 -> 1
+document.getElementById('student-name').innerText = studentSession.nombre;
+document.getElementById('course-title').innerText = studentSession.curso === 'habilidades' ?
+    'Formación en Habilidades Digitales e IA' : 'Desarrollo de Software & Videojuegos';
 
-        if (file) {
-            try {
-                const fileInfo = document.getElementById('file-info-' + weekId);
-                const fileNameSpan = fileInfo.querySelector('.file-name');
-                const uploadBtn = e.target.parentElement.querySelector('.btn-upload');
+// Cargar Clases y Entregas
+async function loadContent() {
+    try {
+        const weeksContainer = document.getElementById('weeks-container');
+        weeksContainer.innerHTML = '';
 
-                uploadBtn.innerText = 'Subiendo...';
-                uploadBtn.disabled = true;
+        // 1. Obtener Clases
+        const clasesSnap = await db.collection('clases')
+            .where('curso', '==', studentSession.curso)
+            .where('visible', '==', true)
+            .orderBy('semana', 'asc')
+            .get();
 
-                // Crear ruta en Storage: /tareas/DNI/SemanaX/archivo.pdf
-                const storageRef = storage.ref(`tareas/${userSession.dni}/Semana${weekId}/${file.name}`);
+        // 2. Obtener Entregas del Alumno
+        const entregasSnap = await db.collection('entregas')
+            .where('alumno_dni', '==', studentSession.dni)
+            .get();
+        const entregas = entregasSnap.docs.map(doc => doc.data());
 
-                await storageRef.put(file);
-                const downloadURL = await storageRef.getDownloadURL();
-
-                // Registrar entrega en Firestore
-                await db.collection('entregas').add({
-                    dni: userSession.dni,
-                    nombre: userSession.nombre,
-                    semana: weekId,
-                    archivo: file.name,
-                    url: downloadURL,
-                    fecha: firebase.firestore.FieldValue.serverTimestamp(),
-                    nota: 'Pendiente'
-                });
-
-                fileNameSpan.textContent = file.name;
-                fileInfo.classList.remove('hidden');
-                fileInfo.style.display = 'flex';
-                uploadBtn.classList.add('hidden');
-                uploadBtn.style.display = 'none';
-
-                alert('¡Tarea entregada con éxito!');
-
-            } catch (error) {
-                console.error("Error al subir archivo:", error);
-                alert('Error al subir el archivo. Intente de nuevo.');
-                const uploadBtn = e.target.parentElement.querySelector('.btn-upload');
-                uploadBtn.innerText = 'Subir Archivo';
-                uploadBtn.disabled = false;
-            }
+        if (clasesSnap.empty) {
+            weeksContainer.innerHTML = '<p class="empty-msg">Aún no hay clases publicadas.</p>';
+            return;
         }
-    });
-});
 
-function removeFile(id) {
-    const fileInfo = document.getElementById('file-info-' + id);
-    const uploadBtn = document.querySelector('#upload-zone-' + id + ' .btn-upload');
-    const input = document.getElementById('homework-' + id);
+        clasesSnap.docs.forEach(doc => {
+            const clase = doc.data();
+            const entrega = entregas.find(e => e.semana === clase.semana);
 
-    input.value = '';
-    fileInfo.classList.add('hidden');
-    fileInfo.style.display = 'none';
-    uploadBtn.classList.remove('hidden');
-    uploadBtn.style.display = 'block';
-    uploadBtn.innerText = 'Subir Archivo';
-    uploadBtn.disabled = false;
+            const card = document.createElement('div');
+            card.className = 'card week-card';
+            card.innerHTML = `
+                <div class="week-header">
+                    <h3>Semana ${clase.semana}: ${clase.nombre.replace('.pdf', '')}</h3>
+                    <span class="badge success">Disponible</span>
+                </div>
+                <div class="week-body">
+                    <div class="content-item">
+                        <span class="icon">📄</span>
+                        <div class="item-info">
+                            <strong>Material de Estudio</strong>
+                            <p>Teoría técnica de la semana.</p>
+                        </div>
+                        <button class="btn-view" onclick="openPDF('${clase.url}')">Ver PDF</button>
+                    </div>
+                    <div class="content-item tarea-section">
+                        <span class="icon">✏️</span>
+                        <div class="item-info">
+                            <strong>Actividad de la Semana</strong>
+                            <p>${entrega ? '✓ Archivo entregado' : 'Pendiente de entrega'}</p>
+                        </div>
+                        ${!entrega ? `
+                            <div class="upload-zone">
+                                <input type="file" id="file-${clase.semana}" class="hidden-input" accept=".pdf" onchange="uploadHomework(${clase.semana})">
+                                <button class="btn-upload" onclick="document.getElementById('file-${clase.semana}').click()">Subir PDF</button>
+                            </div>
+                        ` : `
+                            <div class="status-badge ${entrega.estado.toLowerCase()}">${entrega.estado}</div>
+                        `}
+                    </div>
+                </div>
+                ${entrega && entrega.nota ? `
+                    <div class="week-footer">
+                        <div class="grade-pill">
+                            <span>Calificación: <strong>${entrega.nota}</strong></span>
+                            ${entrega.comentario ? `<p class="comment">" ${entrega.comentario} "</p>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            weeksContainer.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Error cargando contenido:", error);
+    }
 }
 
-document.getElementById('btn-logout-student')?.addEventListener('click', () => {
-    localStorage.removeItem('user_session');
+async function uploadHomework(semana) {
+    const fileInput = document.getElementById(`file-${semana}`);
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    try {
+        const btn = fileInput.nextElementSibling;
+        const originalText = btn.innerText;
+        btn.innerText = "Subiendo...";
+        btn.disabled = true;
+
+        const path = `entregas/${studentSession.dni}/Semana_${semana}/${file.name}`;
+        const ref = storage.ref().child(path);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+
+        await db.collection('entregas').add({
+            alumno_dni: studentSession.dni,
+            alumno_nombre: studentSession.nombre,
+            curso: studentSession.curso,
+            semana: semana,
+            archivo_url: url,
+            archivo_nombre: file.name,
+            fecha_entrega: new Date().toISOString(),
+            estado: 'Pendiente',
+            nota: '',
+            comentario: ''
+        });
+
+        alert("¡Trabajo entregado con éxito!");
+        loadContent();
+    } catch (error) {
+        console.error(error);
+        alert("Error al subir el archivo.");
+    }
+}
+
+function openPDF(url) {
+    window.open(url, '_blank');
+}
+
+document.getElementById('btn-logout-student').addEventListener('click', () => {
+    localStorage.removeItem('userSession');
     window.location.href = 'index.html';
 });
+
+loadContent();
