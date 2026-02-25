@@ -202,6 +202,11 @@ document.querySelectorAll('.nav-link').forEach(link => {
             currentViewedCourse = '';
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('table-section').classList.add('hidden');
+
+            // Mostrar todos los contadores en Dash
+            document.getElementById('card-total-unificados').style.display = 'block';
+            document.getElementById('card-count-habilidades').style.display = 'block';
+            document.getElementById('card-count-programacion').style.display = 'block';
         } else if (sectionId === 'habilidades' || sectionId === 'programacion') {
             showTable(sectionId);
         }
@@ -214,6 +219,17 @@ function showTable(courseKey) {
     document.getElementById('table-section').classList.remove('hidden');
     document.getElementById('current-course-title').innerText =
         courseKey === 'habilidades' ? 'Alumnos: Habilidades Digitales & IA' : 'Alumnos: Desarrollo de Software & Videojuegos';
+
+    // Toggle de Tarjetas de Estadísticas arriba
+    if (courseKey === 'habilidades') {
+        document.getElementById('card-total-unificados').style.display = 'none';
+        document.getElementById('card-count-habilidades').style.display = 'block';
+        document.getElementById('card-count-programacion').style.display = 'none';
+    } else {
+        document.getElementById('card-total-unificados').style.display = 'none';
+        document.getElementById('card-count-habilidades').style.display = 'none';
+        document.getElementById('card-count-programacion').style.display = 'block';
+    }
 
     const tbody = document.querySelector('#students-table tbody');
     tbody.innerHTML = '';
