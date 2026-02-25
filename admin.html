@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -62,6 +63,26 @@
 
                 <div class="dashboard-charts card" id="advanced-stats-section">
                     <h3>Análisis de la Matrícula</h3>
+
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>Situación Laboral</h4>
+                            <canvas id="chart-trabajo"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>Nivel Educativo</h4>
+                            <canvas id="chart-estudios"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>Distribución por Sexo</h4>
+                            <canvas id="chart-sexo"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>Rango de Edades</h4>
+                            <canvas id="chart-edades"></canvas>
+                        </div>
+                    </div>
+
                     <div class="stats-container-modern" id="stats-summary">
                         <p class="stats-placeholder">Cargando estadísticas detalladas...</p>
                     </div>
