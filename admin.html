@@ -47,24 +47,23 @@
             <section id="dashboard-section" class="section active">
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <span class="stat-value">2</span>
-                        <span class="stat-label">Cursos Activos</span>
+                        <span class="stat-value" id="stat-total-global">0</span>
+                        <span class="stat-label">Total Alumnos Unificados</span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-value" id="count-habilidades">0</span>
-                        <span class="stat-label">Alumnos Habilidades Digitales</span>
+                        <span class="stat-label">Habilidades Digitales & IA</span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-value" id="count-programacion">0</span>
-                        <span class="stat-label">Alumnos Programación</span>
+                        <span class="stat-label">Desarrollo de Software</span>
                     </div>
                 </div>
 
-                <div class="advanced-stats card hidden" id="advanced-stats-section">
-                    <h3>Estadísticas Avanzadas</h3>
-                    <div class="stats-visuals">
-                        <!-- Aquí se pueden agregar gráficos luego -->
-                        <div id="stats-summary"></div>
+                <div class="dashboard-charts card" id="advanced-stats-section">
+                    <h3>Análisis de la Matrícula</h3>
+                    <div class="stats-container-modern" id="stats-summary">
+                        <p class="stats-placeholder">Cargando estadísticas detalladas...</p>
                     </div>
                 </div>
 

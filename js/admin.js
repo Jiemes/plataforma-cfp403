@@ -24,13 +24,11 @@ async function loadStudentsFromFirebase() {
 }
 
 function sortAndCleanDuplicates(courseKey) {
-    // 1. Eliminar duplicados por DNI (quedarse con el último)
     const uniqueMap = new Map();
     studentData[courseKey].forEach(student => {
         uniqueMap.set(student.dni, student);
     });
 
-    // 2. Convertir a array y ordenar alfabéticamente por apellido
     studentData[courseKey] = Array.from(uniqueMap.values()).sort((a, b) => {
         return (a.full_name || "").localeCompare(b.full_name || "");
     });
@@ -38,68 +36,86 @@ function sortAndCleanDuplicates(courseKey) {
 
 function calculateStats() {
     const all = [...studentData.habilidades, ...studentData.programacion];
+    document.getElementById('stat-total-global').innerText = all.length;
+
     if (all.length === 0) return;
 
-    // Ejemplo de estadísticas (puedes ampliar según las columnas de tu Excel)
+    // Estadísticas detalladas
     const stats = {
         total: all.length,
-        hombres: all.filter(s => s.sexo === 'Masculino').length,
-        mujeres: all.filter(s => s.sexo === 'Femenino').length,
+        buscandoTrabajo: all.filter(s => s.busca_trabajo && s.busca_trabajo.toUpperCase().includes('SI')).length,
+        trabajando: all.filter(s => s.trabajo_actual && !s.trabajo_actual.toUpperCase().includes('NO')).length,
+        nivelesEducativos: {}
     };
+
+    // Frecuencia de Niveles Educativos
+    all.forEach(s => {
+        if (s.nivel_educativo) {
+            stats.nivelesEducativos[s.nivel_educativo] = (stats.nivelesEducativos[s.nivel_educativo] || 0) + 1;
+        }
+    });
 
     const statsDiv = document.getElementById('stats-summary');
     if (statsDiv) {
-        // Mostrar sección si hay datos
-        document.getElementById('advanced-stats-section').classList.remove('hidden');
-        statsDiv.innerHTML = `
-            <p><strong>Total estudiantes únicos:</strong> ${stats.total}</p>
-            <p>Se han eliminado duplicados automáticamente por DNI.</p>
+        let html = `
+            <div class="stats-row">
+                <div class="stat-mini-card">
+                    <strong>Buscando Trabajo</strong>
+                    <span>${stats.buscandoTrabajo} (${((stats.buscandoTrabajo / stats.total) * 100).toFixed(1)}%)</span>
+                </div>
+                <div class="stat-mini-card">
+                    <strong>Actualmente Trabajando</strong>
+                    <span>${stats.trabajando} (${((stats.trabajando / stats.total) * 100).toFixed(1)}%)</span>
+                </div>
+            </div>
+            <div class="stats-education">
+                <h4>Niveles Educativos:</h4>
+                <ul>
+                    ${Object.entries(stats.nivelesEducativos).map(([nivel, cant]) => `
+                        <li><strong>${nivel}:</strong> ${cant} alumnos</li>
+                    `).join('')}
+                </ul>
+            </div>
         `;
+        statsDiv.innerHTML = html;
     }
 }
 
 // Ejecutar carga inicial
 loadStudentsFromFirebase();
 
-// Handle Habilidades Upload
-document.getElementById('upload-habilidades')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        processExcel(file, 'habilidades');
-    }
-});
-
-// Handle Programacion Upload
-document.getElementById('upload-programacion')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        processExcel(file, 'programacion');
-    }
-});
+// Manejo de Archivos Excel
+document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
+document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
 
 function processExcel(file, courseType) {
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(worksheet);
 
-        // Transform data to our format, capturing all possible fields for stats
+        // Mapeo Maestro de Columnas (Basado en tu planilla de GForms)
         const transformed = json.map(row => ({
-            dni: String(row['CUÁL ES SU NÚMERO DE DOCUMENTO?'] || row['DNI'] || row['Nro de documento'] || '').trim(),
-            nombre: row['CUÁLES SON SUS NOMBRES?'] || row['Nombres'] || '',
-            apellido: row['CUÁLES SON SUS APELLIDOS?'] || row['Apellidos'] || '',
+            dni: String(row['CUÁL ES SU NÚMERO DE DOCUMENTO?'] || row['DNI'] || row['Documento'] || '').trim(),
             email: row['Dirección de correo electrónico'] || row['Email'] || '',
-            telefono: row['CUÁL ES SU NÚMERO DE TELÉFONO PERSONAL?'] || row['Teléfono'] || row['Telefono'] || '',
-            sexo: row['SEXO'] || row['Sexo'] || '',
-            edad: row['EDAD'] || row['Edad'] || '',
-            ocupacion: row['OCUPACIÓN'] || row['Ocupación'] || '',
-            full_name: `${row['CUÁLES SON SUS APELLIDOS?'] || row['Apellidos'] || ''}, ${row['CUÁLES SON SUS NOMBRES?'] || row['Nombres'] || ''}`.toUpperCase().trim()
-        })).filter(s => s.dni); // Evitar filas vacías sin DNI
+            apellido: row['CUÁLES SON SUS APELLIDOS?'] || row['Apellidos'] || '',
+            nombre: row['CUÁLES SON SUS NOMBRES?'] || row['Nombres'] || '',
+            full_name: `${row['CUÁLES SON SUS APELLIDOS?'] || ''}, ${row['CUÁLES SON SUS NOMBRES?'] || ''}`.toUpperCase().trim(),
+            nacimiento: row['CUÁL ES SU FECHA DE NACIMIENTO?'] || '',
+            ciudad_nacimiento: row['CUÁL ES SU CIUDAD DE NACIMIENTO?'] || '',
+            direccion: row['CUÁL ES LA DIRECCIÓN ACTUAL DONDE VIVE?'] || '',
+            telefono: row['CUÁL ES SU NÚMERO DE TELÉFONO?'] || row['Teléfono'] || row['Telefono'] || '',
+            nivel_educativo: row['CUÁL ES SU NIVEL EDUCATIVO ALCANZADO?'] || '',
+            trabajo_actual: row['CUÁL ES SU TRABAJO ACTUAL? (DE NO TRABAJAR SOLO ESCRIBA NO)'] || '',
+            busca_trabajo: row['BUSCA TRABAJO U OTRO TRABAJO?'] || '',
+            salud: row['TIENE ALGÚN PROBLEMA DE SALUD, ALERGIA O PATOLOGÍA? CUÁL?'] || '',
+            fecha_importacion: new Date().toISOString()
+        })).filter(s => s.dni && s.dni.length > 5);
 
-        // Guardar en Firebase
+        // Guardar en Firebase con batch
         const collectionName = courseType === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
         const batch = db.batch();
 
@@ -110,17 +126,17 @@ function processExcel(file, courseType) {
 
         try {
             await batch.commit();
-            alert(`¡Éxito! Se han guardado ${transformed.length} registros. Se han unificado duplicados por DNI.`);
+            alert(`¡Éxito! Se han importado ${transformed.length} alumnos para ${courseType.toUpperCase()}.`);
             loadStudentsFromFirebase();
         } catch (error) {
-            console.error("Error al guardar en Firebase:", error);
-            alert("Error al guardar en la base de datos.");
+            console.error(error);
+            alert("Error al guardar en Firebase.");
         }
     };
     reader.readAsArrayBuffer(file);
 }
 
-// Navigation Logic
+// Navegación
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -153,11 +169,11 @@ function showTable(courseKey) {
         tr.innerHTML = `
             <td>${student.full_name}</td>
             <td>${student.dni}</td>
-            <td>${student.telefono || '-'}</td>
+            <td>${student.telefono || 'Sin datos'}</td>
             <td>${student.email}</td>
             <td>
-                <button class="btn-edit" onclick="editStudent('${courseKey}', '${student.dni}')">✏️</button>
-                <button class="btn-delete" onclick="deleteStudent('${courseKey}', '${student.dni}')">🗑️</button>
+                <button class="btn-edit" title="Ver más / Editar" onclick="editStudent('${courseKey}', '${student.dni}')">✏️</button>
+                <button class="btn-delete" title="Eliminar" onclick="deleteStudent('${courseKey}', '${student.dni}')">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -165,11 +181,12 @@ function showTable(courseKey) {
 }
 
 async function editStudent(course, dni) {
-    const collectionName = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-    const newEmail = prompt(`Editar email para el DNI ${dni}:`);
+    // Por ahora solo editamos email, pero ya tenemos acceso a todo el objeto student
+    const student = studentData[course].find(s => s.dni === dni);
+    const newEmail = prompt(`Editar datos para ${student.full_name}\n\nEmail actual:`, student.email);
     if (newEmail) {
         try {
-            await db.collection(collectionName).doc(dni).update({ email: newEmail });
+            await db.collection(course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion').doc(dni).update({ email: newEmail });
             loadStudentsFromFirebase();
             showTable(course);
         } catch (error) { console.error(error); }
@@ -178,9 +195,8 @@ async function editStudent(course, dni) {
 
 async function deleteStudent(course, dni) {
     if (confirm('¿Está seguro de eliminar este alumno?')) {
-        const collectionName = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
         try {
-            await db.collection(collectionName).doc(dni).delete();
+            await db.collection(course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion').doc(dni).delete();
             loadStudentsFromFirebase();
             showTable(course);
         } catch (error) { console.error(error); }
@@ -188,7 +204,5 @@ async function deleteStudent(course, dni) {
 }
 
 document.getElementById('btn-logout')?.addEventListener('click', () => {
-    authFirebase.signOut().then(() => {
-        window.location.href = 'index.html';
-    });
+    authFirebase.signOut().then(() => window.location.href = 'index.html');
 });
