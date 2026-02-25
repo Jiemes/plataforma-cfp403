@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración | CFP 403</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="assets/CFP 403.png" alt="Logo" class="sidebar-logo">
+                <div class="sidebar-titles">
+                    <h3>CFP N° 403</h3>
+                    <p>Mercedes</p>
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
+                <a href="#" class="nav-link" data-section="habilidades">Habilidades Digitales & IA</a>
+                <a href="#" class="nav-link" data-section="programacion">Software & Videojuegos</a>
+                <a href="#" class="nav-link" data-section="settings">Configuración</a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="btn-logout" class="btn-secondary">Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <header class="content-header">
+                <h2>Bienvenido, Juan Manuel</h2>
+                <div class="header-right">
+                    <div class="user-profile">Administrador</div>
+                </div>
+            </header>
+
+            <section id="dashboard-section" class="section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value">2</span>
+                        <span class="stat-label">Cursos Activos</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="count-habilidades">0</span>
+                        <span class="stat-label">Alumnos Habilidades Digitales</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="count-programacion">0</span>
+                        <span class="stat-label">Alumnos Programación</span>
+                    </div>
+                </div>
+
+                <div class="import-section card">
+                    <h3>Importar Alumnos</h3>
+                    <p>Sube los archivos Excel para cargar automáticamente los alumnos de cada curso.</p>
+                    <div class="upload-controls">
+                        <div class="upload-item">
+                            <label>Habilidades Digitales</label>
+                            <input type="file" id="upload-habilidades" accept=".xlsx, .xls">
+                        </div>
+                        <div class="upload-item">
+                            <label>Prog. & Videojuegos</label>
+                            <input type="file" id="upload-programacion" accept=".xlsx, .xls">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="table-section" class="section hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="current-course-title">Listado de Alumnos</h3>
+                        <button class="btn-primary">Nuevo Alumno</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="students-table">
+                            <thead>
+                                <tr>
+                                    <th>Apellido y Nombre</th>
+                                    <th>DNI</th>
+                                    <th>Email</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Trs populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>
