@@ -12,7 +12,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
     try {
         // 1. Caso especial: Administrador
-        if (email === 'admin@cfp403.edu.ar' && dni === 'admin123') {
+        if (email === 'sanchezjuanmanuel@abc.gob.ar' && dni === 'Perroloco2026') {
             window.location.href = 'admin.html';
             return;
         }
