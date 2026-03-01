@@ -1,6 +1,7 @@
-﻿// Administración CFP 403 - Lógica Inteligente 4.0
+﻿// Administración CFP 403 - Lógica Inteligente 5.0
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
+let currentClaseTab = 'habilidades';
 let charts = {};
 let notificationsListener = null;
 
@@ -10,27 +11,33 @@ async function loadStudentsFromFirebase() {
         const snapHab = await db.collection('alumnos_habilidades').get();
         studentData.habilidades = snapHab.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         processAndClean('habilidades');
-        const countHab = document.getElementById('count-habilidades');
-        if (countHab) countHab.innerText = studentData.habilidades.length;
 
         const snapProg = await db.collection('alumnos_programacion').get();
         studentData.programacion = snapProg.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         processAndClean('programacion');
-        const countProg = document.getElementById('count-programacion');
-        if (countProg) countProg.innerText = studentData.programacion.length;
 
-        updateDashboard();
+        refreshCounters();
+        updateDashboardView('global');
         if (currentViewedCourse) showTable(currentViewedCourse);
         initNotifications();
-    } catch (err) { console.error("Error crítico:", err); }
+    } catch (err) { console.error("Error crítico carga inicial:", err); }
 }
 
-// Limpieza y Detección de Sexo Automática
+function refreshCounters() {
+    const counts = {
+        total: studentData.habilidades.length + studentData.programacion.length,
+        hab: studentData.habilidades.length,
+        prog: studentData.programacion.length
+    };
+    if (document.getElementById('stat-total-global')) document.getElementById('stat-total-global').innerText = counts.total;
+    if (document.getElementById('count-habilidades')) document.getElementById('count-habilidades').innerText = counts.hab;
+    if (document.getElementById('count-programacion')) document.getElementById('count-programacion').innerText = counts.prog;
+}
+
 function processAndClean(key) {
     const map = new Map();
     studentData[key].forEach(s => {
-        // Autodetección de sexo si no viene definido o es incorrecto
-        if (!s.sexo || s.sexo.length < 1 || s.sexo === 'N/A') {
+        if (!s.sexo || s.sexo.length < 1 || s.sexo === 'N/A' || s.sexo === 'O') {
             s.sexo = guessGender(s.full_name);
         }
         map.set(s.dni, s);
@@ -39,23 +46,34 @@ function processAndClean(key) {
 }
 
 function guessGender(fullName) {
-    if (!fullName) return 'O';
-    const name = fullName.split(',').pop().trim().toUpperCase().split(' ')[0];
-    const femaleEndings = ['A', 'INA', 'ELA', 'IA', 'RA', 'ITH', 'IS', 'ETH'];
-    const femaleNames = ['MARIA', 'ANA', 'ELENA', 'MARTA', 'LAURA', 'PAULA', 'LUCIA', 'SOFIA', 'JULIA', 'CARMEN', 'BELEN', 'MILAGROS', 'LOURDES', 'INES', 'ESTHER', 'ROSARIO', 'BEATRIZ', 'RAQUEL', 'VALENTINA', 'CONSTANZA'];
+    if (!fullName) return 'M';
+    const parts = fullName.split(',');
+    const namePart = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+    const firstName = namePart.split(' ')[0].toUpperCase();
 
-    if (femaleNames.includes(name)) return 'F';
-    for (let end of femaleEndings) {
-        if (name.endsWith(end)) return 'F';
-    }
-    return 'M'; // Por defecto Masculino para el resto de casos comunes en español que no terminen en A
+    const femaleNames = ['MARIA', 'ANA', 'ELENA', 'MARTA', 'LAURA', 'PAULA', 'LUCIA', 'SOFIA', 'JULIA', 'CARMEN', 'BELEN', 'MILAGROS', 'LOURDES', 'INES', 'ESTHER', 'ROSARIO', 'BEATRIZ', 'RAQUEL', 'VALENTINA', 'CONSTANZA', 'SABRINA', 'JAQUELINA', 'MARISOL', 'KARINA', 'MONICA', 'SILVIA', 'ANDREA', 'PATRICIA', 'ADRIANA', 'GRISELDA', 'CLAUDIA'];
+    const femaleEndings = ['A', 'INA', 'ELA', 'IA', 'RA', 'ITH', 'IS', 'ETH'];
+
+    if (femaleNames.includes(firstName)) return 'F';
+    for (let end of femaleEndings) { if (firstName.endsWith(end)) return 'F'; }
+    return 'M';
 }
 
-function updateDashboard() {
-    const all = [...studentData.habilidades, ...studentData.programacion];
-    const globalTotal = document.getElementById('stat-total-global');
-    if (globalTotal) globalTotal.innerText = all.length;
-    if (all.length > 0) renderCharts(all);
+// DASHBOARD FILTRADO
+function updateDashboardView(type) {
+    const title = document.getElementById('dashboard-view-title');
+    let data = [];
+    if (type === 'global') {
+        title.innerText = "Análisis Global de Matrícula";
+        data = [...studentData.habilidades, ...studentData.programacion];
+    } else if (type === 'habilidades') {
+        title.innerText = "Habilidades Digitales & IA";
+        data = studentData.habilidades;
+    } else {
+        title.innerText = "Software & Videojuegos";
+        data = studentData.programacion;
+    }
+    renderCharts(data);
 }
 
 function renderCharts(all) {
@@ -64,73 +82,69 @@ function renderCharts(all) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { size: 11 } } },
-            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 10 }
+            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
         }
     };
 
-    // Distribución Laboral (Simplificado)
-    const trabajaCount = all.filter(s => s.trabajo_actual && !s.trabajo_actual.toUpperCase().includes('NO')).length;
+    // Trabajo
+    const trabaja = all.filter(s => s.trabajo_actual && !s.trabajo_actual.toUpperCase().includes('NO')).length;
     charts.trabajo = new Chart(document.getElementById('chart-trabajo'), {
         type: 'pie',
-        data: { labels: ['Trabaja', 'No Trabaja'], datasets: [{ data: [trabajaCount, all.length - trabajaCount], backgroundColor: ['#00B9E8', '#e2e8f0'], borderWidth: 0 }] },
+        data: { labels: ['Trabaja', 'No Trabaja'], datasets: [{ data: [trabaja, all.length - trabaja], backgroundColor: ['#00B9E8', '#e2e8f0'] }] },
         options: opt
     });
 
-    // Nivel Educativo
+    // Estudios
     const edu = {};
     all.forEach(s => { if (s.nivel_educativo) edu[s.nivel_educativo] = (edu[s.nivel_educativo] || 0) + 1; });
     charts.estudios = new Chart(document.getElementById('chart-estudios'), {
         type: 'bar',
-        data: { labels: Object.keys(edu), datasets: [{ label: 'Cantidad', data: Object.values(edu), backgroundColor: '#00B9E8', borderRadius: 8 }] },
-        options: { ...opt, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } }
+        data: { labels: Object.keys(edu), datasets: [{ label: 'Alumnos', data: Object.values(edu), backgroundColor: '#00B9E8' }] },
+        options: { ...opt, plugins: { legend: { display: false } } }
     });
 
-    // Distribución por Sexo (Autocalculado)
-    const sexo = { M: all.filter(s => s.sexo === 'M').length, F: all.filter(s => s.sexo === 'F').length, O: all.filter(s => s.sexo === 'O').length };
+    // Sexo
+    const sexo = { M: all.filter(s => s.sexo === 'M').length, F: all.filter(s => s.sexo === 'F').length };
     charts.sexo = new Chart(document.getElementById('chart-sexo'), {
         type: 'doughnut',
-        data: { labels: ['Masculino', 'Femenino', 'Otro'], datasets: [{ data: [sexo.M, sexo.F, sexo.O], backgroundColor: ['#1e293b', '#FF6384', '#FFCE56'], cutout: '65%', borderWidth: 0 }] },
+        data: { labels: ['Manculino', 'Femenino'], datasets: [{ data: [sexo.M, sexo.F], backgroundColor: ['#1e293b', '#FF6384'] }] },
         options: opt
     });
 
-    // Rango de Edades
-    const age = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 };
+    // Edad
+    const ages = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 };
     all.forEach(s => {
         let a = parseInt(s.edad);
         if (isNaN(a) && s.nacimiento) a = new Date().getFullYear() - new Date(s.nacimiento).getFullYear();
-        if (a <= 25) age['18-25']++; else if (a <= 35) age['26-35']++; else if (a <= 45) age['36-45']++; else if (a > 45) age['46+']++;
+        if (a <= 25) ages['18-25']++; else if (a <= 35) ages['26-35']++; else if (a <= 45) ages['36-45']++; else ages['46+']++;
     });
     charts.edades = new Chart(document.getElementById('chart-edades'), {
         type: 'bar',
-        data: { labels: Object.keys(age), datasets: [{ data: Object.values(age), backgroundColor: '#1e293b', borderRadius: 8 }] },
-        options: { ...opt, plugins: { legend: { display: false } }, scales: { y: { grid: { display: false } }, x: { grid: { display: false } } } }
+        data: { labels: Object.keys(ages), datasets: [{ label: 'Alumnos', data: Object.values(ages), backgroundColor: '#1e293b' }] },
+        options: { ...opt, plugins: { legend: { display: false } } }
     });
 }
 
-// TABLAS UNIFICADAS
-async function showTable(courseKey) {
-    currentViewedCourse = courseKey;
+// TABLAS Y VACIADO
+async function showTable(course) {
+    currentViewedCourse = course;
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     document.getElementById('table-section').classList.remove('hidden');
-    document.getElementById('current-course-title').innerText = courseKey === 'habilidades' ? 'Habilidades Digitales & IA' : 'Software & Videojuegos';
+    document.getElementById('current-course-title').innerText = course === 'habilidades' ? 'Habilidades Digitales & IA' : 'Software & Videojuegos';
 
-    // UI Cards
-    document.getElementById('card-total-unificados').style.display = 'none';
-    document.getElementById('card-count-habilidades').style.display = courseKey === 'habilidades' ? 'block' : 'none';
-    document.getElementById('card-count-programacion').style.display = courseKey === 'programacion' ? 'block' : 'none';
+    const tbody = document.querySelector('#students-table tbody');
+    tbody.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
 
     try {
-        const snapEntregas = await db.collection('entregas').where('curso', '==', courseKey).get();
-        const entregas = snapEntregas.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const tbody = document.querySelector('#students-table tbody');
+        const snapEnt = await db.collection('entregas').where('curso', '==', course).get();
+        const entregas = snapEnt.docs.map(doc => doc.data());
         tbody.innerHTML = '';
 
-        studentData[courseKey].forEach(s => {
-            const sEnt = entregas.filter(e => e.alumno_dni === s.dni);
-            const corr = sEnt.filter(e => e.estado === 'Calificado');
-            const pend = sEnt.filter(e => e.estado === 'Pendiente');
-            const prom = corr.length > 0 ? (corr.reduce((acc, e) => acc + parseFloat(e.nota), 0) / corr.length).toFixed(1) : '-';
+        studentData[course].forEach(s => {
+            const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
+            const corr = eAlu.filter(e => e.estado === 'Calificado');
+            const pend = eAlu.filter(e => e.estado === 'Pendiente');
+            const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota), 0) / corr.length).toFixed(1) : '-';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -144,7 +158,7 @@ async function showTable(courseKey) {
                     <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">
                         ${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}
                     </button>
-                    <button class="btn-icon" onclick="deleteStudent('${courseKey}', '${s.dni}')">🗑️</button>
+                    <button onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -152,101 +166,122 @@ async function showTable(courseKey) {
     } catch (err) { console.error(err); }
 }
 
-// GESTIÓN DE CLASES - ROBUSTO
-document.getElementById('btn-save-clases')?.addEventListener('click', async () => {
-    const fileInput = document.getElementById('upload-pdfs');
-    const files = Array.from(fileInput.files);
-    const curso = document.getElementById('select-curso-clase').value;
-    if (files.length === 0) return alert("Selecciona archivos PDF.");
+async function deleteCourseData() {
+    if (!confirm(`¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse}? Esta acción no se puede deshacer.`)) return;
+    try {
+        const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+        const snap = await db.collection(coll).get();
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        alert("Lista vaciada correctamente.");
+        await loadStudentsFromFirebase();
+    } catch (err) { alert("Error al vaciar: " + err.message); }
+}
 
-    const btn = document.getElementById('btn-save-clases');
-    btn.innerHTML = '<span>⏳ Subiendo...</span>';
+// GESTIÓN DE CLASES 2.0 (Teoría + Actividad)
+function switchClaseType(type) {
+    currentClaseTab = type;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText.toLowerCase().includes(type === 'habilidades' ? 'habilidades' : 'videojuegos'));
+    });
+    loadClasesAdmin();
+}
+
+async function saveMaterial() {
+    const fileT = document.getElementById('pdf-teoria').files[0];
+    const fileA = document.getElementById('pdf-actividad').files[0];
+    const sem = document.getElementById('clase-semana').value;
+    const fPub = document.getElementById('clase-fecha-pub').value;
+
+    if (!sem || !fPub || (!fileT && !fileA)) return alert("Completa al menos un archivo, la semana y la fecha.");
+
+    const btn = document.getElementById('btn-save-material');
+    btn.innerText = "⏳ Subiendo material...";
     btn.disabled = true;
 
     try {
-        console.log("Iniciando batch de subida...");
-        for (const f of files) {
-            const m = f.name.match(/(\d+)/);
-            const s = m ? parseInt(m[0]) : 1;
-            const path = `clases/${curso}/Semana_${s}/${Date.now()}_${f.name}`;
-            const ref = storage.ref().child(path);
+        let urlT = '', nameT = '';
+        let urlA = '', nameA = '';
 
-            console.log(`Subiendo ${f.name}...`);
-            await ref.put(f);
-            const url = await ref.getDownloadURL();
-
-            await db.collection('clases').add({
-                curso, semana: s, nombre: f.name, url, visible: true, fecha: new Date().toISOString()
-            });
+        if (fileT) {
+            const refT = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Teoria_${fileT.name}`);
+            await refT.put(fileT);
+            urlT = await refT.getDownloadURL();
+            nameT = fileT.name;
         }
-        alert("¡Éxito! Clases habilitadas correctamente.");
-        fileInput.value = '';
-        await loadClasesAdmin();
-    } catch (err) {
-        console.error("Fallo en subida:", err);
-        alert("Error crítico durante la subida. Verifica tu conexión.");
-    } finally {
-        btn.innerHTML = 'Subir Clases Seleccionadas';
+
+        if (fileA) {
+            const refA = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Actividad_${fileA.name}`);
+            await refA.put(fileA);
+            urlA = await refA.getDownloadURL();
+            nameA = fileA.name;
+        }
+
+        await db.collection('clases').add({
+            curso: currentClaseTab,
+            semana: parseInt(sem),
+            fecha_publicacion: fPub,
+            teoria_url: urlT, teoría_nombre: nameT,
+            actividad_url: urlA, actividad_nombre: nameA,
+            fecha_creacion: new Date().toISOString()
+        });
+
+        alert("¡Material subido con éxito!");
+        document.getElementById('pdf-teoria').value = '';
+        document.getElementById('pdf-actividad').value = '';
+        loadClasesAdmin();
+    } catch (err) { alert("Error: " + err.message); }
+    finally {
+        btn.innerText = "Subir Material de Semana";
         btn.disabled = false;
     }
-});
+}
 
 async function loadClasesAdmin() {
+    const cont = document.getElementById('clases-list-container');
+    cont.innerHTML = '<p>Cargando materiales...</p>';
     try {
-        const snap = await db.collection('clases').orderBy('semana', 'asc').get();
-        const cont = document.getElementById('clases-list-admin');
-        if (!cont) return;
+        const snap = await db.collection('clases').where('curso', '==', currentClaseTab).orderBy('semana', 'desc').get();
         cont.innerHTML = '';
+        if (snap.empty) cont.innerHTML = '<p>No hay materiales para este curso.</p>';
+
         snap.docs.forEach(doc => {
             const c = doc.data();
+            const isPub = new Date(c.fecha_publicacion) <= new Date();
             const div = document.createElement('div');
-            div.className = 'clase-item-admin';
+            div.className = 'clase-item-row';
             div.innerHTML = `
-                <span><strong>Semana ${c.semana}:</strong> ${c.nombre} (${c.curso})</span>
-                <div class="clase-actions">
-                    <button class="btn-toggle-view ${c.visible ? 'active' : ''}" onclick="toggleClase('${doc.id}', ${c.visible})">${c.visible ? 'Visible' : 'Oculta'}</button>
-                    <button class="btn-icon" onclick="delClase('${doc.id}')">🗑️</button>
-                </div>`;
+                <div style="font-weight:700">Semana ${c.semana}</div>
+                <div>${c.teoría_nombre || '---'} (Teoría)</div>
+                <div>${c.actividad_nombre || '---'} (Actividad)</div>
+                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
+                    ${isPub ? '🔓 Visible' : '🔒 Programada: ' + c.fecha_publicacion}
+                </div>
+                <div><button onclick="delClase('${doc.id}')">🗑️ Eliminar</button></div>
+            `;
             cont.appendChild(div);
         });
     } catch (err) { console.error(err); }
 }
 
-async function toggleClase(id, cur) { await db.collection('clases').doc(id).update({ visible: !cur }); loadClasesAdmin(); }
-async function delClase(id) { if (confirm("¿Eliminar clase?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
+async function delClase(id) { if (confirm("¿Eliminar este material?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
 
-// NOTIFICACIONES
-function initNotifications() {
-    if (notificationsListener) notificationsListener();
-    notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
-        const bell = document.getElementById('notif-bell');
-        const badge = document.getElementById('notif-count');
-        if (snap.size > 0) {
-            bell.classList.add('bell-active');
-            badge.innerText = snap.size;
-            badge.classList.remove('hidden');
-        } else {
-            bell.classList.remove('bell-active');
-            badge.classList.add('hidden');
-        }
-    });
-}
+// EVENTOS Y NAVEGACIÓN
+document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
+document.getElementById('btn-save-material')?.addEventListener('click', saveMaterial);
 
-// NAVEGACIÓN - SOLUCIÓN DE SALTOS DE INTERFAZ
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         const sec = link.getAttribute('data-section');
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
-
         document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
 
         if (sec === 'dashboard') {
             document.getElementById('dashboard-section').classList.remove('hidden');
-            document.getElementById('card-total-unificados').style.display = 'block';
-            document.getElementById('card-count-habilidades').style.display = 'block';
-            document.getElementById('card-count-programacion').style.display = 'block';
+            updateDashboardView('global');
         } else if (sec === 'clases') {
             document.getElementById('clases-section').classList.remove('hidden');
             loadClasesAdmin();
@@ -256,6 +291,22 @@ document.querySelectorAll('.nav-link').forEach(link => {
     });
 });
 
-// INIT
+async function deleteStudent(course, dni) {
+    if (!confirm("¿Eliminar alumno?")) return;
+    const coll = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+    await db.collection(coll).doc(dni).delete();
+    await loadStudentsFromFirebase();
+}
+
+function initNotifications() {
+    if (notificationsListener) notificationsListener();
+    notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
+        const badge = document.getElementById('notif-count');
+        if (snap.size > 0) {
+            badge.innerText = snap.size;
+            badge.classList.remove('hidden');
+        } else { badge.classList.add('hidden'); }
+    });
+}
+
 loadStudentsFromFirebase();
-document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });

@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno
+// Mi Aula Virtual - Lógica del Alumno 5.0
 const studentSession = JSON.parse(localStorage.getItem('userSession'));
 
 if (!studentSession) {
@@ -9,17 +9,18 @@ document.getElementById('student-name').innerText = studentSession.nombre;
 document.getElementById('course-title').innerText = studentSession.curso === 'habilidades' ?
     'Formación en Habilidades Digitales e IA' : 'Desarrollo de Software & Videojuegos';
 
-// Cargar Clases y Entregas
+// Cargar Clases y Actividades
 async function loadContent() {
     try {
         const weeksContainer = document.getElementById('weeks-container');
-        weeksContainer.innerHTML = '';
+        weeksContainer.innerHTML = '<p class="loader">Organizando tus clases...</p>';
 
-        // 1. Obtener Clases
-        const clasesSnap = await db.collection('clases')
+        // 1. Obtener Materiales (Filtrado por curso y fecha de publicación)
+        const now = new Date().toISOString().split('T')[0];
+        const materialesSnap = await db.collection('clases')
             .where('curso', '==', studentSession.curso)
-            .where('visible', '==', true)
-            .orderBy('semana', 'asc')
+            .where('fecha_publicacion', '<=', now) // Solo los publicados hasta hoy
+            .orderBy('fecha_publicacion', 'desc')
             .get();
 
         // 2. Obtener Entregas del Alumno
@@ -28,61 +29,68 @@ async function loadContent() {
             .get();
         const entregas = entregasSnap.docs.map(doc => doc.data());
 
-        if (clasesSnap.empty) {
-            weeksContainer.innerHTML = '<p class="empty-msg">Aún no hay clases publicadas.</p>';
+        weeksContainer.innerHTML = '';
+
+        if (materialesSnap.empty) {
+            weeksContainer.innerHTML = '<p class="empty-msg">Próximamente aparecerán tus primeras clases aquí. ¡Prepárate!</p>';
             return;
         }
 
-        clasesSnap.docs.forEach(doc => {
-            const clase = doc.data();
-            const entrega = entregas.find(e => e.semana === clase.semana);
+        materialesSnap.docs.forEach(doc => {
+            const mat = doc.data();
+            const entrega = entregas.find(e => e.semana === mat.semana);
 
             const card = document.createElement('div');
             card.className = 'card week-card';
             card.innerHTML = `
                 <div class="week-header">
-                    <h3>Semana ${clase.semana}: ${clase.nombre.replace('.pdf', '')}</h3>
-                    <span class="badge success">Disponible</span>
+                    <h3>Semana ${mat.semana}</h3>
+                    <span class="badge success">Material Disponible</span>
                 </div>
                 <div class="week-body">
+                    <!-- Sección Teoría -->
                     <div class="content-item">
-                        <span class="icon">📄</span>
+                        <span class="icon">📖</span>
                         <div class="item-info">
-                            <strong>Material de Estudio</strong>
-                            <p>Teoría técnica de la semana.</p>
+                            <strong>Material de Estudio (Teoría)</strong>
+                            <p>${mat.teoría_nombre || 'No hay material de lectura esta semana'}</p>
                         </div>
-                        <button class="btn-view" onclick="openPDF('${clase.url}')">Ver PDF</button>
+                        ${mat.teoria_url ? `<button class="btn-view" onclick="window.open('${mat.teoria_url}', '_blank')">Abrir PDF</button>` : ''}
                     </div>
-                    <div class="content-item tarea-section">
-                        <span class="icon">✏️</span>
+
+                    <!-- Sección Actividad -->
+                    <div class="content-item tarefa-row" style="margin-top:20px; border-top: 1px solid #f1f5f9; padding-top:20px;">
+                        <span class="icon">🛠️</span>
                         <div class="item-info">
-                            <strong>Actividad de la Semana</strong>
-                            <p>${entrega ? '✓ Archivo entregado' : 'Pendiente de entrega'}</p>
+                            <strong>Actividad Práctica</strong>
+                            <p>${mat.actividad_nombre || 'Actividad subida'}</p>
                         </div>
+                        ${mat.actividad_url ? `<button class="btn-view secondary" onclick="window.open('${mat.actividad_url}', '_blank')">Ver Consigna</button>` : ''}
+                    </div>
+
+                    <!-- Sección Entrega del Alumno -->
+                    <div class="delivery-section" style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:15px;">
                         ${!entrega ? `
-                            <div class="upload-zone">
-                                <input type="file" id="file-${clase.semana}" class="hidden-input" accept=".pdf" onchange="uploadHomework(${clase.semana})">
-                                <button class="btn-upload" onclick="document.getElementById('file-${clase.semana}').click()">Subir PDF</button>
-                            </div>
+                            <p style="font-size:0.9rem; margin-bottom:10px;"><strong>Tu Entrega:</strong> Aún no has subido tu trabajo.</p>
+                            <input type="file" id="file-${mat.semana}" class="hidden-input" accept=".pdf" onchange="uploadHomework(${mat.semana})">
+                            <button class="btn-upload" onclick="document.getElementById('file-${mat.semana}').click()">Subir mi Actividad (PDF)</button>
                         ` : `
-                            <div class="status-badge ${entrega.estado.toLowerCase()}">${entrega.estado}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <p><strong>Estado:</strong> <span class="status-badge ${entrega.estado.toLowerCase()}">${entrega.estado}</span></p>
+                                    ${entrega.nota ? `<p style="margin-top:10px;">Calificación: <strong style="color:var(--primary-color); font-size:1.2rem;">${entrega.nota}</strong></p>` : ''}
+                                </div>
+                                ${entrega.comentario ? `<div class="teacher-feedback"><em>"${entrega.comentario}"</em></div>` : ''}
+                            </div>
                         `}
                     </div>
                 </div>
-                ${entrega && entrega.nota ? `
-                    <div class="week-footer">
-                        <div class="grade-pill">
-                            <span>Calificación: <strong>${entrega.nota}</strong></span>
-                            ${entrega.comentario ? `<p class="comment">" ${entrega.comentario} "</p>` : ''}
-                        </div>
-                    </div>
-                ` : ''}
             `;
             weeksContainer.appendChild(card);
         });
 
     } catch (error) {
-        console.error("Error cargando contenido:", error);
+        console.error("Error cargando aula virtual:", error);
     }
 }
 
@@ -92,16 +100,12 @@ async function uploadHomework(semana) {
     if (!file) return;
 
     const btn = fileInput.nextElementSibling;
-    const originalText = btn.innerText;
-
     try {
-        btn.innerText = "⌛ Subiendo...";
+        btn.innerText = "⌛ Enviando trabajo...";
         btn.disabled = true;
 
         const path = `entregas/${studentSession.dni}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
-
-        console.log(`Subiendo entrega para DNI ${studentSession.dni}, semana ${semana}...`);
         await ref.put(file);
         const url = await ref.getDownloadURL();
 
@@ -118,24 +122,14 @@ async function uploadHomework(semana) {
             comentario: ''
         });
 
-        alert("¡Trabajo entregado con éxito!");
+        alert("¡Felicidades! Tu actividad ha sido entregada correctamente.");
         loadContent();
     } catch (error) {
-        console.error("Error en entrega:", error);
-        alert("Error al subir el archivo: " + error.message);
+        alert("Hubo un problema: " + error.message);
     } finally {
-        btn.innerText = "Subir PDF";
+        btn.innerText = "Subir mi Actividad (PDF)";
         btn.disabled = false;
     }
 }
-
-function openPDF(url) {
-    window.open(url, '_blank');
-}
-
-document.getElementById('btn-logout-student').addEventListener('click', () => {
-    localStorage.removeItem('userSession');
-    window.location.href = 'index.html';
-});
 
 loadContent();

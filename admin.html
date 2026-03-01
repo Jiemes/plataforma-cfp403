@@ -52,25 +52,26 @@
             </header>
 
             <div class="stats-grid">
-                <div class="stat-card" id="card-total-unificados">
+                <div class="stat-card" id="card-total-unificados" style="cursor:pointer"
+                    onclick="updateDashboardView('global')">
                     <span class="stat-value" id="stat-total-global">0</span>
-                    <span class="stat-label">Total Alumnos Unificados</span>
+                    <span class="stat-label">Total Global</span>
                 </div>
-                <div class="stat-card" id="card-count-habilidades">
+                <div class="stat-card" id="card-count-habilidades" style="cursor:pointer"
+                    onclick="updateDashboardView('habilidades')">
                     <span class="stat-value" id="count-habilidades">0</span>
-                    <span class="stat-label">Habilidades Digitales & IA</span>
+                    <span class="stat-label">Habilidades Digitales</span>
                 </div>
-                <div class="stat-card" id="card-count-programacion">
+                <div class="stat-card" id="card-count-programacion" style="cursor:pointer"
+                    onclick="updateDashboardView('programacion')">
                     <span class="stat-value" id="count-programacion">0</span>
-                    <span class="stat-label">Desarrollo de Software</span>
+                    <span class="stat-label">Software & Videojuegos</span>
                 </div>
             </div>
 
             <section id="dashboard-section" class="section active">
-
-                <div class="dashboard-charts card" id="advanced-stats-section">
-                    <h3>Análisis de la Matrícula</h3>
-
+                <div class="dashboard-charts card">
+                    <h3 id="dashboard-view-title">Análisis Global de Matrícula</h3>
                     <div class="charts-grid">
                         <div class="chart-container">
                             <h4>Situación Laboral</h4>
@@ -81,17 +82,13 @@
                             <canvas id="chart-estudios"></canvas>
                         </div>
                         <div class="chart-container">
-                            <h4>Distribución por Sexo</h4>
+                            <h4>Distribución por Sexo (Auto)</h4>
                             <canvas id="chart-sexo"></canvas>
                         </div>
                         <div class="chart-container">
                             <h4>Rango de Edades</h4>
                             <canvas id="chart-edades"></canvas>
                         </div>
-                    </div>
-
-                    <div class="stats-container-modern" id="stats-summary">
-                        <p class="stats-placeholder">Cargando estadísticas detalladas...</p>
                     </div>
                 </div>
 
@@ -113,20 +110,43 @@
 
             <section id="clases-section" class="section hidden">
                 <div class="card">
-                    <h3>Gestión de Clases Semanales</h3>
-                    <p>Sube los PDFs de las clases. El sistema los habilitará semanalmente.</p>
-                    <div class="upload-zone-modern">
-                        <select id="select-curso-clase">
-                            <option value="habilidades">Habilidades Digitales & IA</option>
-                            <option value="programacion">Software & Videojuegos</option>
-                        </select>
-                        <input type="file" id="upload-pdfs" multiple accept=".pdf">
-                        <button class="btn-primary" id="btn-save-clases">Subir Clases Seleccionadas</button>
+                    <div class="tabs-clases">
+                        <button class="tab-btn active" onclick="switchClaseType('habilidades')">Habilidades
+                            Digitales</button>
+                        <button class="tab-btn" onclick="switchClaseType('programacion')">Software &
+                            Videojuegos</button>
+                    </div>
+
+                    <div class="upload-box-clases">
+                        <h4 style="margin-bottom:20px;">Carga de Material Semanal</h4>
+                        <div class="upload-grid-clases">
+                            <div class="field-item">
+                                <label>Archivo de Teoría (PDF)</label>
+                                <input type="file" id="pdf-teoria" accept=".pdf">
+                            </div>
+                            <div class="field-item">
+                                <label>Archivo de Actividad (PDF)</label>
+                                <input type="file" id="pdf-actividad" accept=".pdf">
+                            </div>
+                            <div class="field-item">
+                                <label>Semana</label>
+                                <input type="number" id="clase-semana" min="1" placeholder="Ej: 1">
+                            </div>
+                            <div class="field-item">
+                                <label>Fecha de Publicación</label>
+                                <input type="date" id="clase-fecha-pub">
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="btn-save-material" style="margin-top:20px; width:100%">Subir
+                            Material de Semana</button>
                     </div>
                 </div>
+
                 <div class="card" style="margin-top: 20px;">
-                    <h3>Clases Cargadas</h3>
-                    <div id="clases-list-admin"></div>
+                    <h3>Listado de Clases y Actividades</h3>
+                    <div id="clases-list-container">
+                        <!-- Clases loaded here -->
+                    </div>
                 </div>
             </section>
 
