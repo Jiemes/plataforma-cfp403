@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -27,11 +28,10 @@
                 </div>
             </div>
             <nav class="nav-menu">
-                <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
+                <a href="#" class="nav-link active" data-section="dashboard">Estadísticas</a>
                 <a href="#" class="nav-link" data-section="habilidades">Habilidades Digitales & IA</a>
                 <a href="#" class="nav-link" data-section="programacion">Software & Videojuegos</a>
-                <a href="#" class="nav-link" data-section="clases">Gesitón de Clases</a>
-                <a href="#" class="nav-link" data-section="notas">Notas y Promedios</a>
+                <a href="#" class="nav-link" data-section="clases">Gestión de Clases</a>
                 <a href="#" class="nav-link" data-section="settings">Configuración</a>
             </nav>
             <div class="sidebar-footer">
@@ -130,26 +130,6 @@
                 </div>
             </section>
 
-            <section id="notas-section" class="section hidden">
-                <div class="card">
-                    <h3>Promedios y Calificaciones</h3>
-                    <div class="table-container">
-                        <table id="grades-table">
-                            <thead>
-                                <tr>
-                                    <th>Alumno</th>
-                                    <th>DNI</th>
-                                    <th>Curso</th>
-                                    <th>Promedio</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
             <section id="table-section" class="section hidden">
                 <div class="card">
                     <div class="card-header">
@@ -167,6 +147,8 @@
                                     <th>DNI</th>
                                     <th>Teléfono</th>
                                     <th>Email</th>
+                                    <th>T. Corregidos</th>
+                                    <th>Promedio</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
