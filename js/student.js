@@ -91,14 +91,17 @@ async function uploadHomework(semana) {
     const file = fileInput.files[0];
     if (!file) return;
 
+    const btn = fileInput.nextElementSibling;
+    const originalText = btn.innerText;
+
     try {
-        const btn = fileInput.nextElementSibling;
-        const originalText = btn.innerText;
-        btn.innerText = "Subiendo...";
+        btn.innerText = "⌛ Subiendo...";
         btn.disabled = true;
 
-        const path = `entregas/${studentSession.dni}/Semana_${semana}/${file.name}`;
+        const path = `entregas/${studentSession.dni}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
+
+        console.log(`Subiendo entrega para DNI ${studentSession.dni}, semana ${semana}...`);
         await ref.put(file);
         const url = await ref.getDownloadURL();
 
@@ -118,8 +121,11 @@ async function uploadHomework(semana) {
         alert("¡Trabajo entregado con éxito!");
         loadContent();
     } catch (error) {
-        console.error(error);
-        alert("Error al subir el archivo.");
+        console.error("Error en entrega:", error);
+        alert("Error al subir el archivo: " + error.message);
+    } finally {
+        btn.innerText = "Subir PDF";
+        btn.disabled = false;
     }
 }
 
