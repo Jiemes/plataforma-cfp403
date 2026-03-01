@@ -79,29 +79,21 @@ function renderCharts(all) {
     charts.edades = new Chart(document.getElementById('chart-edades'), { type: 'bar', data: { labels: Object.keys(dataEdades), datasets: [{ label: 'Alumnos', data: Object.values(dataEdades), backgroundColor: '#1e293b' }] }, options: commonOptions });
 }
 
-// GESTIÃ“N DE CLASES
+// GESTIÓN DE CLASES
 document.getElementById('btn-save-clases')?.addEventListener('click', async () => {
     const files = document.getElementById('upload-pdfs').files;
     const curso = document.getElementById('select-curso-clase').value;
     if (files.length === 0) return alert("Selecciona archivos PDF");
 
     for (const file of files) {
-        // Formato esperado: "Nombre_Curso_Semana_1.pdf" o similares
         const match = file.name.match(/(\d+)/);
         const semana = match ? parseInt(match[0]) : 1;
-
         const path = `clases/${curso}/Semana_${semana}/${file.name}`;
         const ref = storage.ref().child(path);
         await ref.put(file);
         const url = await ref.getDownloadURL();
-
         await db.collection('clases').add({
-            curso,
-            semana,
-            nombre: file.name,
-            url,
-            visible: true,
-            fecha_creacion: new Date().toISOString()
+            curso, semana, nombre: file.name, url, visible: true, fecha_creacion: new Date().toISOString()
         });
     }
     alert("Clases subidas correctamente");
@@ -125,7 +117,7 @@ async function loadClasesAdmin() {
                 <button class="btn-toggle-view ${c.visible ? 'active' : ''}" onclick="toggleClaseVisibility('${doc.id}', ${c.visible})">
                     ${c.visible ? 'Visible' : 'Oculta'}
                 </button>
-                <button onclick="deleteClase('${doc.id}')">ðŸ—‘ï¸</button>
+                <button onclick="deleteClase('${doc.id}')">🗑️</button>
             </div>
         `;
         container.appendChild(div);
@@ -138,7 +130,7 @@ async function toggleClaseVisibility(id, current) {
 }
 
 async function deleteClase(id) {
-    if (confirm("Â¿Eliminar clase?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); }
+    if (confirm("¿Eliminar clase?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); }
 }
 
 // NOTIFICACIONES Y ENTREGAS
@@ -147,7 +139,6 @@ function initNotifications() {
     notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
         const count = snap.size;
         const bell = document.getElementById('notif-bell');
-        const badge = document.getElementById('notif-badge');
         if (count > 0) {
             bell.classList.add('bell-active');
             document.getElementById('notif-count').innerText = count;
@@ -165,26 +156,21 @@ async function loadGradesTable() {
     const entregas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     const tbody = document.querySelector('#grades-table tbody');
     tbody.innerHTML = '';
-
     const allStudents = [...studentData.habilidades, ...studentData.programacion];
     allStudents.forEach(s => {
         const sEntregas = entregas.filter(e => e.alumno_dni === s.dni);
         const notas = sEntregas.map(e => parseFloat(e.nota)).filter(n => !isNaN(n));
         const promedio = notas.length > 0 ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : '-';
-
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${s.full_name}</td>
-            <td>${s.dni}</td>
-            <td>${sEntregas[0]?.curso || 'N/A'}</td>
-            <td><strong>${promedio}</strong></td>
+            <td>${s.full_name}</td><td>${s.dni}</td><td>${sEntregas[0]?.curso || 'N/A'}</td><td><strong>${promedio}</strong></td>
             <td><button onclick="viewStudentWorks('${s.dni}')">Ver Trabajos (${sEntregas.length})</button></td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// NAVEGACIÃ“N
+// NAVEGACIÓN
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -192,8 +178,6 @@ document.querySelectorAll('.nav-link').forEach(link => {
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-
-        // Reset stat cards display
         document.getElementById('card-total-unificados').style.display = 'block';
         document.getElementById('card-count-habilidades').style.display = 'block';
         document.getElementById('card-count-programacion').style.display = 'block';
@@ -216,8 +200,6 @@ function showTable(courseKey) {
     currentViewedCourse = courseKey;
     document.getElementById('table-section').classList.remove('hidden');
     document.getElementById('current-course-title').innerText = courseKey === 'habilidades' ? 'Alumnos: Habilidades Digitales & IA' : 'Alumnos: Desarrollo de Software & Videojuegos';
-
-    // Filtro de cards
     document.getElementById('card-total-unificados').style.display = 'none';
     if (courseKey === 'habilidades') {
         document.getElementById('card-count-habilidades').style.display = 'block';
@@ -226,48 +208,52 @@ function showTable(courseKey) {
         document.getElementById('card-count-habilidades').style.display = 'none';
         document.getElementById('card-count-programacion').style.display = 'block';
     }
-
     const tbody = document.querySelector('#students-table tbody');
     tbody.innerHTML = '';
     studentData[courseKey].forEach(s => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${s.full_name}</td><td>${s.dni}</td><td>${s.telefono || 'Sin datos'}</td><td>${s.email}</td><td><button onclick="editStudent('${courseKey}', '${s.dni}')">âœï¸</button><button onclick="deleteStudent('${courseKey}', '${s.dni}')">ðŸ—‘ï¸</button></td>`;
+        tr.innerHTML = `<td>${s.full_name}</td><td>${s.dni}</td><td>${s.telefono || 'Sin datos'}</td><td>${s.email}</td><td><button onclick="editStudent('${courseKey}', '${s.dni}')">✏️</button><button onclick="deleteStudent('${courseKey}', '${s.dni}')">🗑️</button></td>`;
         tbody.appendChild(tr);
     });
 }
 
-// EXCEL IMPORT (Solo disponible en Dash)
-document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
-document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
-
+// EXCEL IMPORT
 async function processExcel(file, type) {
     const reader = new FileReader();
     reader.onload = async (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-        const transformed = json.map(row => ({
-            dni: String(row['CUÃL ES SU NÃšMERO DE DOCUMENTO?'] || row['DNI'] || row['Documento'] || '').trim(),
-            email: row['DirecciÃ³n de correo electrÃ³nico'] || row['Email'] || '',
-            full_name: `${row['CUÃLES SON SUS APELLIDOS?'] || ''}, ${row['CUÃLES SON SUS NOMBRES?'] || ''}`.toUpperCase().trim(),
-            telefono: row['CUÃL ES SU NÃšMERO DE TELÃ‰FONO?'] || row['TelÃ©fono'] || row['Telefono'] || '',
-            nivel_educativo: row['CUÃL ES SU NIVEL EDUCATIVO ALCANZADO?'] || '',
-            trabajo_actual: row['CUÃL ES SU TRABAJO ACTUAL? (DE NO TRABAJAR SOLO ESCRIBA NO)'] || '',
-            busca_trabajo: row['BUSCA TRABAJO U OTRO TRABAJO?'] || '',
-            sexo: row['SEXO'] || row['GENERO'] || '',
-            edad: row['EDAD'] || '',
-            nacimiento: row['CUÃL ES SU FECHA DE NACIMIENTO?'] || ''
-        })).filter(s => s.dni && s.dni.length > 5);
-        const batch = db.batch();
-        const collection = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-        transformed.forEach(s => batch.set(db.collection(collection).doc(s.dni), s));
-        await batch.commit();
-        alert('ImportaciÃ³n completada');
-        loadStudentsFromFirebase();
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            const transformed = json.map(row => ({
+                dni: String(row['CUÁL ES SU NÚMERO DE DOCUMENTO?'] || row['DNI'] || row['Documento'] || '').trim(),
+                email: row['Dirección de correo electrónico'] || row['Email'] || '',
+                full_name: `${row['CUÁLES SON SUS APELLIDOS?'] || ''}, ${row['CUÁLES SON SUS NOMBRES?'] || ''}`.toUpperCase().trim(),
+                telefono: row['CUÁL ES SU NÚMERO DE TELÉFONO?'] || row['Teléfono'] || row['Telefono'] || '',
+                nivel_educativo: row['CUÁL ES SU NIVEL EDUCATIVO ALCANZADO?'] || '',
+                trabajo_actual: row['CUÁL ES SU TRABAJO ACTUAL? (DE NO TRABAJAR SOLO ESCRIBA NO)'] || '',
+                busca_trabajo: row['BUSCA TRABAJO U OTRO TRABAJO?'] || '',
+                sexo: row['SEXO'] || row['GÉNERO'] || '',
+                edad: row['EDAD'] || '',
+                nacimiento: row['CUÁL ES SU FECHA DE NACIMIENTO?'] || '',
+                salud: row['TIENE ALGÚN PROBLEMA DE SALUD, ALERGIA O PATOLOGÍA? CUÁL?'] || ''
+            })).filter(s => s.dni && s.dni.length > 5);
+
+            if (transformed.length === 0) return alert("No se detectaron alumnos válidos.");
+
+            const batch = db.batch();
+            const collection = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+            transformed.forEach(s => batch.set(db.collection(collection).doc(s.dni), s));
+            await batch.commit();
+            alert(`¡Éxito! ${transformed.length} alumnos cargados.`);
+            loadStudentsFromFirebase();
+        } catch (err) { alert("Error: " + err.message); }
     };
     reader.readAsArrayBuffer(file);
 }
 
+document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
+document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
+
 // INIT
 loadStudentsFromFirebase();
-
