@@ -22,7 +22,7 @@ async function loadStudentsFromFirebase() {
         updateDashboard();
         if (currentViewedCourse) showTable(currentViewedCourse);
         initNotifications();
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Error cargando alumnos:", err); }
 }
 
 function sortAndClean(key) {
@@ -165,7 +165,7 @@ async function showTable(courseKey) {
             `;
             tbody.appendChild(tr);
         });
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Error cargando tabla:", err); }
 }
 
 // MODAL DE CALIFICACIÓN
@@ -214,24 +214,33 @@ document.getElementById('btn-save-clases')?.addEventListener('click', async () =
     if (files.length === 0) return alert("Selecciona archivos PDF");
 
     const btn = document.getElementById('btn-save-clases');
-    btn.innerText = "Subiendo...";
+    btn.innerText = "⌛ Subiendo...";
     btn.disabled = true;
 
     try {
+        console.log("Iniciando subida...");
         for (const f of files) {
             const m = f.name.match(/(\d+)/);
             const s = m ? parseInt(m[0]) : 1;
             const ref = storage.ref().child(`clases/${curso}/Semana_${s}/${f.name}`);
+
+            console.log(`Subiendo ${f.name} a Storage...`);
             await ref.put(f);
+
+            console.log("Obteniendo URL...");
             const url = await ref.getDownloadURL();
-            await db.collection('clases').add({ curso, semana: s, nombre: f.name, url, visible: true, fecha: new Date().toISOString() });
+
+            console.log("Registrando en Firestore...");
+            await db.collection('clases').add({
+                curso, semana: s, nombre: f.name, url, visible: true, fecha: new Date().toISOString()
+            });
         }
-        alert("¡Clases subidas con éxito!");
+        alert("¡Clases subidas y registradas con éxito!");
         fileInput.value = '';
         await loadClasesAdmin();
     } catch (err) {
-        alert("Error subiendo: " + err.message);
-        console.error(err);
+        alert("Error en la subida: " + err.message);
+        console.error("Fallo detallado de subida:", err);
     } finally {
         btn.innerText = "Subir Clases Seleccionadas";
         btn.disabled = false;
@@ -239,22 +248,26 @@ document.getElementById('btn-save-clases')?.addEventListener('click', async () =
 });
 
 async function loadClasesAdmin() {
-    const snap = await db.collection('clases').orderBy('semana', 'asc').get();
-    const cont = document.getElementById('clases-list-admin');
-    cont.innerHTML = '';
-    snap.docs.forEach(doc => {
-        const c = doc.data();
-        const div = document.createElement('div');
-        div.className = 'clase-item-admin';
-        div.innerHTML = `
-            <span>Semana ${c.semana}: ${c.nombre} (${c.curso})</span>
-            <div class="clase-actions">
-                <button class="btn-toggle-view ${c.visible ? 'active' : ''}" onclick="toggleClase('${doc.id}', ${c.visible})">${c.visible ? 'Visible' : 'Oculta'}</button>
-                <button onclick="delClase('${doc.id}')">🗑️</button>
-            </div>`;
-        cont.appendChild(div);
-    });
+    try {
+        const snap = await db.collection('clases').orderBy('semana', 'asc').get();
+        const cont = document.getElementById('clases-list-admin');
+        if (!cont) return;
+        cont.innerHTML = '';
+        snap.docs.forEach(doc => {
+            const c = doc.data();
+            const div = document.createElement('div');
+            div.className = 'clase-item-admin';
+            div.innerHTML = `
+                <span>Semana ${c.semana}: ${c.nombre} (${c.curso})</span>
+                <div class="clase-actions">
+                    <button class="btn-toggle-view ${c.visible ? 'active' : ''}" onclick="toggleClase('${doc.id}', ${c.visible})">${c.visible ? 'Visible' : 'Oculta'}</button>
+                    <button onclick="delClase('${doc.id}')">🗑️</button>
+                </div>`;
+            cont.appendChild(div);
+        });
+    } catch (err) { console.error("Error cargando clases:", err); }
 }
+
 async function toggleClase(id, cur) { await db.collection('clases').doc(id).update({ visible: !cur }); loadClasesAdmin(); }
 async function delClase(id) { if (confirm("¿Eliminar clase?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
 
@@ -335,4 +348,4 @@ document.querySelectorAll('.nav-link').forEach(link => {
 loadStudentsFromFirebase();
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
-document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
+document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
