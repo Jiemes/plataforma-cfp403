@@ -205,34 +205,40 @@ async function saveMaterial() {
         let urlA = '', nameA = '';
 
         if (fileT) {
-            const refT = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Teoria_${fileT.name}`);
+            console.log("Subiendo teoría...");
+            const refT = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Teoria_${Date.now()}_${fileT.name}`);
             await refT.put(fileT);
             urlT = await refT.getDownloadURL();
             nameT = fileT.name;
         }
 
         if (fileA) {
-            const refA = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Actividad_${fileA.name}`);
+            console.log("Subiendo actividad...");
+            const refA = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Actividad_${Date.now()}_${fileA.name}`);
             await refA.put(fileA);
             urlA = await refA.getDownloadURL();
             nameA = fileA.name;
         }
 
+        console.log("Guardando en base de datos...");
         await db.collection('clases').add({
             curso: currentClaseTab,
             semana: parseInt(sem),
             fecha_publicacion: fPub,
-            teoria_url: urlT, teoría_nombre: nameT,
+            teoria_url: urlT, teoria_nombre: nameT,
             actividad_url: urlA, actividad_nombre: nameA,
             fecha_creacion: new Date().toISOString()
         });
 
-        alert("¡Material subido con éxito!");
+        alert("¡Material de la semana " + sem + " subido con éxito!");
         document.getElementById('pdf-teoria').value = '';
         document.getElementById('pdf-actividad').value = '';
-        loadClasesAdmin();
-    } catch (err) { alert("Error: " + err.message); }
-    finally {
+        document.getElementById('clase-semana').value = '';
+        await loadClasesAdmin();
+    } catch (err) {
+        console.error("Error en subida de material:", err);
+        alert("Error: " + err.message);
+    } finally {
         btn.innerText = "Subir Material de Semana";
         btn.disabled = false;
     }
@@ -240,36 +246,81 @@ async function saveMaterial() {
 
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
+    if (!cont) return;
     cont.innerHTML = '<p>Cargando materiales...</p>';
     try {
         const snap = await db.collection('clases').where('curso', '==', currentClaseTab).orderBy('semana', 'desc').get();
         cont.innerHTML = '';
-        if (snap.empty) cont.innerHTML = '<p>No hay materiales para este curso.</p>';
+        if (snap.empty) {
+            cont.innerHTML = '<p>No hay materiales cargados para este curso.</p>';
+            return;
+        }
 
         snap.docs.forEach(doc => {
             const c = doc.data();
-            const isPub = new Date(c.fecha_publicacion) <= new Date();
+            const hoy = new Date().toISOString().split('T')[0];
+            const isPub = c.fecha_publicacion <= hoy;
             const div = document.createElement('div');
             div.className = 'clase-item-row';
             div.innerHTML = `
                 <div style="font-weight:700">Semana ${c.semana}</div>
-                <div>${c.teoría_nombre || '---'} (Teoría)</div>
-                <div>${c.actividad_nombre || '---'} (Actividad)</div>
+                <div style="font-size:0.85rem">${c.teoria_nombre || '---'}</div>
+                <div style="font-size:0.85rem">${c.actividad_nombre || '---'}</div>
                 <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
                     ${isPub ? '🔓 Visible' : '🔒 Programada: ' + c.fecha_publicacion}
                 </div>
-                <div><button onclick="delClase('${doc.id}')">🗑️ Eliminar</button></div>
+                <div><button class="btn-icon" onclick="delClase('${doc.id}')">🗑️</button></div>
             `;
             cont.appendChild(div);
         });
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Error cargando clases:", err); }
 }
 
 async function delClase(id) { if (confirm("¿Eliminar este material?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
 
+// EXCEL IMPORT - RESTAURADO
+async function processExcel(file, type) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+
+            const trans = json.map(r => ({
+                dni: String(r['CUÁL ES SU NÚMERO DE DOCUMENTO?'] || r['DNI'] || r['DOCUMENTO'] || '').trim(),
+                email: r['Dirección de correo electrónico'] || r['EMAIL'] || '',
+                full_name: `${r['CUÁLES SON SUS APELLIDOS?'] || r['APELLIDO'] || ''}, ${r['CUÁLES SON SUS NOMBRES?'] || r['NOMBRE'] || ''}`.toUpperCase().trim(),
+                telefono: r['CUÁL ES SU NÚMERO DE TELÉFONO?'] || r['TELEFONO'] || '',
+                nivel_educativo: r['CUÁL ES SU NIVEL EDUCATIVO ALCANZADO?'] || r['ESTUDIOS'] || '',
+                trabajo_actual: r['CUÁL ES SU TRABAJO ACTUAL? (DE NO TRABAJAR SOLO ESCRIBA NO)'] || r['TRABAJO'] || '',
+                busca_trabajo: r['BUSCA TRABAJO U OTRO TRABAJO?'] || '',
+                sexo: r['SEXO'] || '',
+                edad: r['EDAD'] || '',
+                nacimiento: r['CUÁL ES SU FECHA DE NACIMIENTO?'] || ''
+            })).filter(s => s.dni.length > 5);
+
+            if (trans.length === 0) return alert("No se encontraron datos válidos en el Excel.");
+
+            const batch = db.batch();
+            const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+            trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
+
+            await batch.commit();
+            alert("¡Importación exitosa! Alumnos cargados: " + trans.length);
+            loadStudentsFromFirebase();
+        } catch (err) { alert("Error al procesar Excel: " + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
 // EVENTOS Y NAVEGACIÓN
 document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
 document.getElementById('btn-save-material')?.addEventListener('click', saveMaterial);
+document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
+document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
+document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
 
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -302,10 +353,12 @@ function initNotifications() {
     if (notificationsListener) notificationsListener();
     notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
         const badge = document.getElementById('notif-count');
-        if (snap.size > 0) {
-            badge.innerText = snap.size;
-            badge.classList.remove('hidden');
-        } else { badge.classList.add('hidden'); }
+        if (badge) {
+            if (snap.size > 0) {
+                badge.innerText = snap.size;
+                badge.classList.remove('hidden');
+            } else { badge.classList.add('hidden'); }
+        }
     });
 }
 
