@@ -228,10 +228,14 @@ document.getElementById('btn-save-clases')?.addEventListener('click', async () =
         }
         alert("¡Clases subidas con éxito!");
         fileInput.value = '';
-        loadClasesAdmin();
-    } catch (err) { alert("Error subiendo: " + err.message); }
-    btn.innerText = "Subir Clases Seleccionadas";
-    btn.disabled = false;
+        await loadClasesAdmin();
+    } catch (err) {
+        alert("Error subiendo: " + err.message);
+        console.error(err);
+    } finally {
+        btn.innerText = "Subir Clases Seleccionadas";
+        btn.disabled = false;
+    }
 });
 
 async function loadClasesAdmin() {
