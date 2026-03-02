@@ -143,6 +143,32 @@ body {
     font-weight: 800;
 }
 
+.btn-primary {
+    padding: 12px 24px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 6px -1px rgba(0, 185, 232, 0.2);
+}
+
+.btn-primary:hover {
+    background: #0096bc;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 185, 232, 0.3);
+}
+
+.btn-primary:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Stats Cards */
 .stats-grid {
     display: grid;
@@ -476,6 +502,20 @@ td {
     background: #dcfce7 !important;
     border-color: #10b981 !important;
     color: #166534 !important;
+}
+
+.clase-item-row small a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.clase-item-row small a:hover {
+    text-decoration: underline;
+}
+
+.clase-item-row small a[onclick*="delete"] {
+    color: #ef4444;
 }
 
 .btn-danger-outline {
