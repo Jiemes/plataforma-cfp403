@@ -265,43 +265,27 @@ async function processExcel(file, type) {
 async function saveConfig() {
     const start = document.getElementById('course-start-date').value;
     const freq = parseInt(document.getElementById('course-frequency').value) || 7;
-    const syllabus = document.getElementById('course-syllabus-url').value.trim();
-    const welcome = document.getElementById('course-welcome-url').value.trim();
 
     if (!start) return alert("Debes ingresar al menos la fecha de inicio.");
 
     const btn = document.getElementById('btn-save-config');
+    const oldText = btn.innerText;
     btn.innerText = "⌛ Guardando...";
     btn.disabled = true;
 
     try {
-        const materiales = {};
-        for (let i = 1; i <= 15; i++) {
-            const claseLink = document.getElementById(`clase-link-${i}`)?.value.trim();
-            const actividadLink = document.getElementById(`actividad-link-${i}`)?.value.trim();
-            if (claseLink || actividadLink) {
-                materiales[`sem_${i}`] = {
-                    clase: claseLink || '',
-                    actividad: actividadLink || ''
-                };
-            }
-        }
-
         await db.collection('config_cursos').doc(currentClaseTab).set({
             fecha_inicio: start,
             frecuencia_dias: freq,
-            syllabus_url: syllabus,
-            welcome_url: welcome,
-            materiales: materiales,
             actualizado: new Date().toISOString()
         }, { merge: true });
 
-        alert("¡Configuración y links guardados exitosamente!");
+        alert("¡Configuración base guardada con éxito!");
         loadClasesAdmin();
     } catch (err) {
         alert("Error al guardar: " + err.message);
     } finally {
-        btn.innerText = "Guardar Configuración del Curso";
+        btn.innerText = oldText;
         btn.disabled = false;
     }
 }
@@ -309,41 +293,32 @@ async function saveConfig() {
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
-    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma y links...</p>';
+    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma...</p>';
 
     try {
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
-        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, syllabus_url: '', welcome_url: '', materiales: {} };
+        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, materials: {} };
         const materiales = config.materiales || {};
         const exceptions = config.excepciones || [];
 
         // Llenar campos principales
         document.getElementById('course-start-date').value = config.fecha_inicio || '';
         document.getElementById('course-frequency').value = config.frecuencia_dias || 7;
-        document.getElementById('course-syllabus-url').value = config.syllabus_url || '';
-        document.getElementById('course-welcome-url').value = config.welcome_url || '';
+        document.getElementById('course-syllabus-url').value = config.syllabus_url ? "✅ Cargado (Programa)" : "";
+        document.getElementById('course-welcome-url').value = config.welcome_url ? "✅ Cargado (Bienvenida)" : "";
 
         cont.innerHTML = '';
 
-        // Botón de limpieza total
-        const clearBtn = document.createElement('button');
-        clearBtn.innerText = "🗑️ Limpiar Toda la Configuración";
-        clearBtn.className = "btn-secondary";
-        clearBtn.style.marginBottom = "20px";
-        clearBtn.onclick = clearConfig;
-        cont.appendChild(clearBtn);
-
-        const infoDiv = document.createElement('div');
-        infoDiv.style = "background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px; border-left: 4px solid var(--primary-color);";
-        infoDiv.innerHTML = `
-            <strong>Instrucciones:</strong> Pega los links de Drive individuales para cada archivo.<br>
-            Asegúrate de que los archivos en Drive sean <strong>públicos</strong> ("Cualquier persona con el link puede ver").
-        `;
-        cont.appendChild(infoDiv);
-
         const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
 
-        for (let i = 1; i <= 15; i++) {
+        // Determinar cuántas semanas mostrar (al menos las que tienen archivos o la semana 1)
+        let maxWeekInFiles = 1;
+        Object.keys(materiales).forEach(k => {
+            const num = parseInt(k.replace('sem_', ''));
+            if (num > maxWeekInFiles) maxWeekInFiles = num;
+        });
+
+        for (let i = 1; i <= Math.max(maxWeekInFiles, 1); i++) {
             if (exceptions.includes(i)) continue;
 
             let pubStatus = '📅 Sin fecha';
@@ -355,27 +330,53 @@ async function loadClasesAdmin() {
                 pubStatus = isPub ? '🔓 Visible' : '🔒 Libera: ' + pubDate.toLocaleDateString();
             }
 
-            const matSemana = materiales[`sem_${i}`] || { clase: '', actividad: '' };
+            const mat = materiales[`sem_${i}`] || { clase: '', actividad: '' };
 
             const div = document.createElement('div');
-            div.className = 'clase-item-row';
-            div.style.gridTemplateColumns = "80px 120px 1fr 1fr 50px";
+            div.className = 'clase-item-row card';
+            div.style = "display:grid; grid-template-columns: 100px 140px 1fr 1fr 50px; align-items:center; gap:15px; padding:15px; margin-bottom:12px; background:#fff;";
             div.innerHTML = `
-                <div style="font-weight:700">Semana ${i}</div>
-                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}" style="font-size:0.7rem;">${pubStatus}</div>
+                <div style="font-weight:700; color:#1e293b;">Semana ${i}</div>
+                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}" style="font-size:0.75rem;">${pubStatus}</div>
                 
-                <div class="field-item" style="gap:4px;">
-                    <input type="url" id="clase-link-${i}" value="${matSemana.clase || ''}" placeholder="Link Clase PDF" style="font-size:0.8rem; padding:6px;">
+                <div>
+                    <button class="btn-primary-sm ${mat.clase ? 'success' : ''}" onclick="manualUpload('clase', ${i})" style="width:100%;">
+                        ${mat.clase ? '✅ Clase Cargada' : '📁 Subir Clase'}
+                    </button>
+                    ${mat.clase ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.clase}" target="_blank">Ver</a> | <a href="#" onclick="deleteSingleFile(${i}, 'clase')">Borrar</a></small>` : ''}
                 </div>
                 
-                <div class="field-item" style="gap:4px;">
-                    <input type="url" id="actividad-link-${i}" value="${matSemana.actividad || ''}" placeholder="Link Actividad PDF" style="font-size:0.8rem; padding:6px;">
+                <div>
+                    <button class="btn-primary-sm ${mat.actividad ? 'success' : ''}" onclick="manualUpload('actividad', ${i})" style="width:100%;">
+                        ${mat.actividad ? '✅ Actividad Cargada' : '📁 Subir Actividad'}
+                    </button>
+                    ${mat.actividad ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.actividad}" target="_blank">Ver</a> | <a href="#" onclick="deleteSingleFile(${i}, 'actividad')">Borrar</a></small>` : ''}
                 </div>
 
                 <button class="btn-icon" onclick="deleteWeek(${i})" title="Ocultar semana">🗑️</button>
             `;
             cont.appendChild(div);
         }
+
+        const addBtn = document.createElement('button');
+        addBtn.innerText = "➕ Agregar Nueva Semana";
+        addBtn.className = "btn-secondary";
+        addBtn.style = "width:100%; margin-top:10px; padding:15px; border: 2px dashed #cbd5e1;";
+        addBtn.onclick = () => {
+            const next = maxWeekInFiles + 1;
+            const docRef = db.collection('config_cursos').doc(currentClaseTab);
+            const mats = { ...materiales };
+            mats[`sem_${next}`] = { clase: '', actividad: '' };
+            docRef.update({ materiales: mats }).then(() => loadClasesAdmin());
+        };
+        cont.appendChild(addBtn);
+
+        // Botón Peligro abajo
+        const dangerZone = document.createElement('div');
+        dangerZone.style = "margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;";
+        dangerZone.innerHTML = `<button class="btn-danger-outline" onclick="clearConfig()" style="font-size:0.8rem;">🗑️ Borrar TODA la configuración del curso</button>`;
+        cont.appendChild(dangerZone);
+
     } catch (err) { console.error(err); }
 }
 
@@ -457,7 +458,6 @@ document.getElementById('btn-clear-course')?.addEventListener('click', deleteCou
 document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
-document.getElementById('bulk-upload-input')?.addEventListener('change', (e) => handleBulkUpload(e.target.files));
 document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
 
 document.querySelectorAll('.nav-link').forEach(link => {
@@ -486,90 +486,60 @@ async function deleteStudent(course, dni) {
     await loadStudentsFromFirebase();
 }
 
-// MEGA CARGA MASIVA
-async function handleBulkUpload(files) {
+// CARGA MANUAL INDIVIDUAL
+async function manualUpload(type, sem = null) {
     if (!currentClaseTab) return alert("Selecciona un curso primero.");
-    if (!files || files.length === 0) return;
 
-    const progressList = document.getElementById('upload-progress-list');
-    progressList.innerHTML = '<b>🚀 Iniciando carga masiva...</b><br>';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    try {
-        const docRef = db.collection('config_cursos').doc(currentClaseTab);
-        const snap = await docRef.get();
-        let config = snap.exists ? snap.data() : { materiales: {}, excepciones: [], fecha_inicio: '', frecuencia_dias: 7 };
-        let materiales = config.materiales || {};
+        try {
+            const fileName = file.name;
+            const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
+            const refStorage = storage.ref().child(storagePath);
 
-        let count = 0;
-        for (const file of files) {
-            const name = file.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Quitar acentos
-            let targetType = "";
-            let weekNum = 0;
+            alert(`⏳ Cargando ${fileName}... No cierres la plataforma hasta ver el mensaje de éxito.`);
+            await refStorage.put(file);
+            const fileUrl = await refStorage.getDownloadURL();
 
-            // Regex mejorado para detectar Clase/Actividad + Número
-            if (name.includes('clase')) {
-                targetType = 'clase';
-                const match = name.match(/clase\s*(\d+)/);
-                if (match) weekNum = parseInt(match[1]);
-            } else if (name.includes('actividad')) {
-                targetType = 'actividad';
-                const match = name.match(/actividad\s*(\d+)/);
-                if (match) weekNum = parseInt(match[1]);
-            } else if (name.includes('programa') || name.includes('syllabus')) {
-                targetType = 'syllabus';
-            } else if (name.includes('bienvenida') || name.includes('welcome')) {
-                targetType = 'welcome';
+            const docRef = db.collection('config_cursos').doc(currentClaseTab);
+            const snap = await docRef.get();
+            let config = snap.exists ? snap.data() : { materiales: {} };
+
+            if (type === 'welcome') config.welcome_url = fileUrl;
+            else if (type === 'syllabus') config.syllabus_url = fileUrl;
+            else if (type === 'clase' || type === 'actividad') {
+                if (!config.materiales) config.materiales = {};
+                if (!config.materiales[`sem_${sem}`]) config.materiales[`sem_${sem}`] = {};
+                config.materiales[`sem_${sem}`][type] = fileUrl;
             }
 
-            if (targetType) {
-                const li = document.createElement('div');
-                li.style.margin = "4px 0";
-                li.innerHTML = `⏳ Cargando: <i>${file.name}</i>...`;
-                progressList.appendChild(li);
-
-                try {
-                    const storagePath = `materiales/${currentClaseTab}/${(targetType === 'clase' || targetType === 'actividad') ? 'Semana_' + weekNum : 'General'}/${file.name}`;
-                    const refStorage = storage.ref().child(storagePath);
-                    await refStorage.put(file);
-                    const fileUrl = await refStorage.getDownloadURL();
-
-                    if (targetType === 'clase' || targetType === 'actividad') {
-                        if (!materiales[`sem_${weekNum}`]) materiales[`sem_${weekNum}`] = {};
-                        materiales[`sem_${weekNum}`][targetType] = fileUrl;
-                    } else if (targetType === 'syllabus') {
-                        config.syllabus_url = fileUrl;
-                    } else if (targetType === 'welcome') {
-                        config.welcome_url = fileUrl;
-                    }
-
-                    li.innerHTML = `✅ <b>${file.name}</b> procesado con éxito.`;
-                    count++;
-                } catch (uploadErr) {
-                    li.innerHTML = `❌ <span style="color:red">Error en ${file.name}: ${uploadErr.message}</span>`;
-                }
-            } else {
-                const li = document.createElement('div');
-                li.style.color = "#64748b";
-                li.innerHTML = `⚠️ Ignorado: ${file.name} (nombre no reconocido)`;
-                progressList.appendChild(li);
-            }
-        }
-
-        // Guardar todo al final
-        await docRef.set({ ...config, materiales, actualizado: new Date().toISOString() }, { merge: true });
-
-        const summary = document.createElement('div');
-        summary.style = "margin-top:15px; padding:10px; background:#dcfce7; border-radius:8px; color:#166534; font-weight:bold;";
-        summary.innerHTML = `🎉 ¡Carga finalizada! ${count} archivos vinculados correctamente.`;
-        progressList.appendChild(summary);
-
-        setTimeout(() => {
+            await docRef.set(config, { merge: true });
+            alert("✅ ¡Archivo cargado con éxito!");
             loadClasesAdmin();
-        }, 1000);
+        } catch (err) {
+            alert("Error al cargar: " + err.message);
+        }
+    };
+    input.click();
+}
 
-    } catch (criticalErr) {
-        alert("Error crítico en la carga masiva: " + criticalErr.message);
-    }
+async function deleteSingleFile(semana, tipo) {
+    if (!confirm(`¿Eliminar el archivo de ${tipo} de la Semana ${semana}?`)) return;
+    try {
+        const ref = db.collection('config_cursos').doc(currentClaseTab);
+        const doc = await ref.get();
+        const config = doc.data();
+        if (config.materiales && config.materiales[`sem_${semana}`]) {
+            delete config.materiales[`sem_${semana}`][tipo];
+            await ref.update({ materiales: config.materiales });
+            loadClasesAdmin();
+        }
+    } catch (e) { alert(e.message); }
 }
 
 function initNotifications() {

@@ -377,6 +377,7 @@ td {
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.9rem;
+    background: #fff;
 }
 
 .clase-item-row {
@@ -452,4 +453,56 @@ td {
 
 .btn-icon:hover {
     background: #fee2e2;
+}
+
+.btn-primary-sm {
+    padding: 8px 12px;
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary-sm:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary-sm.success {
+    background: #dcfce7 !important;
+    border-color: #10b981 !important;
+    color: #166534 !important;
+}
+
+.btn-danger-outline {
+    background: none;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-danger-outline:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.clase-item-row.card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    transition: transform 0.2s;
+    background: #fff;
+    margin-bottom: 12px;
+}
+
+.clase-item-row.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
