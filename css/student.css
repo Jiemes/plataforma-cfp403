@@ -273,14 +273,55 @@ body {
     filter: grayscale(1);
 }
 
-/* Aula Virtual Premium Styles */
+/* Aula Virtual Premium Styles - Accordion */
 .week-card {
-    transition: transform 0.3s;
+    transition: var(--transition);
     border-left: 5px solid var(--primary-color);
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 12px !important;
 }
 
-.week-card:hover {
-    transform: translateX(10px);
+.week-card .week-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.4s ease-out;
+    pointer-events: none;
+}
+
+.week-card.active {
+    cursor: default;
+}
+
+.week-card.active .week-body {
+    max-height: 2000px;
+    padding-top: 24px;
+    padding-bottom: 32px;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.week-card .week-header {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.week-card.active .week-header {
+    border-bottom: 1px solid var(--gray-100);
+    margin-bottom: 24px;
+}
+
+.content-item.clickable {
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.content-item.clickable:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-light);
 }
 
 .content-item {
