@@ -178,20 +178,32 @@ async function loadContent() {
 }
 
 function visualizePdf(url, title) {
-    if (!url) return alert("El material para esta sección aún no está disponible.");
+    if (!url) return alert("El material solicitado aún no está disponible.");
 
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
+    const titleEl = document.getElementById('pdf-title');
+    const externalLink = document.getElementById('pdf-external-link');
 
-    // Función para convertir link de Drive en link de previsualización directo
+    // Reset para evitar ver el PDF anterior mientras carga el nuevo
+    viewer.src = "about:blank";
+    if (titleEl) titleEl.innerText = title;
+    if (externalLink) externalLink.href = url;
+
     let embedUrl = url;
     if (url.includes('drive.google.com')) {
-        const fileIdMatch = url.match(/\/d\/(.+?)\//);
-        if (fileIdMatch) {
-            embedUrl = `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+        let fileId = "";
+        if (url.includes('/d/')) {
+            fileId = url.split('/d/')[1].split('/')[0];
+        } else if (url.includes('id=')) {
+            fileId = url.split('id=')[1].split('&')[0];
         }
-    } else {
-        // Para otros links, intentar usar Google Viewer
+
+        if (fileId) {
+            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+    } else if (!url.toLowerCase().endsWith('.pdf')) {
+        // Si no es Drive ni termina en .pdf, intentar Google Viewer como último recurso
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
@@ -199,9 +211,10 @@ function visualizePdf(url, title) {
     modal.classList.remove('hidden');
 }
 
+// Cerrar modal
 document.getElementById('close-pdf')?.addEventListener('click', () => {
     document.getElementById('pdf-modal').classList.add('hidden');
-    document.getElementById('pdf-viewer').src = "";
+    document.getElementById('pdf-viewer').src = "about:blank";
 });
 
 async function uploadHomework(semana) {

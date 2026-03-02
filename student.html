@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v6.6.4 | CFP 403</title>
+    <title>Mi Aula Virtual v6.6.5 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.6.4">
-    <link rel="stylesheet" href="css/student.css?v=6.6.4">
+    <link rel="stylesheet" href="css/style.css?v=6.6.5">
+    <link rel="stylesheet" href="css/student.css?v=6.6.5">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -55,13 +55,23 @@
     <!-- Modal para ver PDF -->
     <div id="pdf-modal" class="modal hidden">
         <div class="modal-content">
-            <span class="close-modal" id="close-pdf">&times;</span>
-            <iframe id="pdf-viewer" src="" frameborder="0"></iframe>
+            <div class="modal-header-pdf"
+                style="padding: 15px 25px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+                <h3 id="pdf-title" style="font-size: 1rem; color: #1e293b;">Material de Clase</h3>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <a id="pdf-external-link" href="#" target="_blank"
+                        style="font-size: 0.85rem; color: var(--primary-color); text-decoration:none; font-weight:600;">
+                        🔗 Abrir en pestaña nueva
+                    </a>
+                    <span class="close-modal" id="close-pdf" style="position:static; font-size: 30px;">&times;</span>
+                </div>
+            </div>
+            <iframe id="pdf-viewer" src="" frameborder="0" style="width:100%; height: calc(100% - 60px);"></iframe>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=6.6.4"></script>
+    <script src="js/student.js?v=6.6.5"></script>
 </body>
 
 </html>
