@@ -249,15 +249,21 @@ async function loadClasesAdmin() {
     if (!cont) return;
     cont.innerHTML = '<p>Cargando materiales...</p>';
     try {
-        const snap = await db.collection('clases').where('curso', '==', currentClaseTab).orderBy('semana', 'desc').get();
+        // Quitamos el orderBy de la consulta para evitar el error de índice faltante en Firebase
+        // Ordenaremos los resultados localmente en el JS
+        const snap = await db.collection('clases').where('curso', '==', currentClaseTab).get();
+
+        let clases = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Ordenar por semana descendente localmente
+        clases.sort((a, b) => b.semana - a.semana);
+
         cont.innerHTML = '';
-        if (snap.empty) {
+        if (clases.length === 0) {
             cont.innerHTML = '<p>No hay materiales cargados para este curso.</p>';
             return;
         }
 
-        snap.docs.forEach(doc => {
-            const c = doc.data();
+        clases.forEach(c => {
             const hoy = new Date().toISOString().split('T')[0];
             const isPub = c.fecha_publicacion <= hoy;
             const div = document.createElement('div');
@@ -269,7 +275,7 @@ async function loadClasesAdmin() {
                 <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
                     ${isPub ? '🔓 Visible' : '🔒 Programada: ' + c.fecha_publicacion}
                 </div>
-                <div><button class="btn-icon" onclick="delClase('${doc.id}')">🗑️</button></div>
+                <div><button class="btn-icon" onclick="delClase('${c.id}')">🗑️</button></div>
             `;
             cont.appendChild(div);
         });
@@ -278,7 +284,7 @@ async function loadClasesAdmin() {
 
 async function delClase(id) { if (confirm("¿Eliminar este material?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
 
-// EXCEL IMPORT - RESTAURADO
+// EXCEL IMPORT - ULTRA TOLERANTE
 async function processExcel(file, type) {
     if (!file) return;
     const reader = new FileReader();
@@ -288,20 +294,28 @@ async function processExcel(file, type) {
             const wb = XLSX.read(data, { type: 'array' });
             const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
-            const trans = json.map(r => ({
-                dni: String(r['CUÁL ES SU NÚMERO DE DOCUMENTO?'] || r['DNI'] || r['DOCUMENTO'] || '').trim(),
-                email: r['Dirección de correo electrónico'] || r['EMAIL'] || '',
-                full_name: `${r['CUÁLES SON SUS APELLIDOS?'] || r['APELLIDO'] || ''}, ${r['CUÁLES SON SUS NOMBRES?'] || r['NOMBRE'] || ''}`.toUpperCase().trim(),
-                telefono: r['CUÁL ES SU NÚMERO DE TELÉFONO?'] || r['TELEFONO'] || '',
-                nivel_educativo: r['CUÁL ES SU NIVEL EDUCATIVO ALCANZADO?'] || r['ESTUDIOS'] || '',
-                trabajo_actual: r['CUÁL ES SU TRABAJO ACTUAL? (DE NO TRABAJAR SOLO ESCRIBA NO)'] || r['TRABAJO'] || '',
-                busca_trabajo: r['BUSCA TRABAJO U OTRO TRABAJO?'] || '',
-                sexo: r['SEXO'] || '',
-                edad: r['EDAD'] || '',
-                nacimiento: r['CUÁL ES SU FECHA DE NACIMIENTO?'] || ''
-            })).filter(s => s.dni.length > 5);
+            const trans = json.map(r => {
+                // Buscador inteligente de columnas (ignora mayúsculas/minúsculas y espacios)
+                const getVal = (patterns) => {
+                    const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
+                    return key ? r[key] : '';
+                };
 
-            if (trans.length === 0) return alert("No se encontraron datos válidos en el Excel.");
+                return {
+                    dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
+                    email: String(getVal(['EMAIL', 'CORREO', 'DIRECCIÓN DE CORREO']) || '').trim(),
+                    full_name: `${getVal(['APELLIDO']) || ''}, ${getVal(['NOMBRE']) || ''}`.toUpperCase().trim() || String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO']) || '').toUpperCase().trim(),
+                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                    nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN', 'TRABAJA?']) || '').trim(),
+                    busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
+                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
+                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                    nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim()
+                };
+            }).filter(s => s.dni.length > 5);
+
+            if (trans.length === 0) return alert("No se encontraron datos. Verifica que el Excel tenga columnas como 'DNI' y 'Nombre'.");
 
             const batch = db.batch();
             const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
