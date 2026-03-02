@@ -191,36 +191,42 @@ function switchClaseType(type) {
 async function saveMaterial() {
     const fileT = document.getElementById('pdf-teoria').files[0];
     const fileA = document.getElementById('pdf-actividad').files[0];
+    const urlT_input = document.getElementById('url-teoria').value.trim();
+    const urlA_input = document.getElementById('url-actividad').value.trim();
     const sem = document.getElementById('clase-semana').value;
     const fPub = document.getElementById('clase-fecha-pub').value;
 
-    if (!sem || !fPub || (!fileT && !fileA)) return alert("Completa al menos un archivo, la semana y la fecha.");
+    if (!sem || !fPub || (!fileT && !fileA && !urlT_input && !urlA_input)) {
+        return alert("Completa al menos un material (archivo o link), la semana y la fecha.");
+    }
 
     const btn = document.getElementById('btn-save-material');
-    btn.innerText = "⏳ Subiendo material...";
+    btn.innerText = "⏳ Guardando material...";
     btn.disabled = true;
 
     try {
-        let urlT = '', nameT = '';
-        let urlA = '', nameA = '';
+        let urlT = urlT_input, nameT = urlT_input ? "Link de Drive (Teoría)" : "";
+        let urlA = urlA_input, nameA = urlA_input ? "Link de Drive (Actividad)" : "";
 
-        if (fileT) {
-            console.log("Subiendo teoría...");
+        // Si hay archivo de Teoría y NO hay link, subimos el archivo
+        if (fileT && !urlT_input) {
+            console.log("Subiendo teoría a Firebase...");
             const refT = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Teoria_${Date.now()}_${fileT.name}`);
             await refT.put(fileT);
             urlT = await refT.getDownloadURL();
             nameT = fileT.name;
         }
 
-        if (fileA) {
-            console.log("Subiendo actividad...");
+        // Si hay archivo de Actividad y NO hay link, subimos el archivo
+        if (fileA && !urlA_input) {
+            console.log("Subiendo actividad a Firebase...");
             const refA = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Actividad_${Date.now()}_${fileA.name}`);
             await refA.put(fileA);
             urlA = await refA.getDownloadURL();
             nameA = fileA.name;
         }
 
-        console.log("Guardando en base de datos...");
+        console.log("Guardando registro...");
         await db.collection('clases').add({
             curso: currentClaseTab,
             semana: parseInt(sem),
@@ -230,16 +236,18 @@ async function saveMaterial() {
             fecha_creacion: new Date().toISOString()
         });
 
-        alert("¡Material de la semana " + sem + " subido con éxito!");
+        alert("¡Material de la semana " + sem + " guardado con éxito!");
         document.getElementById('pdf-teoria').value = '';
         document.getElementById('pdf-actividad').value = '';
+        document.getElementById('url-teoria').value = '';
+        document.getElementById('url-actividad').value = '';
         document.getElementById('clase-semana').value = '';
         await loadClasesAdmin();
     } catch (err) {
-        console.error("Error en subida de material:", err);
+        console.error("Error en proceso:", err);
         alert("Error: " + err.message);
     } finally {
-        btn.innerText = "Subir Material de Semana";
+        btn.innerText = "Guardar Material Semanal";
         btn.disabled = false;
     }
 }

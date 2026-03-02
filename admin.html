@@ -121,14 +121,6 @@
                         <h4 style="margin-bottom:20px;">Carga de Material Semanal</h4>
                         <div class="upload-grid-clases">
                             <div class="field-item">
-                                <label>Archivo de Teoría (PDF)</label>
-                                <input type="file" id="pdf-teoria" accept=".pdf">
-                            </div>
-                            <div class="field-item">
-                                <label>Archivo de Actividad (PDF)</label>
-                                <input type="file" id="pdf-actividad" accept=".pdf">
-                            </div>
-                            <div class="field-item">
                                 <label>Semana</label>
                                 <input type="number" id="clase-semana" min="1" placeholder="Ej: 1">
                             </div>
@@ -136,9 +128,26 @@
                                 <label>Fecha de Publicación</label>
                                 <input type="date" id="clase-fecha-pub">
                             </div>
+                            <div class="field-item"
+                                style="grid-column: span 2; background: #e2e8f0; padding: 10px; border-radius: 8px;">
+                                <p style="font-size:0.85rem; color:#1e293b; margin:0;"><b>💡 Tip:</b> Como tienes todo
+                                    en Drive, solo pega los enlaces de compartir (asegúrate de que estén públicos).</p>
+                            </div>
+                            <div class="field-item">
+                                <label>Teoría (Subir PDF)</label>
+                                <input type="file" id="pdf-teoria" accept=".pdf">
+                                <label style="margin-top:10px; font-weight: 400;">O pegar enlace Drive:</label>
+                                <input type="text" id="url-teoria" placeholder="https://drive.google.com/...">
+                            </div>
+                            <div class="field-item">
+                                <label>Actividad (Subir PDF)</label>
+                                <input type="file" id="pdf-actividad" accept=".pdf">
+                                <label style="margin-top:10px; font-weight: 400;">O pegar enlace Drive:</label>
+                                <input type="text" id="url-actividad" placeholder="https://drive.google.com/...">
+                            </div>
                         </div>
-                        <button class="btn-primary" id="btn-save-material" style="margin-top:20px; width:100%">Subir
-                            Material de Semana</button>
+                        <button class="btn-primary" id="btn-save-material" style="margin-top:20px; width:100%">Guardar
+                            Material Semanal</button>
                     </div>
                 </div>
 
