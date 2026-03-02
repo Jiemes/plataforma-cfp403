@@ -301,50 +301,102 @@ async function loadClasesAdmin() {
             return;
         }
 
-        const config = doc.data();
-        const exceptions = config.excepciones || [];
+        const materiales = config.materiales || {};
 
         cont.innerHTML = '';
         const clearBtn = document.createElement('button');
-        clearBtn.innerText = "🗑️ Eliminar TODA la configuración de este curso";
+        clearBtn.innerText = "🗑️ Limpiar Configuración (Drive y Fechas)";
         clearBtn.style = "background:#fee2e2; color:#ef4444; border:none; padding:10px; border-radius:8px; width:100%; margin-bottom:15px; cursor:pointer; font-weight:700;";
         clearBtn.onclick = clearConfig;
         cont.appendChild(clearBtn);
 
-        document.getElementById('course-drive-url').value = config.drive_url;
-        document.getElementById('course-start-date').value = config.fecha_inicio;
-        document.getElementById('course-frequency').value = config.frecuencia_dias;
+        document.getElementById('course-drive-url').value = config.drive_url || '';
+        document.getElementById('course-start-date').value = config.fecha_inicio || '';
+        document.getElementById('course-frequency').value = config.frecuencia_dias || 7;
 
         const infoDiv = document.createElement('div');
         infoDiv.style = "background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px;";
-        infoDiv.innerHTML = '<b>Modo Automático ACTIVADO:</b> El sistema liberará archivos de Drive según el calendario.';
+        infoDiv.innerHTML = '<b>Gestión de Materiales:</b> Haz clic en los botones para subir los PDFs de cada semana (Clase y Actividad).';
         cont.appendChild(infoDiv);
 
-        const startDate = new Date(config.fecha_inicio + "T08:00:00-03:00");
+        const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
         for (let i = 1; i <= 15; i++) {
-            if (exceptions.includes(i)) continue; // Saltar semanas eliminadas
+            if (exceptions.includes(i)) continue;
 
-            const pubDate = new Date(startDate);
-            pubDate.setDate(startDate.getDate() + ((i - 1) * config.frecuencia_dias));
-            const hoy = new Date();
-            const isPub = hoy >= pubDate;
-            const hasDrive = config.drive_url.length > 10;
+            let pubStatus = '📅 Sin fecha';
+            let isPub = false;
+            if (startDate) {
+                const pubDate = new Date(startDate);
+                pubDate.setDate(startDate.getDate() + ((i - 1) * config.frecuencia_dias));
+                isPub = new Date() >= pubDate;
+                pubStatus = isPub ? '🔓 Visible' : '🔒 ' + pubDate.toLocaleDateString();
+            }
+
+            const matSemana = materiales[`sem_${i}`] || {};
 
             const div = document.createElement('div');
             div.className = 'clase-item-row';
             div.innerHTML = `
                 <div style="font-weight:700">Semana ${i}</div>
-                <div style="font-size:0.85rem">clase ${i}.pdf ${!hasDrive ? '⚠️' : ''}</div>
-                <div style="font-size:0.85rem">actividad ${i}.pdf ${!hasDrive ? '⚠️' : ''}</div>
-                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
-                    ${isPub ? '🔓 Ya visible' : '🔒 Se libera: ' + pubDate.toLocaleDateString()}
+                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">${pubStatus}</div>
+                
+                <div class="material-btn ${matSemana.clase ? 'uploaded' : ''}" onclick="handleMaterial(${i}, 'clase', '${matSemana.clase || ''}')">
+                    📄 ${matSemana.clase ? 'Clase PDF' : 'Subir Clase'}
                 </div>
+                
+                <div class="material-btn ${matSemana.actividad ? 'uploaded' : ''}" onclick="handleMaterial(${i}, 'actividad', '${matSemana.actividad || ''}')">
+                    🛠️ ${matSemana.actividad ? 'Actividad PDF' : 'Subir Actividad'}
+                </div>
+
+                <div style="font-size:0.8rem; color:#64748b;">${matSemana.clase && matSemana.actividad ? '✅ Completo' : '⏳ Falta'}</div>
+                
                 <button class="btn-icon" onclick="deleteWeek(${i})">🗑️</button>
             `;
-            if (!hasDrive) div.style.borderLeft = "4px solid #f43f5e";
             cont.appendChild(div);
         }
     } catch (err) { console.error(err); }
+}
+
+async function handleMaterial(semana, tipo, existingUrl) {
+    if (existingUrl) {
+        if (confirm(`¿Borrar el archivo de ${tipo} de la Semana ${semana}?`)) {
+            try {
+                const ref = db.collection('config_cursos').doc(currentClaseTab);
+                const doc = await ref.get();
+                const materials = doc.data().materiales || {};
+                delete materials[`sem_${semana}`][tipo];
+                await ref.update({ materiales: materials });
+                loadClasesAdmin();
+            } catch (e) { alert(e.message); }
+        }
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const path = `materiales/${currentClaseTab}/Semana_${semana}/${tipo}_${Date.now()}.pdf`;
+            const refStorage = storage.ref().child(path);
+            await refStorage.put(file);
+            const url = await refStorage.getDownloadURL();
+
+            const docRef = db.collection('config_cursos').doc(currentClaseTab);
+            const doc = await docRef.get();
+            const config = doc.data() || {};
+            const materials = config.materiales || {};
+            if (!materials[`sem_${semana}`]) materials[`sem_${semana}`] = {};
+            materials[`sem_${semana}`][tipo] = url;
+
+            await docRef.update({ materiales: materials });
+            alert("¡Archivo subido correctamente!");
+            loadClasesAdmin();
+        } catch (err) { alert("Error: " + err.message); }
+    };
+    input.click();
 }
 
 async function deleteWeek(weekNum) {

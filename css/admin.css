@@ -381,7 +381,7 @@ td {
 
 .clase-item-row {
     display: grid;
-    grid-template-columns: 100px 1fr 1fr 150px 100px;
+    grid-template-columns: 80px 1fr 1fr 140px 140px 60px;
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid #f1f5f9;
@@ -390,6 +390,37 @@ td {
 
 .clase-item-row:last-child {
     border-bottom: none;
+}
+
+.material-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    background: #f8fafc;
+    color: #475569;
+}
+
+.material-btn:hover {
+    background: #f1f5f9;
+}
+
+.material-btn.uploaded {
+    border-style: solid;
+    border-color: var(--primary-color);
+    background: #f0f9ff;
+    color: var(--primary-color);
+}
+
+.material-btn.uploaded:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #ef4444;
 }
 
 .status-pub {

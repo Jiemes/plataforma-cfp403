@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno 6.6.1 (Accordion & Direct Look)
+// Mi Aula Virtual - Lógica del Alumno 6.6.2 (Visualización Profesional)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -49,6 +49,7 @@ async function loadContent() {
             return;
         }
         const config = configSnap.data();
+        const materiales = config.materiales || {};
 
         const entregasSnap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
@@ -58,7 +59,12 @@ async function loadContent() {
 
         weeksContainer.innerHTML = '';
 
-        const startDate = new Date(config.fecha_inicio + "T08:00:00-03:00");
+        const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
+        if (!startDate) {
+            weeksContainer.innerHTML = '<p class="empty-msg">Esperando fecha de inicio...</p>';
+            return;
+        }
+
         const hoy = new Date();
         let semanasLiberadas = 0;
         let diffMs = hoy - startDate;
@@ -75,13 +81,13 @@ async function loadContent() {
 
         const exceptions = config.excepciones || [];
 
-        // Orden descendente (la última semana liberada arriba)
+        // Orden descendente (más nueva arriba)
         for (let i = semanasLiberadas; i >= 1; i--) {
             if (exceptions.includes(i)) continue;
 
             const entrega = entregas.find(e => e.semana === i);
+            const matSemana = materiales[`sem_${i}`] || {};
             const card = document.createElement('div');
-            // La primera semana (la actual) aparece expandida
             card.className = `card week-card animated-in ${i === semanasLiberadas ? 'active' : ''}`;
 
             card.innerHTML = `
@@ -93,34 +99,33 @@ async function loadContent() {
                     </div>
                 </div>
                 <div class="week-body">
-                    <div class="content-item clickable" onclick="window.open('${config.drive_url}', '_blank')" title="Abrir carpeta de materiales">
+                    <div class="content-item clickable" onclick="visualizePdf('${matSemana.clase || ''}', 'Clase ${i}')">
                         <span class="icon">📖</span>
                         <div class="item-info">
                             <strong>Clase ${i}</strong>
-                            <p>Haz clic para estudiar la teoría</p>
+                            <p>${matSemana.clase ? 'Haz clic para ver la teoría' : '⌛ No disponible aún'}</p>
                         </div>
                     </div>
-                    <div class="content-item clickable" onclick="window.open('${config.drive_url}', '_blank')" title="Abrir carpeta de actividades">
+                    <div class="content-item clickable" onclick="visualizePdf('${matSemana.actividad || ''}', 'Actividad ${i}')">
                         <span class="icon">🛠️</span>
                         <div class="item-info">
                             <strong>Actividad ${i}</strong>
-                            <p>Haz clic para ver la consigna</p>
+                            <p>${matSemana.actividad ? 'Haz clic para ver la consigna' : '⌛ No disponible aún'}</p>
                         </div>
                     </div>
                     <div class="delivery-section" style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:15px;">
                         <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
                             <p style="font-size:0.9rem;">
-                                <strong>Estado de Entrega:</strong> 
-                                ${!entrega ?
-                    '<span class="status-badge pendiente">Pendiente</span>' :
-                    `<span class="status-badge ${entrega.estado === 'Calificado' ? 'calificado' : 'pendiente'}" style="background:#dcfce7; color:#166534;">Entregado</span>`
-                }
+                                <strong>Estado:</strong> 
+                                <span class="status-badge ${entrega ? 'calificado' : 'pendiente'}">
+                                    ${entrega ? 'Entregado' : 'Pendiente'}
+                                </span>
                             </p>
                         </div>
                         
                         <input type="file" id="file-${i}" class="hidden-input" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
                         <button class="btn-upload" onclick="document.getElementById('file-${i}').click()">
-                            ${entrega ? '📤 Cambiar/Corregir Entrega' : 'Subir mi Actividad (PDF)'}
+                            ${entrega ? '📤 Corregir/Re-subir PDF' : 'Subir mi Actividad (PDF)'}
                         </button>
                         
                         ${entrega && entrega.nota ? `
@@ -139,6 +144,23 @@ async function loadContent() {
     }
 }
 
+function visualizePdf(url, title) {
+    if (!url) return alert("El profesor aún no ha cargado este material.");
+    const modal = document.getElementById('pdf-modal');
+    const viewer = document.getElementById('pdf-viewer');
+
+    // Usar Google Docs Viewer para embeber el PDF de forma profesional
+    viewer.src = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('close-pdf')?.addEventListener('click', () => {
+    const modal = document.getElementById('pdf-modal');
+    const viewer = document.getElementById('pdf-viewer');
+    viewer.src = "";
+    modal.classList.add('hidden');
+});
+
 async function uploadHomework(semana) {
     const fileInput = document.getElementById(`file-${semana}`);
     const file = fileInput.files[0];
@@ -149,7 +171,6 @@ async function uploadHomework(semana) {
         btn.innerText = "⌛ Subiendo...";
         btn.disabled = true;
 
-        // Sobrescritura inteligente: Buscar si ya existe una entrega
         const snap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
             .where('curso', '==', currentCourseId)
