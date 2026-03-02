@@ -301,7 +301,9 @@ async function loadClasesAdmin() {
             return;
         }
 
+        const config = doc.data();
         const materiales = config.materiales || {};
+        const exceptions = config.excepciones || [];
 
         cont.innerHTML = '';
         const clearBtn = document.createElement('button');
