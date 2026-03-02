@@ -117,37 +117,28 @@
                             Videojuegos</button>
                     </div>
 
-                    <div class="upload-box-clases">
-                        <h4 style="margin-bottom:20px;">Carga de Material Semanal</h4>
+                    <div id="config-schedule-box" class="upload-box-clases">
+                        <h4 style="margin-bottom:20px;">Configuración de Cronograma Automático</h4>
                         <div class="upload-grid-clases">
-                            <div class="field-item">
-                                <label>Semana</label>
-                                <input type="number" id="clase-semana" min="1" placeholder="Ej: 1">
+                            <div class="field-item" style="grid-column: span 2">
+                                <label>Enlace de Carpeta Google Drive del Curso</label>
+                                <input type="text" id="course-drive-url"
+                                    placeholder="https://drive.google.com/drive/folders/...">
+                                <p style="font-size:0.75rem; color:#64748b; margin-top:5px;">Asegúrate de que la carpeta
+                                    sea pública ("Cualquier persona con el link"). Los archivos deben llamarse <b>clase
+                                        1.pdf, clase 2.pdf...</b> y <b>actividad 1.pdf, actividad 2.pdf...</b></p>
                             </div>
                             <div class="field-item">
-                                <label>Fecha de Publicación</label>
-                                <input type="date" id="clase-fecha-pub">
-                            </div>
-                            <div class="field-item"
-                                style="grid-column: span 2; background: #e2e8f0; padding: 10px; border-radius: 8px;">
-                                <p style="font-size:0.85rem; color:#1e293b; margin:0;"><b>💡 Tip:</b> Como tienes todo
-                                    en Drive, solo pega los enlaces de compartir (asegúrate de que estén públicos).</p>
+                                <label>Fecha de Inicio de Cursada</label>
+                                <input type="date" id="course-start-date">
                             </div>
                             <div class="field-item">
-                                <label>Teoría (Subir PDF)</label>
-                                <input type="file" id="pdf-teoria" accept=".pdf">
-                                <label style="margin-top:10px; font-weight: 400;">O pegar enlace Drive:</label>
-                                <input type="text" id="url-teoria" placeholder="https://drive.google.com/...">
-                            </div>
-                            <div class="field-item">
-                                <label>Actividad (Subir PDF)</label>
-                                <input type="file" id="pdf-actividad" accept=".pdf">
-                                <label style="margin-top:10px; font-weight: 400;">O pegar enlace Drive:</label>
-                                <input type="text" id="url-actividad" placeholder="https://drive.google.com/...">
+                                <label>Frecuencia de Publicación (Cada cuántos días)</label>
+                                <input type="number" id="course-frequency" min="1" placeholder="Ej: 7">
                             </div>
                         </div>
-                        <button class="btn-primary" id="btn-save-material" style="margin-top:20px; width:100%">Guardar
-                            Material Semanal</button>
+                        <button class="btn-primary" id="btn-save-config" style="margin-top:20px; width:100%">Guardar
+                            Configuración del Curso</button>
                     </div>
                 </div>
 

@@ -1,4 +1,4 @@
-﻿// Administración CFP 403 - Lógica Inteligente 5.0
+﻿// Administración CFP 403 - Lógica Inteligente 6.0
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -77,6 +77,7 @@ function updateDashboardView(type) {
 }
 
 function renderCharts(all) {
+    if (!all || all.length === 0) return;
     Object.values(charts).forEach(c => c.destroy());
     const opt = {
         responsive: true,
@@ -107,7 +108,7 @@ function renderCharts(all) {
     const sexo = { M: all.filter(s => s.sexo === 'M').length, F: all.filter(s => s.sexo === 'F').length };
     charts.sexo = new Chart(document.getElementById('chart-sexo'), {
         type: 'doughnut',
-        data: { labels: ['Manculino', 'Femenino'], datasets: [{ data: [sexo.M, sexo.F], backgroundColor: ['#1e293b', '#FF6384'] }] },
+        data: { labels: ['Masculino', 'Femenino'], datasets: [{ data: [sexo.M, sexo.F], backgroundColor: ['#1e293b', '#FF6384'] }] },
         options: opt
     });
 
@@ -158,7 +159,7 @@ async function showTable(course) {
                     <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">
                         ${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}
                     </button>
-                    <button onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
+                    <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -179,75 +180,30 @@ async function deleteCourseData() {
     } catch (err) { alert("Error al vaciar: " + err.message); }
 }
 
-// GESTIÓN DE CLASES 2.0 (Teoría + Actividad)
-function switchClaseType(type) {
-    currentClaseTab = type;
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.toggle('active', b.innerText.toLowerCase().includes(type === 'habilidades' ? 'habilidades' : 'videojuegos'));
-    });
-    loadClasesAdmin();
-}
+// CRONOGRAMA AUTOMÁTICO - Lógica Inteligente 6.0
+async function saveConfig() {
+    const url = document.getElementById('course-drive-url').value.trim();
+    const start = document.getElementById('course-start-date').value;
+    const freq = document.getElementById('course-frequency').value;
 
-async function saveMaterial() {
-    const fileT = document.getElementById('pdf-teoria').files[0];
-    const fileA = document.getElementById('pdf-actividad').files[0];
-    const urlT_input = document.getElementById('url-teoria').value.trim();
-    const urlA_input = document.getElementById('url-actividad').value.trim();
-    const sem = document.getElementById('clase-semana').value;
-    const fPub = document.getElementById('clase-fecha-pub').value;
+    if (!url || !start || !freq) return alert("Completa todos los campos de configuración.");
 
-    if (!sem || !fPub || (!fileT && !fileA && !urlT_input && !urlA_input)) {
-        return alert("Completa al menos un material (archivo o link), la semana y la fecha.");
-    }
-
-    const btn = document.getElementById('btn-save-material');
-    btn.innerText = "⏳ Guardando material...";
+    const btn = document.getElementById('btn-save-config');
+    btn.innerText = "⌛ Guardando...";
     btn.disabled = true;
 
     try {
-        let urlT = urlT_input, nameT = urlT_input ? "Link de Drive (Teoría)" : "";
-        let urlA = urlA_input, nameA = urlA_input ? "Link de Drive (Actividad)" : "";
-
-        // Si hay archivo de Teoría y NO hay link, subimos el archivo
-        if (fileT && !urlT_input) {
-            console.log("Subiendo teoría a Firebase...");
-            const refT = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Teoria_${Date.now()}_${fileT.name}`);
-            await refT.put(fileT);
-            urlT = await refT.getDownloadURL();
-            nameT = fileT.name;
-        }
-
-        // Si hay archivo de Actividad y NO hay link, subimos el archivo
-        if (fileA && !urlA_input) {
-            console.log("Subiendo actividad a Firebase...");
-            const refA = storage.ref().child(`clases/${currentClaseTab}/Semana_${sem}/Actividad_${Date.now()}_${fileA.name}`);
-            await refA.put(fileA);
-            urlA = await refA.getDownloadURL();
-            nameA = fileA.name;
-        }
-
-        console.log("Guardando registro...");
-        await db.collection('clases').add({
-            curso: currentClaseTab,
-            semana: parseInt(sem),
-            fecha_publicacion: fPub,
-            teoria_url: urlT, teoria_nombre: nameT,
-            actividad_url: urlA, actividad_nombre: nameA,
-            fecha_creacion: new Date().toISOString()
+        await db.collection('config_cursos').doc(currentClaseTab).set({
+            drive_url: url,
+            fecha_inicio: start,
+            frecuencia_dias: parseInt(freq),
+            actualizado: new Date().toISOString()
         });
-
-        alert("¡Material de la semana " + sem + " guardado con éxito!");
-        document.getElementById('pdf-teoria').value = '';
-        document.getElementById('pdf-actividad').value = '';
-        document.getElementById('url-teoria').value = '';
-        document.getElementById('url-actividad').value = '';
-        document.getElementById('clase-semana').value = '';
-        await loadClasesAdmin();
-    } catch (err) {
-        console.error("Error en proceso:", err);
-        alert("Error: " + err.message);
-    } finally {
-        btn.innerText = "Guardar Material Semanal";
+        alert("¡Configuración guardada! El sistema liberará las clases automáticamente.");
+        loadClasesAdmin();
+    } catch (err) { alert("Error: " + err.message); }
+    finally {
+        btn.innerText = "Guardar Configuración del Curso";
         btn.disabled = false;
     }
 }
@@ -255,42 +211,54 @@ async function saveMaterial() {
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
-    cont.innerHTML = '<p>Cargando materiales...</p>';
+    cont.innerHTML = '<p>Cargando cronograma...</p>';
+
     try {
-        // Quitamos el orderBy de la consulta para evitar el error de índice faltante en Firebase
-        // Ordenaremos los resultados localmente en el JS
-        const snap = await db.collection('clases').where('curso', '==', currentClaseTab).get();
-
-        let clases = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Ordenar por semana descendente localmente
-        clases.sort((a, b) => b.semana - a.semana);
-
-        cont.innerHTML = '';
-        if (clases.length === 0) {
-            cont.innerHTML = '<p>No hay materiales cargados para este curso.</p>';
+        const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
+        if (!doc.exists) {
+            cont.innerHTML = '<p>No hay configuración para este curso. Define el Drive y las fechas arriba.</p>';
             return;
         }
 
-        clases.forEach(c => {
-            const hoy = new Date().toISOString().split('T')[0];
-            const isPub = c.fecha_publicacion <= hoy;
+        const config = doc.data();
+        document.getElementById('course-drive-url').value = config.drive_url;
+        document.getElementById('course-start-date').value = config.fecha_inicio;
+        document.getElementById('course-frequency').value = config.frecuencia_dias;
+
+        cont.innerHTML = '<div style="background:#e2e8f0; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px;">' +
+            '<b>Modo Automático ACTIVADO:</b> El sistema mostrará los archivos de tu Drive según el calendario.' +
+            '</div>';
+
+        // Vista previa de las próximas 10 semanas
+        const startDate = new Date(config.fecha_inicio + "T08:00:00-03:00");
+        for (let i = 1; i <= 10; i++) {
+            const pubDate = new Date(startDate);
+            pubDate.setDate(startDate.getDate() + ((i - 1) * config.frecuencia_dias));
+            const hoy = new Date();
+            const isPub = hoy >= pubDate;
+
             const div = document.createElement('div');
             div.className = 'clase-item-row';
             div.innerHTML = `
-                <div style="font-weight:700">Semana ${c.semana}</div>
-                <div style="font-size:0.85rem">${c.teoria_nombre || '---'}</div>
-                <div style="font-size:0.85rem">${c.actividad_nombre || '---'}</div>
+                <div style="font-weight:700">Semana ${i}</div>
+                <div style="font-size:0.85rem">clase ${i}.pdf</div>
+                <div style="font-size:0.85rem">actividad ${i}.pdf</div>
                 <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
-                    ${isPub ? '🔓 Visible' : '🔒 Programada: ' + c.fecha_publicacion}
+                    ${isPub ? '🔓 Ya visible' : '🔒 Se libera el: ' + pubDate.toLocaleDateString()}
                 </div>
-                <div><button class="btn-icon" onclick="delClase('${c.id}')">🗑️</button></div>
             `;
             cont.appendChild(div);
-        });
-    } catch (err) { console.error("Error cargando clases:", err); }
+        }
+    } catch (err) { console.error(err); }
 }
 
-async function delClase(id) { if (confirm("¿Eliminar este material?")) { await db.collection('clases').doc(id).delete(); loadClasesAdmin(); } }
+function switchClaseType(type) {
+    currentClaseTab = type;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText.toLowerCase().includes(type === 'habilidades' ? 'habilidades' : 'videojuegos'));
+    });
+    loadClasesAdmin();
+}
 
 // EXCEL IMPORT - ULTRA TOLERANTE
 async function processExcel(file, type) {
@@ -303,12 +271,10 @@ async function processExcel(file, type) {
             const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
             const trans = json.map(r => {
-                // Buscador inteligente de columnas (ignora mayúsculas/minúsculas y espacios)
                 const getVal = (patterns) => {
                     const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
                     return key ? r[key] : '';
                 };
-
                 return {
                     dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
                     email: String(getVal(['EMAIL', 'CORREO', 'DIRECCIÓN DE CORREO']) || '').trim(),
@@ -323,23 +289,21 @@ async function processExcel(file, type) {
                 };
             }).filter(s => s.dni.length > 5);
 
-            if (trans.length === 0) return alert("No se encontraron datos. Verifica que el Excel tenga columnas como 'DNI' y 'Nombre'.");
-
+            if (trans.length === 0) return alert("No se encontraron datos válidos.");
             const batch = db.batch();
             const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
             trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
-
             await batch.commit();
-            alert("¡Importación exitosa! Alumnos cargados: " + trans.length);
+            alert("¡Importación exitosa!");
             loadStudentsFromFirebase();
-        } catch (err) { alert("Error al procesar Excel: " + err.message); }
+        } catch (err) { alert("Error al procesar: " + err.message); }
     };
     reader.readAsArrayBuffer(file);
 }
 
-// EVENTOS Y NAVEGACIÓN
+// EVENTOS
 document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
-document.getElementById('btn-save-material')?.addEventListener('click', saveMaterial);
+document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
 document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
@@ -351,7 +315,6 @@ document.querySelectorAll('.nav-link').forEach(link => {
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-
         if (sec === 'dashboard') {
             document.getElementById('dashboard-section').classList.remove('hidden');
             updateDashboardView('global');
