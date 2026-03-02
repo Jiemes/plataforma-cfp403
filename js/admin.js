@@ -489,67 +489,87 @@ async function deleteStudent(course, dni) {
 // MEGA CARGA MASIVA
 async function handleBulkUpload(files) {
     if (!currentClaseTab) return alert("Selecciona un curso primero.");
+    if (!files || files.length === 0) return;
+
     const progressList = document.getElementById('upload-progress-list');
-    progressList.innerHTML = '<b>Procesando archivos...</b><br>';
+    progressList.innerHTML = '<b>🚀 Iniciando carga masiva...</b><br>';
 
-    const docRef = db.collection('config_cursos').doc(currentClaseTab);
-    const snap = await docRef.get();
-    const config = snap.exists ? snap.data() : {};
-    const materiales = config.materiales || {};
+    try {
+        const docRef = db.collection('config_cursos').doc(currentClaseTab);
+        const snap = await docRef.get();
+        let config = snap.exists ? snap.data() : { materiales: {}, excepciones: [], fecha_inicio: '', frecuencia_dias: 7 };
+        let materiales = config.materiales || {};
 
-    let count = 0;
-    for (const file of files) {
-        const name = file.name.toLowerCase();
-        let targetType = ""; // 'clase', 'actividad', 'syllabus', 'welcome'
-        let weekNum = 0;
+        let count = 0;
+        for (const file of files) {
+            const name = file.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Quitar acentos
+            let targetType = "";
+            let weekNum = 0;
 
-        // Detectar tipo y semana por nombre
-        if (name.includes('clase')) {
-            targetType = 'clase';
-            const match = name.match(/clase\s*(\d+)/i);
-            if (match) weekNum = parseInt(match[1]);
-        } else if (name.includes('actividad')) {
-            targetType = 'actividad';
-            const match = name.match(/actividad\s*(\d+)/i);
-            if (match) weekNum = parseInt(match[1]);
-        } else if (name.includes('programa') || name.includes('syllabus')) {
-            targetType = 'syllabus';
-        } else if (name.includes('bienvenida') || name.includes('welcome')) {
-            targetType = 'welcome';
-        }
+            // Regex mejorado para detectar Clase/Actividad + Número
+            if (name.includes('clase')) {
+                targetType = 'clase';
+                const match = name.match(/clase\s*(\d+)/);
+                if (match) weekNum = parseInt(match[1]);
+            } else if (name.includes('actividad')) {
+                targetType = 'actividad';
+                const match = name.match(/actividad\s*(\d+)/);
+                if (match) weekNum = parseInt(match[1]);
+            } else if (name.includes('programa') || name.includes('syllabus')) {
+                targetType = 'syllabus';
+            } else if (name.includes('bienvenida') || name.includes('welcome')) {
+                targetType = 'welcome';
+            }
 
-        if (targetType) {
-            try {
-                const path = `materiales/${currentClaseTab}/${targetType === 'clase' || targetType === 'actividad' ? 'Semana_' + weekNum : 'General'}/${file.name}`;
-                const ref = storage.ref().child(path);
+            if (targetType) {
                 const li = document.createElement('div');
-                li.innerHTML = `⏳ Subiendo ${file.name}...`;
+                li.style.margin = "4px 0";
+                li.innerHTML = `⏳ Cargando: <i>${file.name}</i>...`;
                 progressList.appendChild(li);
 
-                await ref.put(file);
-                const url = await ref.getDownloadURL();
+                try {
+                    const storagePath = `materiales/${currentClaseTab}/${(targetType === 'clase' || targetType === 'actividad') ? 'Semana_' + weekNum : 'General'}/${file.name}`;
+                    const refStorage = storage.ref().child(storagePath);
+                    await refStorage.put(file);
+                    const fileUrl = await refStorage.getDownloadURL();
 
-                if (targetType === 'clase' || targetType === 'actividad') {
-                    if (!materiales[`sem_${weekNum}`]) materiales[`sem_${weekNum}`] = {};
-                    materiales[`sem_${weekNum}`][targetType] = url;
-                } else if (targetType === 'syllabus') {
-                    config.syllabus_url = url;
-                } else if (targetType === 'welcome') {
-                    config.welcome_url = url;
+                    if (targetType === 'clase' || targetType === 'actividad') {
+                        if (!materiales[`sem_${weekNum}`]) materiales[`sem_${weekNum}`] = {};
+                        materiales[`sem_${weekNum}`][targetType] = fileUrl;
+                    } else if (targetType === 'syllabus') {
+                        config.syllabus_url = fileUrl;
+                    } else if (targetType === 'welcome') {
+                        config.welcome_url = fileUrl;
+                    }
+
+                    li.innerHTML = `✅ <b>${file.name}</b> procesado con éxito.`;
+                    count++;
+                } catch (uploadErr) {
+                    li.innerHTML = `❌ <span style="color:red">Error en ${file.name}: ${uploadErr.message}</span>`;
                 }
-
-                li.innerHTML = `✅ ${file.name} listo.`;
-                count++;
-            } catch (e) {
-                console.error(e);
-                progressList.innerHTML += `<span style="color:red">❌ Error en ${file.name}</span><br>`;
+            } else {
+                const li = document.createElement('div');
+                li.style.color = "#64748b";
+                li.innerHTML = `⚠️ Ignorado: ${file.name} (nombre no reconocido)`;
+                progressList.appendChild(li);
             }
         }
-    }
 
-    await docRef.set({ ...config, materiales }, { merge: true });
-    alert(`¡Se procesaron ${count} archivos correctamente!`);
-    loadClasesAdmin();
+        // Guardar todo al final
+        await docRef.set({ ...config, materiales, actualizado: new Date().toISOString() }, { merge: true });
+
+        const summary = document.createElement('div');
+        summary.style = "margin-top:15px; padding:10px; background:#dcfce7; border-radius:8px; color:#166534; font-weight:bold;";
+        summary.innerHTML = `🎉 ¡Carga finalizada! ${count} archivos vinculados correctamente.`;
+        progressList.appendChild(summary);
+
+        setTimeout(() => {
+            loadClasesAdmin();
+        }, 1000);
+
+    } catch (criticalErr) {
+        alert("Error crítico en la carga masiva: " + criticalErr.message);
+    }
 }
 
 function initNotifications() {
