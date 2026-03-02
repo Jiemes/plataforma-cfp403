@@ -302,23 +302,32 @@ async function loadClasesAdmin() {
         }
 
         const config = doc.data();
+        const exceptions = config.excepciones || [];
+
+        cont.innerHTML = '';
+        const clearBtn = document.createElement('button');
+        clearBtn.innerText = "🗑️ Eliminar TODA la configuración de este curso";
+        clearBtn.style = "background:#fee2e2; color:#ef4444; border:none; padding:10px; border-radius:8px; width:100%; margin-bottom:15px; cursor:pointer; font-weight:700;";
+        clearBtn.onclick = clearConfig;
+        cont.appendChild(clearBtn);
+
         document.getElementById('course-drive-url').value = config.drive_url;
         document.getElementById('course-start-date').value = config.fecha_inicio;
         document.getElementById('course-frequency').value = config.frecuencia_dias;
 
-        cont.innerHTML = '<div style="background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px;">' +
-            '<b>Modo Automático ACTIVADO:</b> El sistema validará los archivos en tu Drive cada día a las 8 AM.' +
-            '</div>';
+        const infoDiv = document.createElement('div');
+        infoDiv.style = "background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px;";
+        infoDiv.innerHTML = '<b>Modo Automático ACTIVADO:</b> El sistema liberará archivos de Drive según el calendario.';
+        cont.appendChild(infoDiv);
 
         const startDate = new Date(config.fecha_inicio + "T08:00:00-03:00");
-        for (let i = 1; i <= 12; i++) {
+        for (let i = 1; i <= 15; i++) {
+            if (exceptions.includes(i)) continue; // Saltar semanas eliminadas
+
             const pubDate = new Date(startDate);
             pubDate.setDate(startDate.getDate() + ((i - 1) * config.frecuencia_dias));
             const hoy = new Date();
             const isPub = hoy >= pubDate;
-
-            // Simulación de "Check de Seguridad": En un sistema real usaríamos la API de Drive, 
-            // aquí marcamos alertas si faltan datos básicos de configuración.
             const hasDrive = config.drive_url.length > 10;
 
             const div = document.createElement('div');
@@ -330,11 +339,35 @@ async function loadClasesAdmin() {
                 <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">
                     ${isPub ? '🔓 Ya visible' : '🔒 Se libera: ' + pubDate.toLocaleDateString()}
                 </div>
+                <button class="btn-icon" onclick="deleteWeek(${i})">🗑️</button>
             `;
             if (!hasDrive) div.style.borderLeft = "4px solid #f43f5e";
             cont.appendChild(div);
         }
     } catch (err) { console.error(err); }
+}
+
+async function deleteWeek(weekNum) {
+    if (!confirm(`¿Ocultar la Semana ${weekNum} de este curso?`)) return;
+    try {
+        const ref = db.collection('config_cursos').doc(currentClaseTab);
+        const doc = await ref.get();
+        const exceptions = doc.data().excepciones || [];
+        if (!exceptions.includes(weekNum)) {
+            exceptions.push(weekNum);
+            await ref.update({ excepciones: exceptions });
+            loadClasesAdmin();
+        }
+    } catch (e) { alert(e.message); }
+}
+
+async function clearConfig() {
+    if (!confirm("¿Eliminar TODA la configuración (Drive, Fechas, Excepciones) de este curso?")) return;
+    try {
+        await db.collection('config_cursos').doc(currentClaseTab).delete();
+        alert("Configuración eliminada.");
+        location.reload();
+    } catch (e) { alert(e.message); }
 }
 
 function switchClaseType(type) {

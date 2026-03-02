@@ -21,27 +21,27 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         // Nota: En una plataforma real, primero crearíamos usuarios en Firebase Auth.
         // Aquí, como los importamos masivamente, verificaremos su existencia en Firestore.
 
-        let alumno = null;
-        let curso = '';
+        let cursos_inscrito = [];
+        let info_alumno = null;
 
         const habSnapshot = await db.collection('alumnos_habilidades').doc(dni).get();
         if (habSnapshot.exists) {
-            alumno = habSnapshot.data();
-            curso = 'Habilidades Digitales e IA';
-        } else {
-            const progSnapshot = await db.collection('alumnos_programacion').doc(dni).get();
-            if (progSnapshot.exists) {
-                alumno = progSnapshot.data();
-                curso = 'Desarrollo de Software y Videojuegos';
-            }
+            info_alumno = habSnapshot.data();
+            cursos_inscrito.push({ id: 'habilidades', nombre: 'Formación en Habilidades Digitales e IA' });
         }
 
-        if (alumno && alumno.email.toLowerCase() === email.toLowerCase()) {
-            // Guardar sesión local simple (Para producción usar Firebase Auth)
+        const progSnapshot = await db.collection('alumnos_programacion').doc(dni).get();
+        if (progSnapshot.exists) {
+            if (!info_alumno) info_alumno = progSnapshot.data();
+            cursos_inscrito.push({ id: 'programacion', nombre: 'Desarrollo de Software y Videojuegos' });
+        }
+
+        if (info_alumno && info_alumno.email.toLowerCase() === email.toLowerCase()) {
             localStorage.setItem('user_session', JSON.stringify({
-                nombre: alumno.full_name,
-                dni: alumno.dni,
-                curso: curso
+                nombre: info_alumno.full_name,
+                dni: info_alumno.dni,
+                email: info_alumno.email,
+                cursos: cursos_inscrito
             }));
 
             window.location.href = 'student.html';
