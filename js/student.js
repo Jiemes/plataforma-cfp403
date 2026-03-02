@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno 6.6.4 (Links Directos y Estabilidad)
+// Mi Aula Virtual - Lógica del Alumno 6.6.6 (Reparación Visualizador PDF)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -41,11 +41,11 @@ function switchCourse(courseId, btn) {
 async function loadContent() {
     try {
         const weeksContainer = document.getElementById('weeks-container');
-        weeksContainer.innerHTML = '<p class="loader" style="text-align:center;">Organizando tu material de estudio...</p>';
+        weeksContainer.innerHTML = '<p class="loader" style="text-align:center; padding:40px;">⏳ Organizando tu material de estudio...</p>';
 
         const configSnap = await db.collection('config_cursos').doc(currentCourseId).get();
         if (!configSnap.exists) {
-            weeksContainer.innerHTML = '<p class="empty-msg">El curso aún no ha sido configurado.</p>';
+            weeksContainer.innerHTML = '<p class="empty-msg">El curso aún no ha sido configurado por el administrador.</p>';
             return;
         }
         const config = configSnap.data();
@@ -61,7 +61,7 @@ async function loadContent() {
 
         const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
         if (!startDate) {
-            weeksContainer.innerHTML = '<p class="empty-msg">Esperando fecha de inicio confirmada.</p>';
+            weeksContainer.innerHTML = '<p class="empty-msg">Esperando confirmación de fecha de inicio.</p>';
             return;
         }
 
@@ -75,22 +75,25 @@ async function loadContent() {
         }
 
         if (semanasLiberadas <= 0) {
-            weeksContainer.innerHTML = `<p class="empty-msg">Tu curso comienza el ${startDate.toLocaleDateString()}.</p>`;
+            weeksContainer.innerHTML = `<p class="empty-msg card" style="padding:40px; text-align:center;">
+                🚀 Tu curso comienza el <strong>${startDate.toLocaleDateString()}</strong>.<br>
+                <small style="color:gray;">Vuelve ese día para ver el primer contenido.</small>
+            </p>`;
             return;
         }
 
-        // --- SECCIÓN: INICIO Y BIENVENIDA (Día 1) ---
-        if (config.syllabus_url || config.welcome_url) {
+        // --- SECCIÓN: BIENVENIDA Y PROGRAMA (Día 1) ---
+        if (semanasLiberadas >= 1 && (config.syllabus_url || config.welcome_url)) {
             const introCard = document.createElement('div');
             introCard.className = 'card week-card active animated-in';
-            introCard.style.borderLeftColor = '#10b981';
+            introCard.style.borderLeft = '6px solid #10b981';
             introCard.innerHTML = `
                 <div class="week-header">
                     <h3>📚 Bienvenida y Programa</h3>
                 </div>
                 <div class="week-body" style="max-height:1000px; opacity:1; pointer-events:auto; padding:20px;">
                     ${config.welcome_url ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${config.welcome_url}', 'Bienvenida')">
+                        <div class="content-item clickable" onclick="visualizePdf('${config.welcome_url}', 'Mensaje de Bienvenida')">
                             <span class="icon">👋</span>
                             <div class="item-info">
                                 <strong>Mensaje de Bienvenida</strong>
@@ -99,11 +102,11 @@ async function loadContent() {
                         </div>
                     ` : ''}
                     ${config.syllabus_url ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${config.syllabus_url}', 'Programa')">
+                        <div class="content-item clickable" onclick="visualizePdf('${config.syllabus_url}', 'Programa del Curso')">
                             <span class="icon">📋</span>
                             <div class="item-info">
-                                <strong>Programa del Curso</strong>
-                                <p>Haz clic para ver los contenidos</p>
+                                <strong>Programa Académico</strong>
+                                <p>Haz clic para ver los contenidos y objetivos</p>
                             </div>
                         </div>
                     ` : ''}
@@ -173,45 +176,50 @@ async function loadContent() {
             weeksContainer.appendChild(card);
         }
     } catch (e) {
-        console.error("Error cargando aula:", e);
+        console.error("Error crítico en aula virtual:", e);
     }
 }
 
 function visualizePdf(url, title) {
-    if (!url) return alert("El material solicitado aún no está disponible.");
+    if (!url) return alert("El material solicitado aún no ha sido cargado por el docente.");
 
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
     const titleEl = document.getElementById('pdf-title');
     const externalLink = document.getElementById('pdf-external-link');
+    const loader = document.getElementById('pdf-loader');
 
-    // Reset para evitar ver el PDF anterior mientras carga el nuevo
+    // Limpiar visor y mostrar loader
     viewer.src = "about:blank";
+    if (loader) loader.style.display = "block";
     if (titleEl) titleEl.innerText = title;
     if (externalLink) externalLink.href = url;
 
+    modal.classList.remove('hidden');
+
     let embedUrl = url;
+    // Conversión robusta de Google Drive
     if (url.includes('drive.google.com')) {
         let fileId = "";
-        if (url.includes('/d/')) {
-            fileId = url.split('/d/')[1].split('/')[0];
-        } else if (url.includes('id=')) {
-            fileId = url.split('id=')[1].split('&')[0];
-        }
+        const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
+        if (idMatch) fileId = idMatch[1];
 
         if (fileId) {
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+            // Intentar usar el visualizador de Google Docs que es más compatible con navegadores estrictos
+            embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(`https://drive.google.com/uc?id=${fileId}&export=download`)}&embedded=true`;
         }
     } else if (!url.toLowerCase().endsWith('.pdf')) {
-        // Si no es Drive ni termina en .pdf, intentar Google Viewer como último recurso
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
+    // Al cargar el iframe, ocultar el loader
+    viewer.onload = () => {
+        if (loader) loader.style.display = "none";
+    };
+
     viewer.src = embedUrl;
-    modal.classList.remove('hidden');
 }
 
-// Cerrar modal
 document.getElementById('close-pdf')?.addEventListener('click', () => {
     document.getElementById('pdf-modal').classList.add('hidden');
     document.getElementById('pdf-viewer').src = "about:blank";
@@ -223,17 +231,21 @@ async function uploadHomework(semana) {
     if (!file) return;
     const btn = fileInput.nextElementSibling;
     try {
-        btn.innerText = "⌛ Enviando...";
+        btn.innerText = "⏳ Enviando archivo...";
         btn.disabled = true;
-        const snap = await db.collection('entregas')
-            .where('alumno_dni', '==', studentSession.dni)
-            .where('curso', '==', currentCourseId)
-            .where('semana', '==', semana)
-            .limit(1).get();
+
         const path = `entregas/${studentSession.dni}/${currentCourseId}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
         await ref.put(file);
         const url = await ref.getDownloadURL();
+
+        const entregasRef = db.collection('entregas');
+        const q = await entregasRef
+            .where('alumno_dni', '==', studentSession.dni)
+            .where('curso', '==', currentCourseId)
+            .where('semana', '==', semana)
+            .limit(1).get();
+
         const data = {
             alumno_dni: studentSession.dni,
             alumno_nombre: studentSession.nombre,
@@ -246,12 +258,18 @@ async function uploadHomework(semana) {
             nota: '',
             comentario: ''
         };
-        if (!snap.empty) await db.collection('entregas').doc(snap.docs[0].id).update(data);
-        else await db.collection('entregas').add(data);
-        alert("¡Actividad enviada!");
+
+        if (!q.empty) await entregasRef.doc(q.docs[0].id).update(data);
+        else await entregasRef.add(data);
+
+        alert("✅ ¡Actividad enviada con éxito!");
         loadContent();
-    } catch (error) { alert("Error: " + error.message); }
-    finally { btn.innerText = "Subir Trabajo"; btn.disabled = false; }
+    } catch (error) {
+        alert("Error al subir actividad: " + error.message);
+    } finally {
+        btn.innerText = "Subir mi Actividad (PDF)";
+        btn.disabled = false;
+    }
 }
 
 document.getElementById('btn-logout-student')?.addEventListener('click', () => {

@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v6.6.5 | CFP 403</title>
+    <title>Mi Aula Virtual v6.6.6 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.6.5">
-    <link rel="stylesheet" href="css/student.css?v=6.6.5">
+    <link rel="stylesheet" href="css/style.css?v=6.6.6">
+    <link rel="stylesheet" href="css/student.css?v=6.6.6">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -66,12 +66,17 @@
                     <span class="close-modal" id="close-pdf" style="position:static; font-size: 30px;">&times;</span>
                 </div>
             </div>
-            <iframe id="pdf-viewer" src="" frameborder="0" style="width:100%; height: calc(100% - 60px);"></iframe>
+            <div id="pdf-loader"
+                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                <p style="font-size: 0.9rem; color: #64748b;">⏳ Cargando material académico...</p>
+            </div>
+            <iframe id="pdf-viewer" src="" frameborder="0"
+                style="width:100%; height: calc(100% - 60px); position: relative; z-index: 2;"></iframe>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=6.6.5"></script>
+    <script src="js/student.js?v=6.6.6"></script>
 </body>
 
 </html>
