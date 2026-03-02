@@ -457,6 +457,7 @@ document.getElementById('btn-clear-course')?.addEventListener('click', deleteCou
 document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
+document.getElementById('bulk-upload-input')?.addEventListener('change', (e) => handleBulkUpload(e.target.files));
 document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
 
 document.querySelectorAll('.nav-link').forEach(link => {
@@ -483,6 +484,72 @@ async function deleteStudent(course, dni) {
     const coll = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
     await db.collection(coll).doc(dni).delete();
     await loadStudentsFromFirebase();
+}
+
+// MEGA CARGA MASIVA
+async function handleBulkUpload(files) {
+    if (!currentClaseTab) return alert("Selecciona un curso primero.");
+    const progressList = document.getElementById('upload-progress-list');
+    progressList.innerHTML = '<b>Procesando archivos...</b><br>';
+
+    const docRef = db.collection('config_cursos').doc(currentClaseTab);
+    const snap = await docRef.get();
+    const config = snap.exists ? snap.data() : {};
+    const materiales = config.materiales || {};
+
+    let count = 0;
+    for (const file of files) {
+        const name = file.name.toLowerCase();
+        let targetType = ""; // 'clase', 'actividad', 'syllabus', 'welcome'
+        let weekNum = 0;
+
+        // Detectar tipo y semana por nombre
+        if (name.includes('clase')) {
+            targetType = 'clase';
+            const match = name.match(/clase\s*(\d+)/i);
+            if (match) weekNum = parseInt(match[1]);
+        } else if (name.includes('actividad')) {
+            targetType = 'actividad';
+            const match = name.match(/actividad\s*(\d+)/i);
+            if (match) weekNum = parseInt(match[1]);
+        } else if (name.includes('programa') || name.includes('syllabus')) {
+            targetType = 'syllabus';
+        } else if (name.includes('bienvenida') || name.includes('welcome')) {
+            targetType = 'welcome';
+        }
+
+        if (targetType) {
+            try {
+                const path = `materiales/${currentClaseTab}/${targetType === 'clase' || targetType === 'actividad' ? 'Semana_' + weekNum : 'General'}/${file.name}`;
+                const ref = storage.ref().child(path);
+                const li = document.createElement('div');
+                li.innerHTML = `⏳ Subiendo ${file.name}...`;
+                progressList.appendChild(li);
+
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+
+                if (targetType === 'clase' || targetType === 'actividad') {
+                    if (!materiales[`sem_${weekNum}`]) materiales[`sem_${weekNum}`] = {};
+                    materiales[`sem_${weekNum}`][targetType] = url;
+                } else if (targetType === 'syllabus') {
+                    config.syllabus_url = url;
+                } else if (targetType === 'welcome') {
+                    config.welcome_url = url;
+                }
+
+                li.innerHTML = `✅ ${file.name} listo.`;
+                count++;
+            } catch (e) {
+                console.error(e);
+                progressList.innerHTML += `<span style="color:red">❌ Error en ${file.name}</span><br>`;
+            }
+        }
+    }
+
+    await docRef.set({ ...config, materiales }, { merge: true });
+    alert(`¡Se procesaron ${count} archivos correctamente!`);
+    loadClasesAdmin();
 }
 
 function initNotifications() {

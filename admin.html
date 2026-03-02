@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v6.6.7 | CFP 403</title>
+    <title>Panel Administrativo v6.6.8 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.6.7">
-    <link rel="stylesheet" href="css/admin.css?v=6.6.7">
+    <link rel="stylesheet" href="css/style.css?v=6.6.8">
+    <link rel="stylesheet" href="css/admin.css?v=6.6.8">
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -129,16 +129,31 @@
                                 <input type="number" id="course-frequency" min="1" placeholder="Ej: 7">
                             </div>
                             <div class="field-item">
-                                <label>Programa (Drive Link)</label>
-                                <input type="url" id="course-syllabus-url" placeholder="PDF Programa">
+                                <label>Programa (PDF)</label>
+                                <input type="url" id="course-syllabus-url" placeholder="Link o usa Mega-Carga">
                             </div>
                             <div class="field-item">
-                                <label>Bienvenida (Drive Link)</label>
-                                <input type="url" id="course-welcome-url" placeholder="PDF Bienvenida">
+                                <label>Bienvenida (PDF)</label>
+                                <input type="url" id="course-welcome-url" placeholder="Link o usa Mega-Carga">
                             </div>
                         </div>
-                        <button class="btn-primary" id="btn-save-config" style="margin-top:20px; width:100%">Guardar
-                            Configuración del Curso</button>
+                        <button class="btn-primary" id="btn-save-config" style="margin-top:20px; width:100%">1. Guardar
+                            Configuración Base</button>
+                    </div>
+
+                    <div id="mega-uploader-zone" class="card"
+                        style="margin-top:20px; border:2px dashed var(--primary-color); background:#f0f9ff; text-align:center; padding:30px;">
+                        <h3 style="color:var(--primary-color)">🚀 ZONA DE MEGA-CARGA (Rápido)</h3>
+                        <p style="margin-bottom:15px; font-size:0.9rem;">Selecciona todos los archivos del curso (Clase
+                            1.pdf, Actividad 1.pdf, etc.) y el sistema hará el resto.</p>
+                        <input type="file" id="bulk-upload-input" multiple accept=".pdf" style="display:none">
+                        <button class="btn-primary" onclick="document.getElementById('bulk-upload-input').click()"
+                            style="background:var(--primary-color)">
+                            📁 Seleccionar Archivos Masivamente
+                        </button>
+                        <div id="upload-progress-list"
+                            style="margin-top:15px; text-align:left; font-size:0.8rem; max-height:150px; overflow-y:auto;">
+                        </div>
                     </div>
                 </div>
 
@@ -190,7 +205,7 @@
         </div>
     </div>
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin.js?v=6.6.7"></script>
+    <script src="js/admin.js?v=6.6.8"></script>
 </body>
 
 </html>
