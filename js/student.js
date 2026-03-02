@@ -198,15 +198,15 @@ function visualizePdf(url, title) {
     modal.classList.remove('hidden');
 
     let embedUrl = url;
-    // Conversión robusta de Google Drive
+    // Conversión ultra-directa de Google Drive
     if (url.includes('drive.google.com')) {
         let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
         if (idMatch) fileId = idMatch[1];
 
         if (fileId) {
-            // Intentar usar el visualizador de Google Docs que es más compatible con navegadores estrictos
-            embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(`https://drive.google.com/uc?id=${fileId}&export=download`)}&embedded=true`;
+            // El link /preview es el más estable y fluido para Drive directo
+            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
         }
     } else if (!url.toLowerCase().endsWith('.pdf')) {
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
@@ -216,6 +216,11 @@ function visualizePdf(url, title) {
     viewer.onload = () => {
         if (loader) loader.style.display = "none";
     };
+
+    // Temporizador de seguridad: si tarda más de 4 seg, ocultar cargando para que se vea el botón de auxilio
+    setTimeout(() => {
+        if (loader) loader.style.display = "none";
+    }, 4000);
 
     viewer.src = embedUrl;
 }
