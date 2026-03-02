@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v6.6.3 | CFP 403</title>
+    <title>Panel Administrativo v6.6.4 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.6.3">
-    <link rel="stylesheet" href="css/admin.css?v=6.6.3">
+    <link rel="stylesheet" href="css/style.css?v=6.6.4">
+    <link rel="stylesheet" href="css/admin.css?v=6.6.4">
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -133,8 +133,16 @@
                                 <input type="date" id="course-start-date">
                             </div>
                             <div class="field-item">
-                                <label>Frecuencia de Publicación (Cada cuántos días)</label>
+                                <label>Frecuencia (Días)</label>
                                 <input type="number" id="course-frequency" min="1" placeholder="Ej: 7">
+                            </div>
+                            <div class="field-item">
+                                <label>Programa (Drive Link)</label>
+                                <input type="url" id="course-syllabus-url" placeholder="PDF Programa">
+                            </div>
+                            <div class="field-item">
+                                <label>Bienvenida (Drive Link)</label>
+                                <input type="url" id="course-welcome-url" placeholder="PDF Bienvenida">
                             </div>
                         </div>
                         <button class="btn-primary" id="btn-save-config" style="margin-top:20px; width:100%">Guardar
@@ -190,7 +198,7 @@
         </div>
     </div>
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin.js?v=6.6.3"></script>
+    <script src="js/admin.js?v=6.6.4"></script>
 </body>
 
 </html>

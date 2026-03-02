@@ -263,27 +263,44 @@ async function processExcel(file, type) {
 
 // CRONOGRAMA AUTOMÁTICO - Lógica Inteligente 6.5
 async function saveConfig() {
-    const url = document.getElementById('course-drive-url').value.trim();
     const start = document.getElementById('course-start-date').value;
-    const freq = document.getElementById('course-frequency').value;
+    const freq = parseInt(document.getElementById('course-frequency').value) || 7;
+    const syllabus = document.getElementById('course-syllabus-url').value.trim();
+    const welcome = document.getElementById('course-welcome-url').value.trim();
 
-    if (!url || !start || !freq) return alert("Completa todos los campos de configuración.");
+    if (!start) return alert("Debes ingresar al menos la fecha de inicio.");
 
     const btn = document.getElementById('btn-save-config');
     btn.innerText = "⌛ Guardando...";
     btn.disabled = true;
 
     try {
+        const materiales = {};
+        for (let i = 1; i <= 15; i++) {
+            const claseLink = document.getElementById(`clase-link-${i}`)?.value.trim();
+            const actividadLink = document.getElementById(`actividad-link-${i}`)?.value.trim();
+            if (claseLink || actividadLink) {
+                materiales[`sem_${i}`] = {
+                    clase: claseLink || '',
+                    actividad: actividadLink || ''
+                };
+            }
+        }
+
         await db.collection('config_cursos').doc(currentClaseTab).set({
-            drive_url: url,
             fecha_inicio: start,
-            frecuencia_dias: parseInt(freq),
+            frecuencia_dias: freq,
+            syllabus_url: syllabus,
+            welcome_url: welcome,
+            materiales: materiales,
             actualizado: new Date().toISOString()
-        });
-        alert("¡Configuración guardada!");
+        }, { merge: true });
+
+        alert("¡Configuración y links guardados exitosamente!");
         loadClasesAdmin();
-    } catch (err) { alert("Error: " + err.message); }
-    finally {
+    } catch (err) {
+        alert("Error al guardar: " + err.message);
+    } finally {
         btn.innerText = "Guardar Configuración del Curso";
         btn.disabled = false;
     }
@@ -292,36 +309,40 @@ async function saveConfig() {
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
-    cont.innerHTML = '<p>Cargando cronograma...</p>';
+    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma y links...</p>';
 
     try {
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
-        if (!doc.exists) {
-            cont.innerHTML = '<p>No hay configuración para este curso.</p>';
-            return;
-        }
-
-        const config = doc.data();
+        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, syllabus_url: '', welcome_url: '', materiales: {} };
         const materiales = config.materiales || {};
         const exceptions = config.excepciones || [];
 
+        // Llenar campos principales
+        document.getElementById('course-start-date').value = config.fecha_inicio || '';
+        document.getElementById('course-frequency').value = config.frecuencia_dias || 7;
+        document.getElementById('course-syllabus-url').value = config.syllabus_url || '';
+        document.getElementById('course-welcome-url').value = config.welcome_url || '';
+
         cont.innerHTML = '';
+
+        // Botón de limpieza total
         const clearBtn = document.createElement('button');
-        clearBtn.innerText = "🗑️ Limpiar Configuración (Drive y Fechas)";
-        clearBtn.style = "background:#fee2e2; color:#ef4444; border:none; padding:10px; border-radius:8px; width:100%; margin-bottom:15px; cursor:pointer; font-weight:700;";
+        clearBtn.innerText = "🗑️ Limpiar Toda la Configuración";
+        clearBtn.className = "btn-secondary";
+        clearBtn.style.marginBottom = "20px";
         clearBtn.onclick = clearConfig;
         cont.appendChild(clearBtn);
 
-        document.getElementById('course-drive-url').value = config.drive_url || '';
-        document.getElementById('course-start-date').value = config.fecha_inicio || '';
-        document.getElementById('course-frequency').value = config.frecuencia_dias || 7;
-
         const infoDiv = document.createElement('div');
-        infoDiv.style = "background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px;";
-        infoDiv.innerHTML = '<b>Gestión de Materiales:</b> Haz clic en los botones para subir los PDFs de cada semana (Clase y Actividad).';
+        infoDiv.style = "background:#f1f5f9; padding:15px; border-radius:12px; font-size:0.9rem; margin-bottom:20px; border-left: 4px solid var(--primary-color);";
+        infoDiv.innerHTML = `
+            <strong>Instrucciones:</strong> Pega los links de Drive individuales para cada archivo.<br>
+            Asegúrate de que los archivos en Drive sean <strong>públicos</strong> ("Cualquier persona con el link puede ver").
+        `;
         cont.appendChild(infoDiv);
 
         const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
+
         for (let i = 1; i <= 15; i++) {
             if (exceptions.includes(i)) continue;
 
@@ -331,28 +352,27 @@ async function loadClasesAdmin() {
                 const pubDate = new Date(startDate);
                 pubDate.setDate(startDate.getDate() + ((i - 1) * config.frecuencia_dias));
                 isPub = new Date() >= pubDate;
-                pubStatus = isPub ? '🔓 Visible' : '🔒 ' + pubDate.toLocaleDateString();
+                pubStatus = isPub ? '🔓 Visible' : '🔒 Libera: ' + pubDate.toLocaleDateString();
             }
 
-            const matSemana = materiales[`sem_${i}`] || {};
+            const matSemana = materiales[`sem_${i}`] || { clase: '', actividad: '' };
 
             const div = document.createElement('div');
             div.className = 'clase-item-row';
+            div.style.gridTemplateColumns = "80px 120px 1fr 1fr 50px";
             div.innerHTML = `
                 <div style="font-weight:700">Semana ${i}</div>
-                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}">${pubStatus}</div>
+                <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}" style="font-size:0.7rem;">${pubStatus}</div>
                 
-                <div class="material-btn ${matSemana.clase ? 'uploaded' : ''}" onclick="handleMaterial(${i}, 'clase', '${matSemana.clase || ''}')">
-                    📄 ${matSemana.clase ? 'Clase PDF' : 'Subir Clase'}
+                <div class="field-item" style="gap:4px;">
+                    <input type="url" id="clase-link-${i}" value="${matSemana.clase || ''}" placeholder="Link Clase PDF" style="font-size:0.8rem; padding:6px;">
                 </div>
                 
-                <div class="material-btn ${matSemana.actividad ? 'uploaded' : ''}" onclick="handleMaterial(${i}, 'actividad', '${matSemana.actividad || ''}')">
-                    🛠️ ${matSemana.actividad ? 'Actividad PDF' : 'Subir Actividad'}
+                <div class="field-item" style="gap:4px;">
+                    <input type="url" id="actividad-link-${i}" value="${matSemana.actividad || ''}" placeholder="Link Actividad PDF" style="font-size:0.8rem; padding:6px;">
                 </div>
 
-                <div style="font-size:0.8rem; color:#64748b;">${matSemana.clase && matSemana.actividad ? '✅ Completo' : '⏳ Falta'}</div>
-                
-                <button class="btn-icon" onclick="deleteWeek(${i})">🗑️</button>
+                <button class="btn-icon" onclick="deleteWeek(${i})" title="Ocultar semana">🗑️</button>
             `;
             cont.appendChild(div);
         }

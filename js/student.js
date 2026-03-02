@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno 6.6.2 (Visualización Profesional)
+// Mi Aula Virtual - Lógica del Alumno 6.6.4 (Links Directos y Estabilidad)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -41,11 +41,11 @@ function switchCourse(courseId, btn) {
 async function loadContent() {
     try {
         const weeksContainer = document.getElementById('weeks-container');
-        weeksContainer.innerHTML = '<p class="loader" style="text-align:center;">Organizando tus clases...</p>';
+        weeksContainer.innerHTML = '<p class="loader" style="text-align:center;">Organizando tu material de estudio...</p>';
 
         const configSnap = await db.collection('config_cursos').doc(currentCourseId).get();
         if (!configSnap.exists) {
-            weeksContainer.innerHTML = '<p class="empty-msg">El cronograma del curso aún no ha sido configurado.</p>';
+            weeksContainer.innerHTML = '<p class="empty-msg">El curso aún no ha sido configurado.</p>';
             return;
         }
         const config = configSnap.data();
@@ -61,7 +61,7 @@ async function loadContent() {
 
         const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
         if (!startDate) {
-            weeksContainer.innerHTML = '<p class="empty-msg">Esperando fecha de inicio...</p>';
+            weeksContainer.innerHTML = '<p class="empty-msg">Esperando fecha de inicio confirmada.</p>';
             return;
         }
 
@@ -79,9 +79,42 @@ async function loadContent() {
             return;
         }
 
+        // --- SECCIÓN: INICIO Y BIENVENIDA (Día 1) ---
+        if (config.syllabus_url || config.welcome_url) {
+            const introCard = document.createElement('div');
+            introCard.className = 'card week-card active animated-in';
+            introCard.style.borderLeftColor = '#10b981';
+            introCard.innerHTML = `
+                <div class="week-header">
+                    <h3>📚 Bienvenida y Programa</h3>
+                </div>
+                <div class="week-body" style="max-height:1000px; opacity:1; pointer-events:auto; padding:20px;">
+                    ${config.welcome_url ? `
+                        <div class="content-item clickable" onclick="visualizePdf('${config.welcome_url}', 'Bienvenida')">
+                            <span class="icon">👋</span>
+                            <div class="item-info">
+                                <strong>Mensaje de Bienvenida</strong>
+                                <p>Haz clic para leer el inicio del curso</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${config.syllabus_url ? `
+                        <div class="content-item clickable" onclick="visualizePdf('${config.syllabus_url}', 'Programa')">
+                            <span class="icon">📋</span>
+                            <div class="item-info">
+                                <strong>Programa del Curso</strong>
+                                <p>Haz clic para ver los contenidos</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            weeksContainer.appendChild(introCard);
+        }
+
         const exceptions = config.excepciones || [];
 
-        // Orden descendente (más nueva arriba)
+        // Semanas (Orden descendente)
         for (let i = semanasLiberadas; i >= 1; i--) {
             if (exceptions.includes(i)) continue;
 
@@ -103,20 +136,20 @@ async function loadContent() {
                         <span class="icon">📖</span>
                         <div class="item-info">
                             <strong>Clase ${i}</strong>
-                            <p>${matSemana.clase ? 'Haz clic para ver la teoría' : '⌛ No disponible aún'}</p>
+                            <p>${matSemana.clase ? 'Haz clic para ver la teoría' : '⌛ Pendiente de carga'}</p>
                         </div>
                     </div>
                     <div class="content-item clickable" onclick="visualizePdf('${matSemana.actividad || ''}', 'Actividad ${i}')">
                         <span class="icon">🛠️</span>
                         <div class="item-info">
                             <strong>Actividad ${i}</strong>
-                            <p>${matSemana.actividad ? 'Haz clic para ver la consigna' : '⌛ No disponible aún'}</p>
+                            <p>${matSemana.actividad ? 'Haz clic para ver la consigna' : '⌛ Pendiente de carga'}</p>
                         </div>
                     </div>
                     <div class="delivery-section" style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:15px;">
                         <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
                             <p style="font-size:0.9rem;">
-                                <strong>Estado:</strong> 
+                                <strong>Estado Entrega:</strong> 
                                 <span class="status-badge ${entrega ? 'calificado' : 'pendiente'}">
                                     ${entrega ? 'Entregado' : 'Pendiente'}
                                 </span>
@@ -130,8 +163,8 @@ async function loadContent() {
                         
                         ${entrega && entrega.nota ? `
                             <div class="grade-pill" style="margin-top:20px; border-top: 1px dashed #cbd5e1; padding-top:15px;">
-                                <p>Calificación: <strong style="color:var(--primary-color); font-size:1.3rem;">${entrega.nota}</strong></p>
-                                ${entrega.comentario ? `<p class="comment">"${entrega.comentario}"</p>` : ''}
+                                <p>Nota: <strong style="color:var(--primary-color); font-size:1.3rem;">${entrega.nota}</strong></p>
+                                ${entrega.comentario ? `<p class="comment" style="font-style:italic; margin-top:5px; color:#475569;">"${entrega.comentario}"</p>` : ''}
                             </div>
                         ` : ''}
                     </div>
@@ -140,50 +173,55 @@ async function loadContent() {
             weeksContainer.appendChild(card);
         }
     } catch (e) {
-        console.error("Error cargando aula virtual:", e);
+        console.error("Error cargando aula:", e);
     }
 }
 
 function visualizePdf(url, title) {
-    if (!url) return alert("El profesor aún no ha cargado este material.");
+    if (!url) return alert("El material para esta sección aún no está disponible.");
+
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
 
-    // Usar Google Docs Viewer para embeber el PDF de forma profesional
-    viewer.src = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    // Función para convertir link de Drive en link de previsualización directo
+    let embedUrl = url;
+    if (url.includes('drive.google.com')) {
+        const fileIdMatch = url.match(/\/d\/(.+?)\//);
+        if (fileIdMatch) {
+            embedUrl = `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+        }
+    } else {
+        // Para otros links, intentar usar Google Viewer
+        embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    }
+
+    viewer.src = embedUrl;
     modal.classList.remove('hidden');
 }
 
 document.getElementById('close-pdf')?.addEventListener('click', () => {
-    const modal = document.getElementById('pdf-modal');
-    const viewer = document.getElementById('pdf-viewer');
-    viewer.src = "";
-    modal.classList.add('hidden');
+    document.getElementById('pdf-modal').classList.add('hidden');
+    document.getElementById('pdf-viewer').src = "";
 });
 
 async function uploadHomework(semana) {
     const fileInput = document.getElementById(`file-${semana}`);
     const file = fileInput.files[0];
     if (!file) return;
-
     const btn = fileInput.nextElementSibling;
     try {
-        btn.innerText = "⌛ Subiendo...";
+        btn.innerText = "⌛ Enviando...";
         btn.disabled = true;
-
         const snap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
             .where('curso', '==', currentCourseId)
             .where('semana', '==', semana)
-            .limit(1)
-            .get();
-
+            .limit(1).get();
         const path = `entregas/${studentSession.dni}/${currentCourseId}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
         await ref.put(file);
         const url = await ref.getDownloadURL();
-
-        const deliveryData = {
+        const data = {
             alumno_dni: studentSession.dni,
             alumno_nombre: studentSession.nombre,
             curso: currentCourseId,
@@ -195,21 +233,12 @@ async function uploadHomework(semana) {
             nota: '',
             comentario: ''
         };
-
-        if (!snap.empty) {
-            await db.collection('entregas').doc(snap.docs[0].id).update(deliveryData);
-        } else {
-            await db.collection('entregas').add(deliveryData);
-        }
-
-        alert("¡Recibido! Tu trabajo ha sido enviado para corrección.");
+        if (!snap.empty) await db.collection('entregas').doc(snap.docs[0].id).update(data);
+        else await db.collection('entregas').add(data);
+        alert("¡Actividad enviada!");
         loadContent();
-    } catch (error) {
-        alert("Algo salió mal: " + error.message);
-    } finally {
-        btn.innerText = "Subir Trabajo";
-        btn.disabled = false;
-    }
+    } catch (error) { alert("Error: " + error.message); }
+    finally { btn.innerText = "Subir Trabajo"; btn.disabled = false; }
 }
 
 document.getElementById('btn-logout-student')?.addEventListener('click', () => {
