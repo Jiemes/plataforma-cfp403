@@ -296,11 +296,26 @@ async function loadClasesAdmin() {
     cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma...</p>';
 
     try {
-        console.log("Cargando configuración para:", currentClaseTab);
+        console.log("--- LOAD CLASES ADMIN ---");
+        console.log("Curso activo:", currentClaseTab);
+
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
-        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, materiales: {} };
-        const materiales = config.materiales || {};
-        const exceptions = config.excepciones || [];
+        const data = doc.exists ? doc.data() : {};
+
+        // Compatibilidad con typo anterior y nuevos datos
+        const config = {
+            fecha_inicio: data.fecha_inicio || '',
+            frecuencia_dias: data.frecuencia_dias || 7,
+            materiales: data.materiales || data.materials || {},
+            welcome_url: data.welcome_url || '',
+            syllabus_url: data.syllabus_url || '',
+            excepciones: data.excepciones || []
+        };
+
+        const materiales = config.materiales;
+        const exceptions = config.excepciones;
+
+        console.log("Config recuperada:", config);
 
         // Llenar campos principales
         document.getElementById('course-start-date').value = config.fecha_inicio || '';
@@ -448,7 +463,7 @@ async function manualUpload(type, sem = null) {
             const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
             const refStorage = storage.ref().child(storagePath);
 
-            console.log(`[ManualUpload] Iniciando: ${storagePath}`);
+            console.log(`[ManualUpload] Iniciando subida: ${storagePath}`);
             alert(`⏳ Cargando ${fileName}... No cierres la plataforma.`);
 
             await refStorage.put(file);
@@ -459,18 +474,22 @@ async function manualUpload(type, sem = null) {
             const snap = await docRef.get();
             let config = snap.exists ? snap.data() : { materiales: {} };
 
+            // Compatibilidad con typo anterior
+            if (!config.materiales) config.materiales = config.materials || {};
+
             if (type === 'welcome') config.welcome_url = fileUrl;
             else if (type === 'syllabus') config.syllabus_url = fileUrl;
             else if (type === 'clase' || type === 'actividad') {
-                if (!config.materiales) config.materiales = {};
                 if (!config.materiales[`sem_${sem}`]) config.materiales[`sem_${sem}`] = {};
                 config.materiales[`sem_${sem}`][type] = fileUrl;
             }
 
+            console.log("[ManualUpload] Guardando en Firestore:", config);
             await docRef.set(config, { merge: true });
-            console.log("[ManualUpload] DB actualizada correctamente.");
+
+            console.log("[ManualUpload] DB actualizada con éxito.");
             alert("✅ ¡Archivo cargado con éxito!");
-            loadClasesAdmin();
+            await loadClasesAdmin();
         } catch (err) {
             console.error("[ManualUpload] ERROR:", err);
             alert("Error al cargar: " + err.message);
