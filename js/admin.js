@@ -49,31 +49,35 @@ function processAndClean(key) {
 }
 
 function cleanAge(ageRaw, birthRaw) {
+    if (!ageRaw && !birthRaw) return '??';
     let age = parseInt(String(ageRaw || '').replace(/\D/g, ''));
 
     // Si la edad es absurda (ej: >100 o <10), intentar calcularla por nacimiento
     if (isNaN(age) || age < 10 || age > 95) {
         if (birthRaw) {
             try {
-                // Limpiar fecha de nacimiento (manejar DD/MM/AAAA o AAAA-MM-DD)
-                let dateStr = String(birthRaw).trim();
+                // Normalizar separadores y limpiar
+                let dateStr = String(birthRaw).trim().replace(/-/g, '/');
                 let birthDate;
-                if (dateStr.includes('/')) {
-                    const parts = dateStr.split('/');
-                    if (parts[2]?.length === 4) birthDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                } else {
-                    birthDate = new Date(dateStr);
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    // Caso DD/MM/AAAA
+                    if (parts[2].length === 4) birthDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00`);
+                    // Caso AAAA/MM/DD
+                    else if (parts[0].length === 4) birthDate = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T12:00:00`);
                 }
 
+                if (!birthDate || isNaN(birthDate)) birthDate = new Date(dateStr);
+
                 if (birthDate && !isNaN(birthDate)) {
-                    const diff = new Date() - birthDate;
-                    age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+                    let hoy = new Date();
+                    age = hoy.getFullYear() - birthDate.getFullYear();
+                    let m = hoy.getMonth() - birthDate.getMonth();
+                    if (m < 0 || (m === 0 && hoy.getDate() < birthDate.getDate())) age--;
                 }
             } catch (e) { console.log("Error parseando fecha:", birthRaw); }
         }
     }
-
-    // Si sigue siendo absurda o vacía, dejar como N/A para no arruinar estadísticas
     return (isNaN(age) || age < 10 || age > 95) ? '??' : age;
 }
 
