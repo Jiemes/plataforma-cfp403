@@ -296,8 +296,9 @@ async function loadClasesAdmin() {
     cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma...</p>';
 
     try {
+        console.log("Cargando configuración para:", currentClaseTab);
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
-        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, materials: {} };
+        const config = doc.exists ? doc.data() : { fecha_inicio: '', frecuencia_dias: 7, materiales: {} };
         const materiales = config.materiales || {};
         const exceptions = config.excepciones || [];
 
@@ -380,61 +381,6 @@ async function loadClasesAdmin() {
     } catch (err) { console.error(err); }
 }
 
-async function handleMaterial(semana, tipo, existingUrl) {
-    if (existingUrl) {
-        if (confirm(`¿Borrar el archivo de ${tipo} de la Semana ${semana}?`)) {
-            try {
-                const ref = db.collection('config_cursos').doc(currentClaseTab);
-                const doc = await ref.get();
-                const materials = doc.data().materiales || {};
-                delete materials[`sem_${semana}`][tipo];
-                await ref.update({ materiales: materials });
-                loadClasesAdmin();
-            } catch (e) { alert(e.message); }
-        }
-        return;
-    }
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        try {
-            const path = `materiales/${currentClaseTab}/Semana_${semana}/${tipo}_${Date.now()}.pdf`;
-            const refStorage = storage.ref().child(path);
-            await refStorage.put(file);
-            const url = await refStorage.getDownloadURL();
-
-            const docRef = db.collection('config_cursos').doc(currentClaseTab);
-            const doc = await docRef.get();
-            const config = doc.data() || {};
-            const materials = config.materiales || {};
-            if (!materials[`sem_${semana}`]) materials[`sem_${semana}`] = {};
-            materials[`sem_${semana}`][tipo] = url;
-
-            await docRef.update({ materiales: materials });
-            alert("¡Archivo subido correctamente!");
-            loadClasesAdmin();
-        } catch (err) { alert("Error: " + err.message); }
-    };
-    input.click();
-}
-
-async function deleteWeek(weekNum) {
-    if (!confirm(`¿Ocultar la Semana ${weekNum} de este curso?`)) return;
-    try {
-        const ref = db.collection('config_cursos').doc(currentClaseTab);
-        const doc = await ref.get();
-        const exceptions = doc.data().excepciones || [];
-        if (!exceptions.includes(weekNum)) {
-            exceptions.push(weekNum);
-            await ref.update({ excepciones: exceptions });
-            loadClasesAdmin();
-        }
-    } catch (e) { alert(e.message); }
-}
 
 async function clearConfig() {
     if (!confirm("¿Eliminar TODA la configuración (Drive, Fechas, Excepciones) de este curso?")) return;
@@ -502,9 +448,12 @@ async function manualUpload(type, sem = null) {
             const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
             const refStorage = storage.ref().child(storagePath);
 
-            alert(`⏳ Cargando ${fileName}... No cierres la plataforma hasta ver el mensaje de éxito.`);
+            console.log(`[ManualUpload] Iniciando: ${storagePath}`);
+            alert(`⏳ Cargando ${fileName}... No cierres la plataforma.`);
+
             await refStorage.put(file);
             const fileUrl = await refStorage.getDownloadURL();
+            console.log("[ManualUpload] URL generada:", fileUrl);
 
             const docRef = db.collection('config_cursos').doc(currentClaseTab);
             const snap = await docRef.get();
@@ -519,13 +468,30 @@ async function manualUpload(type, sem = null) {
             }
 
             await docRef.set(config, { merge: true });
+            console.log("[ManualUpload] DB actualizada correctamente.");
             alert("✅ ¡Archivo cargado con éxito!");
             loadClasesAdmin();
         } catch (err) {
+            console.error("[ManualUpload] ERROR:", err);
             alert("Error al cargar: " + err.message);
         }
     };
     input.click();
+}
+
+async function deleteWeek(weekNum) {
+    if (!confirm(`¿Ocultar la Semana ${weekNum} de este curso?`)) return;
+    try {
+        const ref = db.collection('config_cursos').doc(currentClaseTab);
+        const doc = await ref.get();
+        const exceptions = doc.data()?.excepciones || [];
+        if (!exceptions.includes(weekNum)) {
+            exceptions.push(weekNum);
+            await ref.update({ excepciones: exceptions });
+            console.log(`Semana ${weekNum} ocultada.`);
+            loadClasesAdmin();
+        }
+    } catch (e) { alert(e.message); }
 }
 
 async function deleteSingleFile(semana, tipo) {
