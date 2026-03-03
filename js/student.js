@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno 6.8.5 (Fechas Individuales)
+// Mi Aula Virtual - Lógica del Alumno v6.8.7 (Visualizador PDF Blindado)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -69,7 +69,7 @@ async function loadContent() {
         if (fechaInicio && hoy >= fechaInicio) {
             const introCard = document.createElement('div');
             introCard.className = 'card week-card active animated-in';
-            introCard.style.borderLeft = '6px solid #00B9E8';
+            introCard.style.borderLeft = '6px solid #10b981';
             introCard.innerHTML = `
                 <div class="week-header"><h3>📚 Bienvenida y Programa</h3></div>
                 <div class="week-body" style="display:block; padding:20px;">
@@ -92,7 +92,6 @@ async function loadContent() {
 
         // 2. SEMANAS
         const exceptions = config.excepciones || [];
-        // Encontrar max semana
         let weeksKeys = Object.keys(materiales).filter(k => k.startsWith('sem_')).map(k => parseInt(k.replace('sem_', ''))).sort((a, b) => b - a);
 
         if (weeksKeys.length === 0 && (!fechaInicio || hoy < fechaInicio)) {
@@ -104,9 +103,6 @@ async function loadContent() {
             if (exceptions.includes(i)) return;
             const mat = materiales[`sem_${i}`] || {};
             const fechaLib = mat.fecha ? new Date(mat.fecha + "T00:00:00") : null;
-
-            // Solo mostrar si ya es la fecha o si no tiene fecha (asumir liberado si no hay fecha?)
-            // Por seguridad, si no hay fecha, no se muestra a menos que sea Admin.
             if (!fechaLib || hoy < fechaLib) return;
 
             const entrega = entregas.find(e => e.semana === i);
@@ -138,11 +134,6 @@ async function loadContent() {
                         <button class="btn-upload" onclick="document.getElementById('file-${i}').click()">
                             ${entrega ? '📤 Re-enviar Actividad' : 'Subir mi Actividad (PDF)'}
                         </button>
-                        ${entrega && entrega.nota ? `
-                            <div class="grade-pill" style="margin-top:15px; border-top: 1px dashed #cbd5e1; padding-top:10px;">
-                                <p>Nota: <strong style="color:#00B9E8; font-size:1.2rem;">${entrega.nota}</strong></p>
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -157,20 +148,39 @@ async function loadContent() {
 }
 
 function visualizePdf(url, title) {
-    if (!url) return alert("El material aún no está disponible.");
+    if (!url) return alert("El material solicitado aún no ha sido cargado por el docente.");
+
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
-    document.getElementById('pdf-title').innerText = title;
-    document.getElementById('pdf-external-link').href = url;
+    const titleEl = document.getElementById('pdf-title');
+    const externalLink = document.getElementById('pdf-external-link');
+    const loader = document.getElementById('pdf-loader');
+
+    // Preparar visor
+    viewer.src = "about:blank";
+    if (loader) loader.style.display = "block";
+    if (titleEl) titleEl.innerText = title;
+    if (externalLink) externalLink.href = url;
+
     modal.classList.remove('hidden');
 
     let embedUrl = url;
+    // Conversión inteligente Google Drive
     if (url.includes('drive.google.com')) {
+        let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        if (idMatch) embedUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+        if (idMatch) fileId = idMatch[1];
+        if (fileId) embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     } else if (!url.toLowerCase().endsWith('.pdf')) {
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
+
+    // Ocultar loader al cargar
+    viewer.onload = () => { if (loader) loader.style.display = "none"; };
+
+    // Fallback de seguridad (5 seg)
+    setTimeout(() => { if (loader) loader.style.display = "none"; }, 5000);
+
     viewer.src = embedUrl;
 }
 
