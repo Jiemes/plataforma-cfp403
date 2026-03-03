@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno 6.6.6 (Reparación Visualizador PDF)
+// Mi Aula Virtual - Lógica del Alumno 6.8.5 (Fechas Individuales)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -49,8 +49,6 @@ async function loadContent() {
             return;
         }
         const config = configSnap.data();
-
-        // Fusión inteligente para el alumno
         let materiales = {};
         if (config.materials) Object.assign(materiales, config.materials);
         if (config.materiales) Object.assign(materiales, config.materiales);
@@ -62,56 +60,29 @@ async function loadContent() {
         const entregas = entregasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         weeksContainer.innerHTML = '';
-
-        const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
-        if (!startDate) {
-            weeksContainer.innerHTML = '<p class="empty-msg">Esperando confirmación de fecha de inicio.</p>';
-            return;
-        }
-
         const hoy = new Date();
-        let semanasLiberadas = 0;
-        let diffMs = hoy - startDate;
-        let diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDias >= 0) {
-            semanasLiberadas = Math.floor(diffDias / config.frecuencia_dias) + 1;
-        }
+        // 1. BIENVENIDA Y PROGRAMA
+        const matInicio = materiales['inicio'] || { welcome: config.welcome_url || '', syllabus: config.syllabus_url || '', fecha: config.fecha_inicio || '' };
+        const fechaInicio = matInicio.fecha ? new Date(matInicio.fecha + "T00:00:00") : null;
 
-        if (semanasLiberadas <= 0) {
-            weeksContainer.innerHTML = `<p class="empty-msg card" style="padding:40px; text-align:center;">
-                🚀 Tu curso comienza el <strong>${startDate.toLocaleDateString()}</strong>.<br>
-                <small style="color:gray;">Vuelve ese día para ver el primer contenido.</small>
-            </p>`;
-            return;
-        }
-
-        // --- SECCIÓN: BIENVENIDA Y PROGRAMA (Día 1) ---
-        if (semanasLiberadas >= 1 && (config.syllabus_url || config.welcome_url)) {
+        if (fechaInicio && hoy >= fechaInicio) {
             const introCard = document.createElement('div');
             introCard.className = 'card week-card active animated-in';
-            introCard.style.borderLeft = '6px solid #10b981';
+            introCard.style.borderLeft = '6px solid #00B9E8';
             introCard.innerHTML = `
-                <div class="week-header">
-                    <h3>📚 Bienvenida y Programa</h3>
-                </div>
-                <div class="week-body" style="max-height:1000px; opacity:1; pointer-events:auto; padding:20px;">
-                    ${config.welcome_url ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${config.welcome_url}', 'Mensaje de Bienvenida')">
+                <div class="week-header"><h3>📚 Bienvenida y Programa</h3></div>
+                <div class="week-body" style="display:block; padding:20px;">
+                    ${matInicio.welcome ? `
+                        <div class="content-item clickable" onclick="visualizePdf('${matInicio.welcome}', 'Bienvenida')">
                             <span class="icon">👋</span>
-                            <div class="item-info">
-                                <strong>Mensaje de Bienvenida</strong>
-                                <p>Haz clic para leer el inicio del curso</p>
-                            </div>
+                            <div class="item-info"><strong>Mensaje de Bienvenida</strong><p>Clic para leer</p></div>
                         </div>
                     ` : ''}
-                    ${config.syllabus_url ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${config.syllabus_url}', 'Programa del Curso')">
+                    ${matInicio.syllabus ? `
+                        <div class="content-item clickable" onclick="visualizePdf('${matInicio.syllabus}', 'Programa')">
                             <span class="icon">📋</span>
-                            <div class="item-info">
-                                <strong>Programa Académico</strong>
-                                <p>Haz clic para ver los contenidos y objetivos</p>
-                            </div>
+                            <div class="item-info"><strong>Programa Académico</strong><p>Clic para ver objetivos</p></div>
                         </div>
                     ` : ''}
                 </div>
@@ -119,17 +90,28 @@ async function loadContent() {
             weeksContainer.appendChild(introCard);
         }
 
+        // 2. SEMANAS
         const exceptions = config.excepciones || [];
+        // Encontrar max semana
+        let weeksKeys = Object.keys(materiales).filter(k => k.startsWith('sem_')).map(k => parseInt(k.replace('sem_', ''))).sort((a, b) => b - a);
 
-        // Semanas (Orden descendente)
-        for (let i = semanasLiberadas; i >= 1; i--) {
-            if (exceptions.includes(i)) continue;
+        if (weeksKeys.length === 0 && (!fechaInicio || hoy < fechaInicio)) {
+            weeksContainer.innerHTML = '<p class="empty-msg">¡Próximamente verás aquí tus contenidos!</p>';
+            return;
+        }
+
+        weeksKeys.forEach(i => {
+            if (exceptions.includes(i)) return;
+            const mat = materiales[`sem_${i}`] || {};
+            const fechaLib = mat.fecha ? new Date(mat.fecha + "T00:00:00") : null;
+
+            // Solo mostrar si ya es la fecha o si no tiene fecha (asumir liberado si no hay fecha?)
+            // Por seguridad, si no hay fecha, no se muestra a menos que sea Admin.
+            if (!fechaLib || hoy < fechaLib) return;
 
             const entrega = entregas.find(e => e.semana === i);
-            const matSemana = materiales[`sem_${i}`] || {};
             const card = document.createElement('div');
-            card.className = `card week-card animated-in ${i === semanasLiberadas ? 'active' : ''}`;
-
+            card.className = `card week-card animated-in ${i === weeksKeys[0] ? 'active' : ''}`;
             card.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('active')">
                     <h3>Semana ${i}</h3>
@@ -139,93 +121,56 @@ async function loadContent() {
                     </div>
                 </div>
                 <div class="week-body">
-                    <div class="content-item clickable" onclick="visualizePdf('${matSemana.clase || ''}', 'Clase ${i}')">
+                    <div class="content-item clickable" onclick="visualizePdf('${mat.clase || ''}', 'Clase ${i}')">
                         <span class="icon">📖</span>
-                        <div class="item-info">
-                            <strong>Clase ${i}</strong>
-                            <p>${matSemana.clase ? 'Haz clic para ver la teoría' : '⌛ Pendiente de carga'}</p>
-                        </div>
+                        <div class="item-info"><strong>Clase ${i}</strong><p>${mat.clase ? 'Ver material teórico' : '⌛ Pendiente'}</p></div>
                     </div>
-                    <div class="content-item clickable" onclick="visualizePdf('${matSemana.actividad || ''}', 'Actividad ${i}')">
+                    <div class="content-item clickable" onclick="visualizePdf('${mat.actividad || ''}', 'Actividad ${i}')">
                         <span class="icon">🛠️</span>
-                        <div class="item-info">
-                            <strong>Actividad ${i}</strong>
-                            <p>${matSemana.actividad ? 'Haz clic para ver la consigna' : '⌛ Pendiente de carga'}</p>
-                        </div>
+                        <div class="item-info"><strong>Actividad ${i}</strong><p>${mat.actividad ? 'Ver consigna' : '⌛ Pendiente'}</p></div>
                     </div>
                     <div class="delivery-section" style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:15px;">
-                        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-                            <p style="font-size:0.9rem;">
-                                <strong>Estado Entrega:</strong> 
-                                <span class="status-badge ${entrega ? 'calificado' : 'pendiente'}">
-                                    ${entrega ? 'Entregado' : 'Pendiente'}
-                                </span>
-                            </p>
-                        </div>
-                        
+                        <p style="font-size:0.9rem; margin-bottom:10px;">
+                            <strong>Estado Entrega:</strong> 
+                            <span class="status-badge ${entrega ? 'calificado' : 'pendiente'}">${entrega ? 'Entregado' : 'Pendiente'}</span>
+                        </p>
                         <input type="file" id="file-${i}" class="hidden-input" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
                         <button class="btn-upload" onclick="document.getElementById('file-${i}').click()">
-                            ${entrega ? '📤 Corregir/Re-subir PDF' : 'Subir mi Actividad (PDF)'}
+                            ${entrega ? '📤 Re-enviar Actividad' : 'Subir mi Actividad (PDF)'}
                         </button>
-                        
                         ${entrega && entrega.nota ? `
-                            <div class="grade-pill" style="margin-top:20px; border-top: 1px dashed #cbd5e1; padding-top:15px;">
-                                <p>Nota: <strong style="color:var(--primary-color); font-size:1.3rem;">${entrega.nota}</strong></p>
-                                ${entrega.comentario ? `<p class="comment" style="font-style:italic; margin-top:5px; color:#475569;">"${entrega.comentario}"</p>` : ''}
+                            <div class="grade-pill" style="margin-top:15px; border-top: 1px dashed #cbd5e1; padding-top:10px;">
+                                <p>Nota: <strong style="color:#00B9E8; font-size:1.2rem;">${entrega.nota}</strong></p>
                             </div>
                         ` : ''}
                     </div>
                 </div>
             `;
             weeksContainer.appendChild(card);
+        });
+
+        if (weeksContainer.innerHTML === '') {
+            weeksContainer.innerHTML = '<p class="empty-msg">Aún no hay contenidos liberados para tu fecha.</p>';
         }
-    } catch (e) {
-        console.error("Error crítico en aula virtual:", e);
-    }
+
+    } catch (e) { console.error(e); }
 }
 
 function visualizePdf(url, title) {
-    if (!url) return alert("El material solicitado aún no ha sido cargado por el docente.");
-
+    if (!url) return alert("El material aún no está disponible.");
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
-    const titleEl = document.getElementById('pdf-title');
-    const externalLink = document.getElementById('pdf-external-link');
-    const loader = document.getElementById('pdf-loader');
-
-    // Limpiar visor y mostrar loader
-    viewer.src = "about:blank";
-    if (loader) loader.style.display = "block";
-    if (titleEl) titleEl.innerText = title;
-    if (externalLink) externalLink.href = url;
-
+    document.getElementById('pdf-title').innerText = title;
+    document.getElementById('pdf-external-link').href = url;
     modal.classList.remove('hidden');
 
     let embedUrl = url;
-    // Conversión ultra-directa de Google Drive
     if (url.includes('drive.google.com')) {
-        let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        if (idMatch) fileId = idMatch[1];
-
-        if (fileId) {
-            // El link /preview es el más estable y fluido para Drive directo
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        }
+        if (idMatch) embedUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
     } else if (!url.toLowerCase().endsWith('.pdf')) {
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
-
-    // Al cargar el iframe, ocultar el loader
-    viewer.onload = () => {
-        if (loader) loader.style.display = "none";
-    };
-
-    // Temporizador de seguridad: si tarda más de 4 seg, ocultar cargando para que se vea el botón de auxilio
-    setTimeout(() => {
-        if (loader) loader.style.display = "none";
-    }, 4000);
-
     viewer.src = embedUrl;
 }
 
@@ -240,20 +185,12 @@ async function uploadHomework(semana) {
     if (!file) return;
     const btn = fileInput.nextElementSibling;
     try {
-        btn.innerText = "⏳ Enviando archivo...";
+        btn.innerText = "⏳ Enviando...";
         btn.disabled = true;
-
         const path = `entregas/${studentSession.dni}/${currentCourseId}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
         await ref.put(file);
         const url = await ref.getDownloadURL();
-
-        const entregasRef = db.collection('entregas');
-        const q = await entregasRef
-            .where('alumno_dni', '==', studentSession.dni)
-            .where('curso', '==', currentCourseId)
-            .where('semana', '==', semana)
-            .limit(1).get();
 
         const data = {
             alumno_dni: studentSession.dni,
@@ -263,22 +200,17 @@ async function uploadHomework(semana) {
             archivo_url: url,
             archivo_nombre: file.name,
             fecha_entrega: new Date().toISOString(),
-            estado: 'Pendiente',
-            nota: '',
-            comentario: ''
+            estado: 'Pendiente'
         };
 
-        if (!q.empty) await entregasRef.doc(q.docs[0].id).update(data);
-        else await entregasRef.add(data);
+        const q = await db.collection('entregas').where('alumno_dni', '==', studentSession.dni).where('curso', '==', currentCourseId).where('semana', '==', semana).get();
+        if (!q.empty) await db.collection('entregas').doc(q.docs[0].id).update(data);
+        else await db.collection('entregas').add(data);
 
-        alert("✅ ¡Actividad enviada con éxito!");
+        alert("✅ ¡Actividad enviada!");
         loadContent();
-    } catch (error) {
-        alert("Error al subir actividad: " + error.message);
-    } finally {
-        btn.innerText = "Subir mi Actividad (PDF)";
-        btn.disabled = false;
-    }
+    } catch (error) { alert("Error: " + error.message); }
+    finally { btn.innerText = "Subir mi Actividad (PDF)"; btn.disabled = false; }
 }
 
 document.getElementById('btn-logout-student')?.addEventListener('click', () => {
