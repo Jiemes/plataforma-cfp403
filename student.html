@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v6.8.9 | CFP 403</title>
+    <title>Mi Aula Virtual v6.9.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.7.1">
-    <link rel="stylesheet" href="css/student.css?v=6.7.1">
+    <link rel="stylesheet" href="css/style.css?v=6.9.0">
+    <link rel="stylesheet" href="css/student.css?v=6.9.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -67,8 +67,10 @@
                 </div>
             </div>
             <div id="pdf-loader"
-                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                <p style="font-size: 0.9rem; color: #64748b;">⏳ Cargando material académico...</p>
+                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 80%; z-index: 5;">
+                <p style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">⌛ Cargando archivo...</p>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Si tarda demasiado, el archivo puede
+                    ser privado en Google Drive.</p>
             </div>
             <iframe id="pdf-viewer" src="" frameborder="0"
                 style="width:100%; height: calc(100% - 60px); position: relative; z-index: 2;"></iframe>
@@ -76,7 +78,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=6.8.7"></script>
+    <script src="js/student.js?v=6.9.0"></script>
 </body>
 
 </html>

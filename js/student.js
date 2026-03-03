@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v6.8.9 (Soporte Universal de PDFs)
+// Mi Aula Virtual - Lógica del Alumno v6.9.0 (Soporte Universal de PDFs)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -144,7 +144,7 @@ async function loadContent() {
 }
 
 /**
- * VISUALIZADOR DE PDF BLINDADO v6.8.9
+ * VISUALIZADOR DE PDF BLINDADO v6.9.0
  * Solución definitiva para bloqueos de Frame y Drive privado.
  */
 function visualizePdf(url, title) {
