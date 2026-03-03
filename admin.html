@@ -4,10 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v6.7.4 | CFP 403</title>
+    <title>Panel Administrativo v6.7.5 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.7.3">
-    <link rel="stylesheet" href="css/admin.css?v=6.7.3">
+    <link rel="stylesheet" href="css/style.css?v=6.7.5">
+    <link rel="stylesheet" href="css/admin.css?v=6.7.5">
+    <style>
+        .success-glow {
+            animation: successPulse 1.5s;
+        }
+
+        @keyframes successPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -204,7 +223,7 @@
         </div>
     </div>
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin.js?v=6.7.1"></script>
+    <script src="js/admin_v6.js?v=6.7.5"></script>
 </body>
 
 </html>

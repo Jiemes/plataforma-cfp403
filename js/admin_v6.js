@@ -1,4 +1,4 @@
-﻿// Administración CFP 403 - Lógica Inteligente 6.5
+﻿// Administración CFP 403 - Lógica Blindada v6.7.5 (Bypass de Caché)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -37,12 +37,8 @@ function refreshCounters() {
 function processAndClean(key) {
     const map = new Map();
     studentData[key].forEach(s => {
-        // Limpiar y validar Edad
         s.edad = cleanAge(s.edad, s.nacimiento);
-
-        if (!s.sexo || s.sexo.length < 1 || s.sexo === 'N/A' || s.sexo === 'O') {
-            s.sexo = guessGender(s.full_name);
-        }
+        if (!s.sexo || s.sexo.length < 1) s.sexo = guessGender(s.full_name);
         map.set(s.dni, s);
     });
     studentData[key] = Array.from(map.values()).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
@@ -51,31 +47,24 @@ function processAndClean(key) {
 function cleanAge(ageRaw, birthRaw) {
     if (!ageRaw && !birthRaw) return '??';
     let age = parseInt(String(ageRaw || '').replace(/\D/g, ''));
-
-    // Si la edad es absurda (ej: >100 o <10), intentar calcularla por nacimiento
     if (isNaN(age) || age < 10 || age > 95) {
         if (birthRaw) {
             try {
-                // Normalizar separadores y limpiar
                 let dateStr = String(birthRaw).trim().replace(/-/g, '/');
                 let birthDate;
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
-                    // Caso DD/MM/AAAA
                     if (parts[2].length === 4) birthDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00`);
-                    // Caso AAAA/MM/DD
                     else if (parts[0].length === 4) birthDate = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T12:00:00`);
                 }
-
                 if (!birthDate || isNaN(birthDate)) birthDate = new Date(dateStr);
-
                 if (birthDate && !isNaN(birthDate)) {
                     let hoy = new Date();
                     age = hoy.getFullYear() - birthDate.getFullYear();
                     let m = hoy.getMonth() - birthDate.getMonth();
                     if (m < 0 || (m === 0 && hoy.getDate() < birthDate.getDate())) age--;
                 }
-            } catch (e) { console.log("Error parseando fecha:", birthRaw); }
+            } catch (e) { }
         }
     }
     return (isNaN(age) || age < 10 || age > 95) ? '??' : age;
@@ -86,16 +75,14 @@ function guessGender(fullName) {
     const parts = fullName.split(',');
     const namePart = parts.length > 1 ? parts[1].trim() : parts[0].trim();
     const firstName = namePart.split(' ')[0].toUpperCase();
-
     const femaleNames = ['MARIA', 'ANA', 'ELENA', 'MARTA', 'LAURA', 'PAULA', 'LUCIA', 'SOFIA', 'JULIA', 'CARMEN', 'BELEN', 'MILAGROS', 'LOURDES', 'INES', 'ESTHER', 'ROSARIO', 'BEATRIZ', 'RAQUEL', 'VALENTINA', 'CONSTANZA', 'SABRINA', 'JAQUELINA', 'MARISOL', 'KARINA', 'MONICA', 'SILVIA', 'ANDREA', 'PATRICIA', 'ADRIANA', 'GRISELDA', 'CLAUDIA'];
     const femaleEndings = ['A', 'INA', 'ELA', 'IA', 'RA', 'ITH', 'IS', 'ETH'];
-
     if (femaleNames.includes(firstName)) return 'F';
     for (let end of femaleEndings) { if (firstName.endsWith(end)) return 'F'; }
     return 'M';
 }
 
-// DASHBOARD FILTRADO
+// DASHBOARD
 function updateDashboardView(type) {
     const title = document.getElementById('dashboard-view-title');
     let data = [];
@@ -118,20 +105,14 @@ function renderCharts(all) {
     const opt = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
-        }
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
     };
-
-    // Trabajo
     const trabaja = all.filter(s => s.trabajo_actual && !s.trabajo_actual.toUpperCase().includes('NO')).length;
     charts.trabajo = new Chart(document.getElementById('chart-trabajo'), {
         type: 'pie',
         data: { labels: ['Trabaja', 'No Trabaja'], datasets: [{ data: [trabaja, all.length - trabaja], backgroundColor: ['#00B9E8', '#e2e8f0'] }] },
         options: opt
     });
-
-    // Estudios
     const edu = {};
     all.forEach(s => { if (s.nivel_educativo) edu[s.nivel_educativo] = (edu[s.nivel_educativo] || 0) + 1; });
     charts.estudios = new Chart(document.getElementById('chart-estudios'), {
@@ -139,16 +120,12 @@ function renderCharts(all) {
         data: { labels: Object.keys(edu), datasets: [{ label: 'Alumnos', data: Object.values(edu), backgroundColor: '#00B9E8' }] },
         options: { ...opt, plugins: { legend: { display: false } } }
     });
-
-    // Sexo
     const sexo = { M: all.filter(s => s.sexo === 'M').length, F: all.filter(s => s.sexo === 'F').length };
     charts.sexo = new Chart(document.getElementById('chart-sexo'), {
         type: 'doughnut',
         data: { labels: ['Masculino', 'Femenino'], datasets: [{ data: [sexo.M, sexo.F], backgroundColor: ['#1e293b', '#FF6384'] }] },
         options: opt
     });
-
-    // Edad (MEJORADO)
     const ages = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0, 'Erróneo': 0 };
     all.forEach(s => {
         let a = parseInt(s.edad);
@@ -165,27 +142,23 @@ function renderCharts(all) {
     });
 }
 
-// TABLAS Y VACIADO
+// TABLAS
 async function showTable(course) {
     currentViewedCourse = course;
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     document.getElementById('table-section').classList.remove('hidden');
     document.getElementById('current-course-title').innerText = course === 'habilidades' ? 'Habilidades Digitales & IA' : 'Software & Videojuegos';
-
     const tbody = document.querySelector('#students-table tbody');
     tbody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
-
     try {
         const snapEnt = await db.collection('entregas').where('curso', '==', course).get();
         const entregas = snapEnt.docs.map(doc => doc.data());
         tbody.innerHTML = '';
-
         studentData[course].forEach(s => {
             const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const pend = eAlu.filter(e => e.estado === 'Pendiente');
             const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota), 0) / corr.length).toFixed(1) : '-';
-
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${s.full_name}</td>
@@ -196,9 +169,7 @@ async function showTable(course) {
                 <td style="text-align:center">${corr.length}</td>
                 <td style="text-align:center"><strong>${prom}</strong></td>
                 <td>
-                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">
-                        ${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}
-                    </button>
+                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}</button>
                     <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
                 </td>
             `;
@@ -208,7 +179,7 @@ async function showTable(course) {
 }
 
 async function deleteCourseData() {
-    if (!confirm(`¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse}? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse}?`)) return;
     try {
         const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
         const snap = await db.collection(coll).get();
@@ -220,7 +191,7 @@ async function deleteCourseData() {
     } catch (err) { alert("Error al vaciar: " + err.message); }
 }
 
-// EXCEL IMPORT - ULTRA TOLERANTE
+// EXCEL
 async function processExcel(file, type) {
     if (!file) return;
     const reader = new FileReader();
@@ -229,7 +200,6 @@ async function processExcel(file, type) {
             const data = new Uint8Array(e.target.result);
             const wb = XLSX.read(data, { type: 'array' });
             const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-
             const trans = json.map(r => {
                 const getVal = (patterns) => {
                     const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
@@ -237,18 +207,17 @@ async function processExcel(file, type) {
                 };
                 return {
                     dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
-                    email: String(getVal(['EMAIL', 'CORREO', 'DIRECCIÓN DE CORREO']) || '').trim(),
+                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
                     full_name: `${getVal(['APELLIDO']) || ''}, ${getVal(['NOMBRE']) || ''}`.toUpperCase().trim() || String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO']) || '').toUpperCase().trim(),
                     telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
                     nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
-                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN', 'TRABAJA?']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
                     busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
                     sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
                     edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
                     nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim()
                 };
             }).filter(s => s.dni.length > 5);
-
             if (trans.length === 0) return alert("No se encontraron datos válidos.");
             const batch = db.batch();
             const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
@@ -261,91 +230,76 @@ async function processExcel(file, type) {
     reader.readAsArrayBuffer(file);
 }
 
-// CRONOGRAMA AUTOMÁTICO - Lógica Inteligente 6.5
+// CRONOGRAMA - LÓGICA BLINDADA 6.7.5
 async function saveConfig() {
     const start = document.getElementById('course-start-date').value;
     const freq = parseInt(document.getElementById('course-frequency').value) || 7;
-
     if (!start) return alert("Debes ingresar al menos la fecha de inicio.");
-
     const btn = document.getElementById('btn-save-config');
-    const oldText = btn.innerText;
     btn.innerText = "⌛ Guardando...";
     btn.disabled = true;
-
     try {
         await db.collection('config_cursos').doc(currentClaseTab).set({
             fecha_inicio: start,
             frecuencia_dias: freq,
             actualizado: new Date().toISOString()
         }, { merge: true });
-
-        alert("¡Configuración base guardada con éxito!");
-        loadClasesAdmin();
-    } catch (err) {
-        alert("Error al guardar: " + err.message);
-    } finally {
-        btn.innerText = oldText;
-        btn.disabled = false;
-    }
+        alert("¡Configuración base guardada!");
+        await loadClasesAdmin();
+    } catch (err) { alert(err.message); }
+    finally { btn.innerText = "💾 Guardar Configuración Base"; btn.disabled = false; }
 }
 
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
-    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Cargando cronograma...</p>';
+    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">⌛ Sincronizando con la nube...</p>';
 
     try {
-        console.log("--- LOAD CLASES ADMIN ---");
-        console.log("Curso activo:", currentClaseTab);
-
+        console.log("--- ACTUALIZANDO VISTA ADMIN [" + currentClaseTab + "] ---");
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
-        const data = doc.exists ? doc.data() : {};
+        const data = doc.exists ? doc.data() : { materiales: {} };
 
-        // Fusión inteligente: Si hay datos en 'materials' y 'materiales', los combinamos
-        let materialesCombined = {};
-        if (data.materials) Object.assign(materialesCombined, data.materials);
-        if (data.materiales) Object.assign(materialesCombined, data.materiales);
+        // Fusión y limpieza de nombres de propiedad (materials -> materiales)
+        let materiales = {};
+        if (data.materials) Object.assign(materiales, data.materials);
+        if (data.materiales) Object.assign(materiales, data.materiales);
 
         const config = {
             fecha_inicio: data.fecha_inicio || '',
             frecuencia_dias: data.frecuencia_dias || 7,
-            materiales: materialesCombined,
+            materiales: materiales,
             welcome_url: data.welcome_url || '',
             syllabus_url: data.syllabus_url || '',
             excepciones: data.excepciones || []
         };
 
-        const materiales = config.materiales;
-        const exceptions = config.excepciones;
+        // Feedback visual de curso activo en el título
+        const badgeColor = currentClaseTab === 'habilidades' ? '#00B9E8' : '#1e293b';
+        const badgeLabel = currentClaseTab === 'habilidades' ? 'HABILIDADES' : 'VIDEOJUEGOS';
+        document.querySelector('#clases-section h3').innerHTML = `Listado de Clases y Actividades <span style="background:${badgeColor}; color:white; padding:3px 12px; border-radius:12px; font-size:0.75rem; margin-left:10px; vertical-align:middle;">${badgeLabel}</span>`;
 
-        console.log("Config recuperada y fusionada:", config);
-
-        // Feedback Visual: Mostrar qué curso estamos operando
-        const badge = `<span style="background:#00B9E8; color:white; padding:2px 10px; border-radius:10px; font-size:0.7rem; margin-left:10px; vertical-align:middle;">${currentClaseTab === 'habilidades' ? 'HABILIDADES' : 'VIDEOJUEGOS'}</span>`;
-        const titleCont = document.querySelector('#clases-section h3');
-        if (titleCont) titleCont.innerHTML = `Listado de Clases y Actividades ${badge}`;
-
-        // Llenar campos principales
+        // Llenar campos
         document.getElementById('course-start-date').value = config.fecha_inicio || '';
         document.getElementById('course-frequency').value = config.frecuencia_dias || 7;
-        document.getElementById('course-syllabus-url').value = config.syllabus_url ? "✅ Cargado (Programa)" : "";
-        document.getElementById('course-welcome-url').value = config.welcome_url ? "✅ Cargado (Bienvenida)" : "";
+        document.getElementById('course-syllabus-url').value = config.syllabus_url ? "✅ Programa Vinculado" : "";
+        document.getElementById('course-welcome-url').value = config.welcome_url ? "✅ Bienvenida Vinculada" : "";
+
+        // Estilos para botones generales
+        document.querySelector('button[onclick="manualUpload(\'welcome\')"]').className = `btn-primary ${config.welcome_url ? 'success-glow' : ''}`;
+        document.querySelector('button[onclick="manualUpload(\'syllabus\')"]').className = `btn-primary ${config.syllabus_url ? 'success-glow' : ''}`;
 
         cont.innerHTML = '';
-
         const startDate = config.fecha_inicio ? new Date(config.fecha_inicio + "T08:00:00-03:00") : null;
 
-        // Determinar cuántas semanas mostrar (al menos las que tienen archivos o la semana 1)
-        let maxWeekInFiles = 1;
+        let maxWeek = 1;
         Object.keys(materiales).forEach(k => {
             const num = parseInt(k.replace('sem_', ''));
-            if (num > maxWeekInFiles) maxWeekInFiles = num;
+            if (num > maxWeek) maxWeek = num;
         });
 
-        for (let i = 1; i <= Math.max(maxWeekInFiles, 1); i++) {
-            if (exceptions.includes(i)) continue;
-
+        for (let i = 1; i <= Math.max(maxWeek, 1); i++) {
+            if (config.excepciones.includes(i)) continue;
             let pubStatus = '📅 Sin fecha';
             let isPub = false;
             if (startDate) {
@@ -356,63 +310,88 @@ async function loadClasesAdmin() {
             }
 
             const mat = materiales[`sem_${i}`] || { clase: '', actividad: '' };
-
             const div = document.createElement('div');
-            div.className = 'clase-item-row card';
-            div.style = "display:grid; grid-template-columns: 100px 140px 1fr 1fr 50px; align-items:center; gap:15px; padding:15px; margin-bottom:12px; background:#fff;";
+            div.className = 'clase-item-row card success-glow-static';
+            div.style = "display:grid; grid-template-columns: 100px 140px 1fr 1fr 50px; align-items:center; gap:15px; padding:15px; margin-bottom:12px; background:#fff; border-radius:12px; border:1px solid #e2e8f0;";
             div.innerHTML = `
                 <div style="font-weight:700; color:#1e293b;">Semana ${i}</div>
                 <div class="status-pub ${isPub ? 'pub-active' : 'pub-soon'}" style="font-size:0.75rem;">${pubStatus}</div>
-                
                 <div>
                     <button class="btn-primary-sm ${mat.clase ? 'success' : ''}" onclick="manualUpload('clase', ${i})" style="width:100%;">
-                        ${mat.clase ? '✅ Clase Cargada' : '📁 Subir Clase'}
+                        ${mat.clase ? '✅ Clase OK' : '📁 Subir Clase'}
                     </button>
-                    ${mat.clase ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.clase}" target="_blank">Ver</a> | <a href="#" onclick="deleteSingleFile(${i}, 'clase')">Borrar</a></small>` : ''}
+                    ${mat.clase ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.clase}" target="_blank" style="color:#00B9E8; font-weight:700;">VER PDF</a> | <a href="#" onclick="deleteSingleFile(${i}, 'clase')" style="color:#ef4444;">BORRAR</a></small>` : ''}
                 </div>
-                
                 <div>
                     <button class="btn-primary-sm ${mat.actividad ? 'success' : ''}" onclick="manualUpload('actividad', ${i})" style="width:100%;">
-                        ${mat.actividad ? '✅ Actividad Cargada' : '📁 Subir Actividad'}
+                        ${mat.actividad ? '✅ Actividad OK' : '📁 Subir Actividad'}
                     </button>
-                    ${mat.actividad ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.actividad}" target="_blank">Ver</a> | <a href="#" onclick="deleteSingleFile(${i}, 'actividad')">Borrar</a></small>` : ''}
+                    ${mat.actividad ? `<small style="display:block; text-align:center; margin-top:5px;"><a href="${mat.actividad}" target="_blank" style="color:#00B9E8; font-weight:700;">VER PDF</a> | <a href="#" onclick="deleteSingleFile(${i}, 'actividad')" style="color:#ef4444;">BORRAR</a></small>` : ''}
                 </div>
-
                 <button class="btn-icon" onclick="deleteWeek(${i})" title="Ocultar semana">🗑️</button>
             `;
             cont.appendChild(div);
         }
 
         const addBtn = document.createElement('button');
-        addBtn.innerText = "➕ Agregar Nueva Semana";
+        addBtn.innerHTML = "➕ Agregar Semana Adicional";
         addBtn.className = "btn-secondary";
-        addBtn.style = "width:100%; margin-top:10px; padding:15px; border: 2px dashed #cbd5e1;";
-        addBtn.onclick = () => {
-            const next = maxWeekInFiles + 1;
-            const docRef = db.collection('config_cursos').doc(currentClaseTab);
-            const mats = { ...materiales };
-            mats[`sem_${next}`] = { clase: '', actividad: '' };
-            docRef.update({ materiales: mats }).then(() => loadClasesAdmin());
+        addBtn.style = "width:100%; margin-top:10px; padding:15px; border: 2px dashed #00B9E8; color:#00B9E8; background:rgba(0,185,232,0.05); cursor:pointer; font-weight:700; border-radius:12px;";
+        addBtn.onclick = async () => {
+            const next = maxWeek + 1;
+            const ref = db.collection('config_cursos').doc(currentClaseTab);
+            let updatedMats = { ...materiales };
+            updatedMats[`sem_${next}`] = { clase: '', actividad: '' };
+            await ref.update({ materiales: updatedMats });
+            loadClasesAdmin();
         };
         cont.appendChild(addBtn);
 
-        // Botón Peligro abajo
-        const dangerZone = document.createElement('div');
-        dangerZone.style = "margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;";
-        dangerZone.innerHTML = `<button class="btn-danger-outline" onclick="clearConfig()" style="font-size:0.8rem;">🗑️ Borrar TODA la configuración del curso</button>`;
-        cont.appendChild(dangerZone);
-
-    } catch (err) { console.error(err); }
+        console.log("--- VISTA ACTUALIZADA CON ÉXITO ---");
+    } catch (err) { console.error("Error cargando cronograma:", err); }
 }
 
+async function manualUpload(type, sem = null) {
+    if (!currentClaseTab) return alert("Selecciona un curso primero.");
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const fileName = file.name;
+            const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
+            const refStorage = storage.ref().child(storagePath);
 
-async function clearConfig() {
-    if (!confirm("¿Eliminar TODA la configuración (Drive, Fechas, Excepciones) de este curso?")) return;
-    try {
-        await db.collection('config_cursos').doc(currentClaseTab).delete();
-        alert("Configuración eliminada.");
-        location.reload();
-    } catch (e) { alert(e.message); }
+            alert(`🚀 Subiendo ${fileName}... Por favor espera el mensaje de confirmación.`);
+            await refStorage.put(file);
+            const fileUrl = await refStorage.getDownloadURL();
+
+            const docRef = db.collection('config_cursos').doc(currentClaseTab);
+            const snap = await docRef.get();
+            let currentData = snap.exists ? snap.data() : {};
+
+            let combined = {};
+            if (currentData.materials) Object.assign(combined, currentData.materials);
+            if (currentData.materiales) Object.assign(combined, currentData.materiales);
+
+            if (type === 'welcome') currentData.welcome_url = fileUrl;
+            else if (type === 'syllabus') currentData.syllabus_url = fileUrl;
+            else if (type === 'clase' || type === 'actividad') {
+                if (!combined[`sem_${sem}`]) combined[`sem_${sem}`] = {};
+                combined[`sem_${sem}`][type] = fileUrl;
+                currentData.materiales = combined;
+                delete currentData.materials; // Migración limpia
+            }
+
+            await docRef.set(currentData, { merge: true });
+            console.log("[STORAGE OK] URL registrada:", fileUrl);
+            alert("✅ ¡Archivo guardado y vinculado correctamente en la base de datos!");
+            await loadClasesAdmin();
+        } catch (err) { alert("Error crítico de carga: " + err.message); }
+    };
+    input.click();
 }
 
 function switchClaseType(type) {
@@ -423,12 +402,51 @@ function switchClaseType(type) {
     loadClasesAdmin();
 }
 
-// EVENTOS
+async function deleteWeek(num) {
+    if (!confirm(`¿Ocultar Semana ${num}?`)) return;
+    try {
+        const ref = db.collection('config_cursos').doc(currentClaseTab);
+        const doc = await ref.get();
+        const exc = doc.data()?.excepciones || [];
+        if (!exc.includes(num)) {
+            exc.push(num);
+            await ref.update({ excepciones: exc });
+            loadClasesAdmin();
+        }
+    } catch (e) { }
+}
+
+async function deleteSingleFile(sem, type) {
+    if (!confirm(`¿Eliminar ${type} de la Semana ${sem}?`)) return;
+    try {
+        const ref = db.collection('config_cursos').doc(currentClaseTab);
+        const doc = await ref.get();
+        const config = doc.data();
+        if (config.materiales && config.materiales[`sem_${sem}`]) {
+            delete config.materiales[`sem_${sem}`][type];
+            await ref.update({ materiales: config.materiales });
+            loadClasesAdmin();
+        }
+    } catch (e) { }
+}
+
+function initNotifications() {
+    if (notificationsListener) notificationsListener();
+    notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
+        const badge = document.getElementById('notif-count');
+        if (badge) {
+            if (snap.size > 0) { badge.innerText = snap.size; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+        }
+    });
+}
+
+// Iniciar
 document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
 document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
-document.getElementById('btn-logout')?.addEventListener('click', () => { if (confirm("¿Cerrar sesión?")) authFirebase.signOut().then(() => window.location.href = 'index.html'); });
+document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
 
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -448,113 +466,5 @@ document.querySelectorAll('.nav-link').forEach(link => {
         }
     });
 });
-
-async function deleteStudent(course, dni) {
-    if (!confirm("¿Eliminar alumno?")) return;
-    const coll = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-    await db.collection(coll).doc(dni).delete();
-    await loadStudentsFromFirebase();
-}
-
-// CARGA MANUAL INDIVIDUAL
-async function manualUpload(type, sem = null) {
-    if (!currentClaseTab) return alert("Selecciona un curso primero.");
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        try {
-            const fileName = file.name;
-            const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
-            const refStorage = storage.ref().child(storagePath);
-
-            console.log(`[ManualUpload] Subiendo a Storage: ${storagePath}`);
-            alert(`⏳ Cargando ${fileName}... No cierres la plataforma.`);
-
-            await refStorage.put(file);
-            const fileUrl = await refStorage.getDownloadURL();
-            console.log("[ManualUpload] URL obtenida:", fileUrl);
-
-            const docRef = db.collection('config_cursos').doc(currentClaseTab);
-            const snap = await docRef.get();
-            let currentData = snap.exists ? snap.data() : {};
-
-            // Fusionar materiales antiguos para no perder nada
-            let materialesCombined = {};
-            if (currentData.materials) Object.assign(materialesCombined, currentData.materials);
-            if (currentData.materiales) Object.assign(materialesCombined, currentData.materiales);
-
-            if (type === 'welcome') {
-                currentData.welcome_url = fileUrl;
-            } else if (type === 'syllabus') {
-                currentData.syllabus_url = fileUrl;
-            } else if (type === 'clase' || type === 'actividad') {
-                if (!materialesCombined[`sem_${sem}`]) materialesCombined[`sem_${sem}`] = {};
-                materialesCombined[`sem_${sem}`][type] = fileUrl;
-            }
-
-            // Guardar siempre como 'materiales' y limpiar el typo viejo
-            currentData.materiales = materialesCombined;
-            if (currentData.materials) delete currentData.materials;
-
-            console.log("[ManualUpload] Registrando en Firestore:", currentData);
-            await docRef.set(currentData, { merge: true });
-
-            console.log("[ManualUpload] Sincronización completa.");
-            alert("✅ ¡Archivo cargado con éxito!");
-            await loadClasesAdmin();
-        } catch (err) {
-            console.error("[ManualUpload] ERROR:", err);
-            alert("Error al cargar: " + err.message);
-        }
-    };
-    input.click();
-}
-
-async function deleteWeek(weekNum) {
-    if (!confirm(`¿Ocultar la Semana ${weekNum} de este curso?`)) return;
-    try {
-        const ref = db.collection('config_cursos').doc(currentClaseTab);
-        const doc = await ref.get();
-        const exceptions = doc.data()?.excepciones || [];
-        if (!exceptions.includes(weekNum)) {
-            exceptions.push(weekNum);
-            await ref.update({ excepciones: exceptions });
-            console.log(`Semana ${weekNum} ocultada.`);
-            loadClasesAdmin();
-        }
-    } catch (e) { alert(e.message); }
-}
-
-async function deleteSingleFile(semana, tipo) {
-    if (!confirm(`¿Eliminar el archivo de ${tipo} de la Semana ${semana}?`)) return;
-    try {
-        const ref = db.collection('config_cursos').doc(currentClaseTab);
-        const doc = await ref.get();
-        const config = doc.data();
-        if (config.materiales && config.materiales[`sem_${semana}`]) {
-            delete config.materiales[`sem_${semana}`][tipo];
-            await ref.update({ materiales: config.materiales });
-            loadClasesAdmin();
-        }
-    } catch (e) { alert(e.message); }
-}
-
-function initNotifications() {
-    if (notificationsListener) notificationsListener();
-    notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
-        const badge = document.getElementById('notif-count');
-        if (badge) {
-            if (snap.size > 0) {
-                badge.innerText = snap.size;
-                badge.classList.remove('hidden');
-            } else { badge.classList.add('hidden'); }
-        }
-    });
-}
 
 loadStudentsFromFirebase();
