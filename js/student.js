@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v6.8.7 (Visualizador PDF Blindado)
+// Mi Aula Virtual - Lógica del Alumno v6.8.8 (Soporte Universal de PDFs)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -140,15 +140,15 @@ async function loadContent() {
             weeksContainer.appendChild(card);
         });
 
-        if (weeksContainer.innerHTML === '') {
-            weeksContainer.innerHTML = '<p class="empty-msg">Aún no hay contenidos liberados para tu fecha.</p>';
-        }
-
     } catch (e) { console.error(e); }
 }
 
+/**
+ * VISUALIZADOR DE PDF BLINDADO v6.8.8
+ * Utiliza Google Docs Viewer para forzar la visualización incluso en sitios con bloqueo de framing.
+ */
 function visualizePdf(url, title) {
-    if (!url) return alert("El material solicitado aún no ha sido cargado por el docente.");
+    if (!url) return alert("El material solicitado aún no ha sido cargado.");
 
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
@@ -156,30 +156,41 @@ function visualizePdf(url, title) {
     const externalLink = document.getElementById('pdf-external-link');
     const loader = document.getElementById('pdf-loader');
 
-    // Preparar visor
+    // 1. Resetear estado
     viewer.src = "about:blank";
+    viewer.style.visibility = "hidden"; // Ocultar hasta cargar para que el loader se vea
     if (loader) loader.style.display = "block";
     if (titleEl) titleEl.innerText = title;
     if (externalLink) externalLink.href = url;
 
     modal.classList.remove('hidden');
 
-    let embedUrl = url;
-    // Conversión inteligente Google Drive
+    let embedUrl = "";
+
+    // 2. Lógica de Enlace Inteligente
     if (url.includes('drive.google.com')) {
+        // Para Google Drive usamos su propio /preview que es muy estable
         let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        if (idMatch) fileId = idMatch[1];
-        if (fileId) embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    } else if (!url.toLowerCase().endsWith('.pdf')) {
+        fileId = idMatch ? idMatch[1] : "";
+        embedUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
+    } else {
+        // PARA TODO LO DEMÁS (incluyendo PDFs directos), usamos el motor de Google Docs 
+        // para "saltar" las protecciones de servidor X-Frame-Options: DENY
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
-    // Ocultar loader al cargar
-    viewer.onload = () => { if (loader) loader.style.display = "none"; };
+    // 3. Control de Carga
+    viewer.onload = () => {
+        if (loader) loader.style.display = "none";
+        viewer.style.visibility = "visible";
+    };
 
-    // Fallback de seguridad (5 seg)
-    setTimeout(() => { if (loader) loader.style.display = "none"; }, 5000);
+    // Fallback por si Google Docs demora (3 seg para mostrar el frame)
+    setTimeout(() => {
+        if (loader) loader.style.display = "none";
+        viewer.style.visibility = "visible";
+    }, 3500);
 
     viewer.src = embedUrl;
 }
