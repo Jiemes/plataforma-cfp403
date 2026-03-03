@@ -1,4 +1,4 @@
-﻿// Administración CFP 403 - Lógica Blindada v6.8.0 (Bypass CORS + Link Manual)
+﻿// Administración CFP 403 - Lógica Blindada v6.8.1 (Restauración de Tablas + Link Manual)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -104,22 +104,145 @@ function renderCharts(all) {
     if (!all || all.length === 0) return;
     Object.values(charts).forEach(c => c.destroy());
     const opt = { responsive: true, maintainAspectRatio: false };
+
     const trabaja = all.filter(s => s.trabajo_actual && !s.trabajo_actual.toUpperCase().includes('NO')).length;
     charts.trabajo = new Chart(document.getElementById('chart-trabajo'), {
         type: 'pie',
         data: { labels: ['Trabaja', 'No Trabaja'], datasets: [{ data: [trabaja, all.length - trabaja], backgroundColor: ['#10b981', '#f1f5f9'] }] },
         options: opt
     });
-    const edu = {};
-    all.forEach(s => { if (s.nivel_educativo) edu[s.nivel_educativo] = (edu[s.nivel_educativo] || 0) + 1; });
+
+    const eduLabels = ['SECUNDARIO', 'TERCIARIO', 'UNIVERSITARIO', 'PRIMARIO'];
+    const eduValues = eduLabels.map(label => all.filter(s => (s.nivel_educativo || '').toUpperCase().includes(label)).length);
     charts.estudios = new Chart(document.getElementById('chart-estudios'), {
         type: 'bar',
-        data: { labels: Object.keys(edu), datasets: [{ label: 'Alumnos', data: Object.values(edu), backgroundColor: '#00B9E8' }] },
+        data: { labels: eduLabels, datasets: [{ label: 'Alumnos', data: eduValues, backgroundColor: '#00B9E8' }] },
+        options: opt
+    });
+
+    const sexo = { M: all.filter(s => s.sexo === 'M').length, F: all.filter(s => s.sexo === 'F').length };
+    charts.sexo = new Chart(document.getElementById('chart-sexo'), {
+        type: 'doughnut',
+        data: { labels: ['Masculino', 'Femenino'], datasets: [{ data: [sexo.M, sexo.F], backgroundColor: ['#1e293b', '#FF6384'] }] },
+        options: opt
+    });
+
+    const ages = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0, 'Erróneo': 0 };
+    all.forEach(s => {
+        let a = parseInt(s.edad);
+        if (isNaN(a)) ages['Erróneo']++;
+        else if (a <= 25) ages['18-25']++;
+        else if (a <= 35) ages['26-35']++;
+        else if (a <= 45) ages['36-45']++;
+        else ages['46+']++;
+    });
+    charts.edades = new Chart(document.getElementById('chart-edades'), {
+        type: 'bar',
+        data: { labels: Object.keys(ages), datasets: [{ label: 'Alumnos', data: Object.values(ages), backgroundColor: '#1e293b' }] },
         options: opt
     });
 }
 
-// CRONOGRAMA v6.8.0
+// TABLAS DE ALUMNOS
+async function showTable(course) {
+    currentViewedCourse = course;
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.getElementById('table-section').classList.remove('hidden');
+    document.getElementById('current-course-title').innerText = course === 'habilidades' ? 'Habilidades Digitales & IA' : 'Software & Videojuegos';
+
+    const tbody = document.querySelector('#students-table tbody');
+    tbody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+
+    try {
+        const snapEnt = await db.collection('entregas').where('curso', '==', course).get();
+        const entregas = snapEnt.docs.map(doc => doc.data());
+        tbody.innerHTML = '';
+
+        studentData[course].forEach(s => {
+            const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
+            const corr = eAlu.filter(e => e.estado === 'Calificado');
+            const pend = eAlu.filter(e => e.estado === 'Pendiente');
+            const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota), 0) / corr.length).toFixed(1) : '-';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${s.full_name}</td>
+                <td>${s.dni}</td>
+                <td>${s.telefono || '---'}</td>
+                <td>${s.email}</td>
+                <td style="text-align:center">${s.edad}</td>
+                <td style="text-align:center">${corr.length}</td>
+                <td style="text-align:center"><strong>${prom}</strong></td>
+                <td>
+                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}</button>
+                    <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) { console.error(err); }
+}
+
+async function deleteStudent(course, dni) {
+    if (!confirm("¿Eliminar alumno?")) return;
+    const coll = course === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+    await db.collection(coll).doc(dni).delete();
+    await loadStudentsFromFirebase();
+}
+
+async function deleteCourseData() {
+    if (!confirm(`¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse}?`)) return;
+    try {
+        const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+        const snap = await db.collection(coll).get();
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        alert("Lista vaciada correctamente.");
+        await loadStudentsFromFirebase();
+    } catch (err) { alert("Error al vaciar: " + err.message); }
+}
+
+// EXCEL
+async function processExcel(file, type) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            const trans = json.map(r => {
+                const getVal = (patterns) => {
+                    const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
+                    return key ? r[key] : '';
+                };
+                return {
+                    dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
+                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
+                    full_name: `${getVal(['APELLIDO']) || ''}, ${getVal(['NOMBRE']) || ''}`.toUpperCase().trim() || String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO']) || '').toUpperCase().trim(),
+                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                    nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
+                    busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
+                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
+                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                    nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim()
+                };
+            }).filter(s => s.dni.length > 5);
+            if (trans.length === 0) return alert("No se encontraron datos válidos.");
+            const batch = db.batch();
+            const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+            trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
+            await batch.commit();
+            alert("¡Importación exitosa!");
+            loadStudentsFromFirebase();
+        } catch (err) { alert("Error al procesar: " + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// CRONOGRAMA v6.8.1
 async function loadClasesAdmin() {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
@@ -128,8 +251,6 @@ async function loadClasesAdmin() {
     try {
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
         const data = doc.exists ? doc.data() : { materiales: {} };
-
-        // Fusión materials/materiales
         let materiales = {};
         if (data.materials) Object.assign(materiales, data.materials);
         if (data.materiales) Object.assign(materiales, data.materiales);
@@ -143,21 +264,15 @@ async function loadClasesAdmin() {
             excepciones: data.excepciones || []
         };
 
-        // UI Titulo
         const badgeColor = currentClaseTab === 'habilidades' ? '#10b981' : '#1e293b';
         document.querySelector('#clases-section h3').innerHTML = `Listado de Clases y Actividades <span style="background:${badgeColor}; color:white; padding:2px 10px; border-radius:10px; font-size:0.7rem;">${currentClaseTab === 'habilidades' ? 'HABILIDADES' : 'VIDEOJUEGOS'}</span>`;
 
         document.getElementById('course-start-date').value = config.fecha_inicio;
         document.getElementById('course-frequency').value = config.frecuencia_dias;
-
-        // Bienvenida/Programa con inputs editables para links
         document.getElementById('course-welcome-url').value = config.welcome_url;
         document.getElementById('course-welcome-url').readOnly = false;
-        document.getElementById('course-welcome-url').placeholder = "Pega link o sube PDF";
-
         document.getElementById('course-syllabus-url').value = config.syllabus_url;
         document.getElementById('course-syllabus-url').readOnly = false;
-        document.getElementById('course-syllabus-url').placeholder = "Pega link o sube PDF";
 
         cont.innerHTML = '';
         let maxWeek = 1;
@@ -184,7 +299,6 @@ async function loadClasesAdmin() {
                             <input type="text" id="link-clase-${i}" value="${mat.clase || ''}" placeholder="Pega link..." style="flex-grow:1; padding:8px; border-radius:8px; border:1px solid #cbd5e1;">
                             <button class="btn-primary-sm" onclick="manualUpload('clase', ${i})" title="Subir desde PC">📁</button>
                         </div>
-                        ${mat.clase ? `<small><a href="${mat.clase}" target="_blank">🔗 Ver Archivo</a></small>` : ''}
                     </div>
                     <div>
                         <label style="font-size:0.8rem; font-weight:700;">Actividad (Link o Subida)</label>
@@ -192,10 +306,9 @@ async function loadClasesAdmin() {
                             <input type="text" id="link-act-${i}" value="${mat.actividad || ''}" placeholder="Pega link..." style="flex-grow:1; padding:8px; border-radius:8px; border:1px solid #cbd5e1;">
                             <button class="btn-primary-sm" onclick="manualUpload('actividad', ${i})" title="Subir desde PC">📁</button>
                         </div>
-                        ${mat.actividad ? `<small><a href="${mat.actividad}" target="_blank">🔗 Ver Archivo</a></small>` : ''}
                     </div>
                 </div>
-                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:10px; width:100%; font-size:0.8rem; background:#64748b;">💾 Guardar Links Semana ${i}</button>
+                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:10px; width:100%; font-size:0.8rem; background:#64748b;">💾 Guardar Semana ${i}</button>
             `;
             cont.appendChild(div);
         }
@@ -213,7 +326,6 @@ async function loadClasesAdmin() {
             loadClasesAdmin();
         };
         cont.appendChild(addBtn);
-
     } catch (e) { console.error(e); }
 }
 
@@ -236,7 +348,6 @@ async function saveConfig() {
     const freq = document.getElementById('course-frequency').value;
     const welcome = document.getElementById('course-welcome-url').value.trim();
     const syllabus = document.getElementById('course-syllabus-url').value.trim();
-
     try {
         await db.collection('config_cursos').doc(currentClaseTab).set({
             fecha_inicio: start,
@@ -257,27 +368,22 @@ async function manualUpload(type, sem = null) {
         const file = e.target.files[0];
         if (!file) return;
         try {
-            alert("🚀 Iniciando subida a Firebase Storage...");
+            alert("🚀 Subiendo a Storage...");
             const ref = storage.ref().child(`materiales/${currentClaseTab}/${Date.now()}_${file.name}`);
-            const task = await ref.put(file);
+            await ref.put(file);
             const url = await ref.getDownloadURL();
-
             if (sem) {
-                const docRef = db.collection('config_cursos').doc(currentClaseTab);
                 const up = {};
                 up[`materiales.sem_${sem}.${type}`] = url;
-                await docRef.update(up);
+                await db.collection('config_cursos').doc(currentClaseTab).update(up);
             } else {
                 const up = {};
                 up[type === 'welcome' ? 'welcome_url' : 'syllabus_url'] = url;
                 await db.collection('config_cursos').doc(currentClaseTab).update(up);
             }
-            alert("✅ Archivo subido y vinculado correctamente.");
+            alert("✅ ¡Éxito!");
             loadClasesAdmin();
-        } catch (err) {
-            console.error(err);
-            alert("❌ ERROR DE CARGA: " + err.message + "\n\nSi el error es de permisos o CORS, por favor usa la opción de 'Pegar Link' directamente.");
-        }
+        } catch (err) { alert("Error: " + err.message); }
     };
     input.click();
 }
@@ -300,6 +406,7 @@ async function deleteWeek(num) {
     } catch (e) { }
 }
 
+// NOTIFICACIONES Y MODALES
 function initNotifications() {
     db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
         const b = document.getElementById('notif-count');
@@ -310,8 +417,54 @@ function initNotifications() {
     });
 }
 
+function closeGradeModal() { document.getElementById('grade-modal').classList.add('hidden'); }
+
+async function viewWorks(dni) {
+    const modal = document.getElementById('grade-modal');
+    const listCont = document.getElementById('student-works-list');
+    modal.classList.remove('hidden');
+    listCont.innerHTML = 'Cargando trabajos...';
+    try {
+        const snap = await db.collection('entregas').where('alumno_dni', '==', dni).get();
+        listCont.innerHTML = snap.size === 0 ? 'No hay entregas.' : '';
+        snap.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'work-item';
+            div.style = "background:#f8fafc; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0;";
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Semana ${data.semana} - ${data.tipo.toUpperCase()}</strong>
+                        <p style="font-size:0.8rem; color:#64748b;">${new Date(data.fecha).toLocaleDateString()}</p>
+                    </div>
+                    <a href="${data.file_url}" target="_blank" class="btn-primary-sm" style="text-decoration:none;">Ver PDF</a>
+                </div>
+                <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                    <input type="number" id="nota-${doc.id}" value="${data.nota || ''}" placeholder="Nota" style="width:60px; padding:5px; border-radius:5px; border:1px solid #cbd5e1;">
+                    <button class="btn-primary-sm" onclick="saveGrade('${doc.id}')">Guardar</button>
+                    ${data.estado === 'Calificado' ? '✅' : '⏳'}
+                </div>
+            `;
+            listCont.appendChild(div);
+        });
+    } catch (e) { }
+}
+
+async function saveGrade(id) {
+    const nota = document.getElementById(`nota-${id}`).value;
+    if (!nota) return alert("Ingresa una nota.");
+    await db.collection('entregas').doc(id).update({ nota: nota, estado: 'Calificado' });
+    alert("Nota guardada.");
+}
+
 // UI HANDLERS
 document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
+document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
+document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
+document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
+document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
+
 document.querySelectorAll('.nav-link').forEach(l => {
     l.addEventListener('click', (e) => {
         e.preventDefault();
@@ -320,7 +473,8 @@ document.querySelectorAll('.nav-link').forEach(l => {
         l.classList.add('active');
         document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
         if (sec === 'clases') { document.getElementById('clases-section').classList.remove('hidden'); loadClasesAdmin(); }
-        else if (sec === 'dashboard') document.getElementById('dashboard-section').classList.remove('hidden');
+        else if (sec === 'dashboard') { document.getElementById('dashboard-section').classList.remove('hidden'); updateDashboardView('global'); }
+        else if (sec === 'habilidades' || sec === 'programacion') showTable(sec);
     });
 });
 
