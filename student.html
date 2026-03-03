@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v7.1.0 | CFP 403</title>
+    <title>Mi Aula Virtual v7.2.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=7.0.0">
@@ -19,15 +19,14 @@
 <body>
     <!-- 1. PANTALLA DE INICIO (Selector de Cursos) -->
     <div id="home-view" class="home-container animated-in">
-        <nav class="home-top-bar">
-            <img src="assets/CFP 403.png" alt="Logo CFP" class="home-logo-cfp">
-            <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="home-logo-gba">
-        </nav>
-
-        <header class="home-welcome">
-            <div class="welcome-card">
-                <h1 id="home-student-name">¡Hola!</h1>
-                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+        <header class="home-header-professional">
+            <div class="header-content-unified">
+                <img src="assets/CFP 403.png" alt="Logo CFP" class="header-logo-side">
+                <div class="header-center-info">
+                    <h1 id="home-student-name">¡Hola, Alumno!</h1>
+                    <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+                </div>
+                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-logo-side">
             </div>
         </header>
 
@@ -38,29 +37,29 @@
             </div>
             <div id="home-course-grid" class="course-grid">
                 <!-- Se poblará dinámicamente -->
-                <div class="loader">Cargando tus cursos...</div>
+                <div class="loader">Sincronizando información...</div>
             </div>
         </main>
 
         <footer class="home-footer">
-            <button id="btn-logout-home" class="btn-logout-lg">Cerrar Sesión Segura</button>
+            <button id="btn-logout-home" class="btn-logout-elegant">Cerrar Sesión Segura</button>
         </footer>
     </div>
 
     <!-- 2. VISTA DASHBOARD DEL CURSO -->
     <div id="course-view" class="student-layout hidden">
-        <nav class="course-nav">
+        <nav class="course-nav-compact">
             <div class="nav-left">
-                <button id="btn-back-home" class="btn-back-simple">
-                    <span>← Volver</span>
+                <button id="btn-back-home" class="btn-back-minimal">
+                    <span>←</span> Inicio
                 </button>
-                <img src="assets/CFP 403.png" alt="Logo CFP" class="nav-logo-sm">
+                <img src="assets/CFP 403.png" alt="Logo CFP" class="nav-logo-tiny">
             </div>
-            <div class="nav-center">
-                <span id="nav-course-name">Curso</span>
+            <div class="nav-middle">
+                <span id="nav-course-name">Curso Actual</span>
             </div>
             <div class="nav-right">
-                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="nav-logo-sm">
+                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="nav-logo-tiny">
             </div>
         </nav>
 
@@ -112,7 +111,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=7.1.0"></script>
+    <script src="js/student.js?v=7.2.0"></script>
 </body>
 
 </html>

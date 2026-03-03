@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v7.1.0 (Corrección de carga y diseño unificado)
+// Mi Aula Virtual - Lógica del Alumno v7.2.0 (Armonía Visual + Fix Carga de Datos)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -6,7 +6,10 @@ if (!studentSession) { window.location.href = 'index.html'; }
 
 function initStudentDashboard() {
     const homeName = document.getElementById('home-student-name');
-    if (homeName) homeName.innerText = `¡Hola, ${studentSession.nombre.split(' ')[0]}!`;
+    if (homeName) {
+        const nombre = studentSession.nombre.split(',')[1] || studentSession.nombre.split(' ')[0];
+        homeName.innerText = `¡Hola, ${nombre.trim()}!`;
+    }
 
     const grid = document.getElementById('home-course-grid');
     if (!grid) return;
@@ -18,8 +21,8 @@ function initStudentDashboard() {
         card.innerHTML = `
             <div class="course-icon">${curso.id === 'habilidades' ? '💻' : '🚀'}</div>
             <h3>${curso.nombre}</h3>
-            <p style="font-size:0.95rem; color:#64748b; margin-bottom:20px;">Accede a tus materiales de estudio y actividades prácticas semanalmente.</p>
-            <button class="btn-enter-course">INGRESAR AHORA</button>
+            <p style="font-size:0.95rem; color:#64748b; margin-bottom:25px;">Explora tus contenidos semanales y envía tus actividades.</p>
+            <button class="btn-enter-course">INGRESAR AL CURSO</button>
         `;
         card.onclick = () => selectCourse(curso.id, curso.nombre);
         grid.appendChild(card);
@@ -44,18 +47,17 @@ function backToHome() {
 async function loadContent() {
     try {
         const weeksContainer = document.getElementById('weeks-container');
-        weeksContainer.innerHTML = '<div style="text-align:center; padding:50px;"><p style="font-size:1.1rem; color:#64748b;">⏳ Cargando contenidos académicos...</p></div>';
+        weeksContainer.innerHTML = '<div style="text-align:center; padding:50px;"><p style="font-size:1.1rem; color:#64748b;">⌛ Sincronizando tu aula virtual...</p></div>';
 
         const configSnap = await db.collection('config_cursos').doc(currentCourseId).get();
         if (!configSnap.exists) {
-            weeksContainer.innerHTML = '<p class="empty-msg" style="color:#1e293b; background:white;">El curso aún no ha sido configurado en el sistema.</p>';
+            weeksContainer.innerHTML = '<p class="empty-msg" style="color:#1e293b; background:white;">El curso no tiene materiales cargados aún.</p>';
             return;
         }
 
         const config = configSnap.data();
-        let materiales = {};
-        if (config.materiales) Object.assign(materiales, config.materiales);
-        else if (config.materials) Object.assign(materiales, config.materials);
+        // UNIFICACIÓN DE CAMPOS: materiales vs materials
+        let materiales = config.materiales || config.materials || {};
 
         const entregasSnap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
@@ -65,49 +67,52 @@ async function loadContent() {
 
         weeksContainer.innerHTML = '';
         const hoy = new Date();
+        hoy.setHours(23, 59, 59, 999); // Tolerancia para liberación en el mismo día
 
-        // 1. BIENVENIDA Y PROGRAMA (Corregido: Forzar visibilidad)
+        // 1. BIENVENIDA Y PROGRAMA (Detección Ultra-Robusta)
         const matInicio = materiales['inicio'] || {};
-        const welcomeUrl = matInicio.welcome || config.welcome_url;
-        const syllabusUrl = matInicio.syllabus || config.syllabus_url;
-        const fInicioStr = matInicio.fecha || config.fecha_inicio;
+        const welcomeUrl = matInicio.welcome || config.welcome_url || config.welcome;
+        const syllabusUrl = matInicio.syllabus || config.syllabus_url || config.syllabus;
+        const fInicioStr = matInicio.fecha || config.fecha_inicio || config.fecha;
 
+        let shouldShowInicio = false;
         if (fInicioStr) {
             const fInicio = new Date(fInicioStr + "T00:00:00");
-            if (hoy >= fInicio) {
-                const introCard = document.createElement('div');
-                introCard.className = 'week-card animated-in';
-                introCard.innerHTML = `
-                    <div class="week-header"><h3>📚 Bienvenida y Programa</h3></div>
-                    <div class="week-body">
-                        ${welcomeUrl ? `
-                            <div class="content-item" onclick="visualizePdf('${welcomeUrl}', 'Bienvenida')">
-                                <span class="icon">👋</span>
-                                <div class="item-info"><strong>Mensaje de Bienvenida</strong><p>Haga clic para ver el mensaje inicial</p></div>
-                            </div>
-                        ` : ''}
-                        ${syllabusUrl ? `
-                            <div class="content-item" onclick="visualizePdf('${syllabusUrl}', 'Programa Académico')">
-                                <span class="icon">📋</span>
-                                <div class="item-info"><strong>Programa del Curso</strong><p>Contenidos y objetivos del año</p></div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-                weeksContainer.appendChild(introCard);
-            }
+            if (hoy >= fInicio) shouldShowInicio = true;
+        } else if (welcomeUrl || syllabusUrl) {
+            shouldShowInicio = true; // Si hay archivos y no hay fecha, se muestra
         }
 
-        // 2. SEMANAS LIBERADAS (Corregido: Mapeo de claves)
-        const exceptions = config.excepciones || [];
-        // Detectamos si las claves son "sem_X" o "semana_X"
+        if (shouldShowInicio) {
+            const introCard = document.createElement('div');
+            introCard.className = 'week-card animated-in opened'; // Forzado abierto
+            introCard.innerHTML = `
+                <div class="week-header"><h3>📚 Bienvenida y Programa</h3></div>
+                <div class="week-body" style="display:flex;">
+                    ${welcomeUrl ? `
+                        <div class="content-item" onclick="visualizePdf('${welcomeUrl}', 'Bienvenida')">
+                            <span class="icon">👋</span>
+                            <div class="item-info"><strong>Mensaje de Bienvenida</strong><p>Haga clic para leer</p></div>
+                        </div>
+                    ` : '<p style="font-size:0.8rem; color:#94a3b8; padding:10px;">⌛ Bienvenida pendiente de carga</p>'}
+                    ${syllabusUrl ? `
+                        <div class="content-item" onclick="visualizePdf('${syllabusUrl}', 'Programa Académico')">
+                            <span class="icon">📋</span>
+                            <div class="item-info"><strong>Programa del Curso</strong><p>Haga clic para ver objetivos</p></div>
+                        </div>
+                    ` : '<p style="font-size:0.8rem; color:#94a3b8; padding:10px;">⌛ Programa pendiente de carga</p>'}
+                </div>
+            `;
+            weeksContainer.appendChild(introCard);
+        }
+
+        // 2. SEMANAS (Orden Inverso)
         let weeksKeys = Object.keys(materiales)
             .filter(k => k.startsWith('sem_'))
             .map(k => parseInt(k.replace('sem_', '')))
             .sort((a, b) => b - a);
 
         weeksKeys.forEach(i => {
-            if (exceptions.includes(i)) return;
             const mat = materiales[`sem_${i}`] || {};
             const fechaLibStr = mat.fecha;
             if (!fechaLibStr) return;
@@ -117,28 +122,30 @@ async function loadContent() {
 
             const entrega = entregas.find(e => e.semana === i);
             const card = document.createElement('div');
-            card.className = 'week-card animated-in';
+            card.className = `week-card animated-in ${i === weeksKeys[0] ? 'opened' : ''}`;
             card.innerHTML = `
-                <div class="week-header" onclick="this.classList.toggle('opened')">
+                <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>Semana ${i}</h3>
-                    <span class="badge" style="background:#dcfce7; color:#166534; padding:5px 12px; border-radius:15px; font-size:0.75rem; font-weight:700;">CONTENIDO DISPONIBLE</span>
+                    <span class="badge" style="background:#00B9E8; color:white; padding:4px 10px; border-radius:10px; font-size:0.7rem;">LIBERADO</span>
                 </div>
                 <div class="week-body">
-                    <div class="content-item" onclick="visualizePdf('${mat.clase || ''}', 'Clase Semana ${i}')">
-                        <span class="icon">📖</span>
-                        <div class="item-info"><strong>Material Teórico ${i}</strong><p>Lectura recomendada del docente</p></div>
-                    </div>
-                    <div class="content-item" onclick="visualizePdf('${mat.actividad || ''}', 'Actividad Semana ${i}')">
-                        <span class="icon">🛠️</span>
-                        <div class="item-info"><strong>Consigna Práctica ${i}</strong><p>Actividad para realizar y entregar</p></div>
-                    </div>
+                    ${mat.clase ? `
+                        <div class="content-item" onclick="visualizePdf('${mat.clase}', 'Clase Semana ${i}')">
+                            <span class="icon">📖</span>
+                            <div class="item-info"><strong>Clase ${i}</strong><p>Material teórico</p></div>
+                        </div>
+                    ` : ''}
+                    ${mat.actividad ? `
+                        <div class="content-item" onclick="visualizePdf('${mat.actividad}', 'Actividad Semana ${i}')">
+                            <span class="icon">🛠️</span>
+                            <div class="item-info"><strong>Actividad ${i}</strong><p>Consigna práctica</p></div>
+                        </div>
+                    ` : ''}
                     <div class="delivery-area">
-                        <p style="font-size:0.9rem; margin-bottom:15px; color:#475569;">
-                            <strong>Estado de Entrega:</strong> ${entrega ? '✅ Recibido' : '⌛ Pendiente de entrega'}
-                        </p>
+                        <p style="font-size:0.85rem; margin-bottom:12px; font-weight:600;">Estado: ${entrega ? '✅ Trabajo Entregado' : '⌛ Pendiente de Entrega'}</p>
                         <input type="file" id="file-${i}" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
                         <button class="btn-upload" onclick="document.getElementById('file-${i}').click()">
-                            ${entrega ? 'ACTUALIZAR ENTREGA (PDF)' : 'SUBIR MI TRABAJO (PDF)'}
+                            ${entrega ? 'RE-ENVIAR ACTIVIDAD' : 'SUBIR MI TRABAJO (PDF)'}
                         </button>
                     </div>
                 </div>
@@ -147,14 +154,17 @@ async function loadContent() {
         });
 
         if (weeksContainer.innerHTML === '') {
-            weeksContainer.innerHTML = '<div class="empty-msg" style="background:white; color:#64748b; border:1px solid #e2e8f0;">No hay contenidos liberados para tu perfil actualmente.</div>';
+            weeksContainer.innerHTML = '<div class="empty-msg" style="padding:40px; text-align:center; background:white; border-radius:20px; color:#64748b;">No hay materiales disponibles para esta fecha.</div>';
         }
 
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("Error al cargar contenidos:", e);
+        alert("Hubo un error de sincronización. Por favor, refresca la página.");
+    }
 }
 
 function visualizePdf(url, title) {
-    if (!url || url === 'undefined') return alert("El docente aún no ha cargado este archivo.");
+    if (!url || url === 'undefined' || url === '') return alert("El archivo aún no ha sido vinculado por el administrador.");
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
     const titleEl = document.getElementById('pdf-title');
@@ -174,12 +184,10 @@ function visualizePdf(url, title) {
     if (url.includes('drive.google.com')) {
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
         if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
-    } else if (!url.toLowerCase().endsWith('.pdf')) {
-        finalUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
     viewer.onload = () => { if (loader) loader.style.display = "none"; viewer.style.visibility = "visible"; };
-    setTimeout(() => { viewer.style.visibility = "visible"; }, 4000);
+    setTimeout(() => { viewer.style.visibility = "visible"; }, 5000); // Mayor margen de espera
     viewer.src = finalUrl;
 }
 
@@ -189,7 +197,7 @@ async function uploadHomework(semana) {
     if (!file) return;
     const btn = fileInput.nextElementSibling;
     try {
-        btn.innerText = "⏳ Enviando archivo...";
+        btn.innerText = "⏳ Subiendo...";
         btn.disabled = true;
         const path = `entregas/${studentSession.dni}/${currentCourseId}/Semana_${semana}/${Date.now()}_${file.name}`;
         const ref = storage.ref().child(path);
@@ -211,14 +219,17 @@ async function uploadHomework(semana) {
         if (!q.empty) await db.collection('entregas').doc(q.docs[0].id).update(data);
         else await db.collection('entregas').add(data);
 
-        alert("✅ ¡Tu actividad ha sido enviada correctamente!");
+        alert("✅ ¡Tarea enviada correctamente!");
         loadContent();
-    } catch (error) { alert("Error al subir: " + error.message); }
+    } catch (error) { alert("Error: " + error.message); }
     finally { btn.innerText = "SUBIR MI TRABAJO (PDF)"; btn.disabled = false; }
 }
 
 document.getElementById('btn-logout-home')?.addEventListener('click', () => { localStorage.removeItem('user_session'); window.location.href = 'index.html'; });
 document.getElementById('btn-back-home')?.addEventListener('click', backToHome);
-document.getElementById('close-pdf')?.addEventListener('click', () => { document.getElementById('pdf-modal').classList.add('hidden'); document.getElementById('pdf-viewer').src = "about:blank"; });
+document.getElementById('close-pdf')?.addEventListener('click', () => {
+    document.getElementById('pdf-modal').classList.add('hidden');
+    document.getElementById('pdf-viewer').src = "about:blank";
+});
 
 initStudentDashboard();
