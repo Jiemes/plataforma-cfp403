@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v7.2.0 | CFP 403</title>
+    <title>Mi Aula Virtual v7.3.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7.0.0">
-    <link rel="stylesheet" href="css/student.css?v=7.0.0">
+    <link rel="stylesheet" href="css/style.css?v=7.3.0">
+    <link rel="stylesheet" href="css/student.css?v=7.3.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -36,7 +36,6 @@
                 <h2>Mis Cursos</h2>
             </div>
             <div id="home-course-grid" class="course-grid">
-                <!-- Se poblará dinámicamente -->
                 <div class="loader">Sincronizando información...</div>
             </div>
         </main>
@@ -46,7 +45,7 @@
         </footer>
     </div>
 
-    <!-- 2. VISTA DASHBOARD DEL CURSO -->
+    <!-- 2. VISTA DASHBOARD DEL CURSO (Layuot Dividido v7.3.0) -->
     <div id="course-view" class="student-layout hidden">
         <nav class="course-nav-compact">
             <div class="nav-left">
@@ -63,55 +62,60 @@
             </div>
         </nav>
 
-        <header class="course-header">
-            <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-gba-logo">
-            <div class="header-text">
-                <h1 id="course-title">Cargando...</h1>
-                <p>Tu espacio de aprendizaje semanal.</p>
-            </div>
-        </header>
-
-        <main class="student-content">
-            <div class="week-list" id="weeks-container">
-                <div class="loading-spinner">Organizando material...</div>
-            </div>
-        </main>
-    </div>
-
-    <!-- MODAL VISUALIZADOR PDF -->
-    <div id="pdf-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header-pdf"
-                style="padding: 15px 25px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
-                <h3 id="pdf-title" style="font-size: 1rem; color: #1e293b; font-weight:800;">Material de Clase</h3>
-                <div style="display:flex; gap:15px; align-items:center;">
-                    <a id="pdf-external-link" href="#" target="_blank"
-                        style="font-size:0.85rem; color: #00B9E8; text-decoration:none; font-weight:700;">🔗 Abrir
-                        Externamente</a>
-                    <span class="close-modal" id="close-pdf" style="cursor:pointer; font-size: 28px;">&times;</span>
+        <div class="split-container">
+            <!-- Columna Izquierda: Contenidos -->
+            <aside class="sidebar-content" id="sidebar-content">
+                <header class="course-header-mini">
+                    <div class="header-text-mini">
+                        <h1 id="course-title">Curso</h1>
+                        <p>Materiales y actividades</p>
+                    </div>
+                </header>
+                <div class="student-content-scroll">
+                    <div class="week-list" id="weeks-container">
+                        <div class="loading-spinner">Cargando material...</div>
+                    </div>
                 </div>
-            </div>
+            </aside>
 
-            <div id="pdf-loader"
-                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 85%; z-index: 5;">
-                <div
-                    style="background:white; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border:1px solid #e2e8f0;">
-                    <p style="font-size: 1.25rem; color: #1e293b; font-weight: 800;">⌛ Procesando archivo...</p>
-                    <p style="font-size: 0.9rem; color: #64748b; margin-top: 10px;">Si el navegador lo bloquea, usa el
-                        botón de abajo para verlo en una pestaña nueva.</p>
-                    <a id="pdf-retry-btn" href="#" target="_blank"
-                        style="display:inline-block; margin-top:25px; padding:15px 35px; background:#10b981; color:white; border-radius:12px; text-decoration:none; font-weight:900; box-shadow:0 5px 15px rgba(16,185,129,0.3);">🔓
-                        ABRIR EN PESTAÑA NUEVA</a>
+            <!-- Columna Derecha: Visor de PDF Integrado -->
+            <main class="main-viewer" id="main-viewer">
+                <div id="viewer-placeholder" class="viewer-placeholder">
+                    <div class="placeholder-content">
+                        <span class="placeholder-icon">📖</span>
+                        <h3>Selecciona un material</h3>
+                        <p>Haz clic en cualquier clase o actividad de la izquierda para comenzar a leer aquí mismo.</p>
+                    </div>
                 </div>
-            </div>
 
-            <iframe id="pdf-viewer" src="" frameborder="0"
-                style="width:100%; height: calc(100% - 60px); visibility: hidden;"></iframe>
+                <div id="viewer-container" class="viewer-container hidden">
+                    <div class="viewer-toolbar">
+                        <h3 id="pdf-title">Material de Clase</h3>
+                        <div class="toolbar-actions">
+                            <a id="pdf-external-link" href="#" target="_blank" class="btn-toolbar">🔗 Pantalla
+                                Completa</a>
+                            <button id="btn-close-viewer" class="btn-toolbar-close">✖ Cerrar Visor</button>
+                        </div>
+                    </div>
+
+                    <div class="viewer-wrapper">
+                        <div id="pdf-loader" class="viewer-loader">
+                            <div class="loader-card">
+                                <h3>⌛ Cargando archivo...</h3>
+                                <p>Estamos preparando tu material de lectura.</p>
+                                <a id="pdf-retry-btn" href="#" target="_blank" class="btn-retry">¿No carga? Abrir en
+                                    pestaña nueva</a>
+                            </div>
+                        </div>
+                        <iframe id="pdf-viewer" src="" frameborder="0"></iframe>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=7.2.0"></script>
+    <script src="js/student.js?v=7.3.0"></script>
 </body>
 
 </html>

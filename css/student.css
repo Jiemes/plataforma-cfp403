@@ -20,21 +20,22 @@ body {
     background: var(--bg-light);
     color: var(--text-dark);
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
-/* 1. HOME VIEW STYLES - UNIFIED HEADER */
+/* 1. HOME VIEW */
 .home-container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
     background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
 }
 
 .home-header-professional {
     width: 100%;
     background: white;
-    padding: 30px 60px;
+    padding: 25px 60px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     border-bottom: 1px solid #e2e8f0;
     display: flex;
@@ -51,9 +52,8 @@ body {
 }
 
 .header-logo-side {
-    height: 80px;
+    height: 70px;
     width: auto;
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
 }
 
 .header-center-info {
@@ -62,16 +62,10 @@ body {
 }
 
 .header-center-info h1 {
-    font-size: 2.8rem;
+    font-size: 2.5rem;
     font-weight: 900;
-    color: var(--text-dark);
     letter-spacing: -0.05em;
     margin-bottom: 5px;
-}
-
-.header-center-info p {
-    font-size: 1.1rem;
-    color: var(--text-muted);
 }
 
 .home-main {
@@ -79,25 +73,6 @@ body {
     margin: 40px auto;
     width: 100%;
     padding: 0 20px;
-}
-
-.section-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 30px;
-}
-
-.section-title .dot {
-    width: 10px;
-    height: 10px;
-    background: var(--primary-color);
-    border-radius: 50%;
-}
-
-.section-title h2 {
-    font-size: 1.5rem;
-    font-weight: 800;
 }
 
 .course-grid {
@@ -113,11 +88,7 @@ body {
     cursor: pointer;
     transition: var(--transition);
     border: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
 }
 
 .course-card:hover {
@@ -127,21 +98,16 @@ body {
 }
 
 .course-icon {
-    font-size: 3.5rem;
-    margin-bottom: 25px;
+    font-size: 3rem;
+    margin-bottom: 20px;
     background: var(--primary-light);
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 22px;
-}
-
-.course-card h3 {
-    font-size: 1.6rem;
-    font-weight: 800;
-    margin-bottom: 12px;
+    border-radius: 20px;
+    margin: 0 auto 20px;
 }
 
 .btn-enter-course {
@@ -155,36 +121,36 @@ body {
 }
 
 .home-footer {
-    padding: 60px;
+    padding: 40px;
     text-align: center;
 }
 
 .btn-logout-elegant {
     background: #f1f5f9;
-    color: #64748b;
     border: 1px solid #e2e8f0;
-    padding: 12px 30px;
-    border-radius: 12px;
+    padding: 10px 25px;
+    border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
-    transition: var(--transition);
+    color: #64748b;
 }
 
-.btn-logout-elegant:hover {
-    background: #fee2e2;
-    color: #b91c1c;
-    border-color: #fecaca;
+/* 2. SPLIT LAYOUT v7.3.0 */
+.student-layout {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 2. DASHBOARD - COMPACT HEADER */
 .course-nav-compact {
+    height: 60px;
     background: white;
-    padding: 10px 40px;
+    padding: 0 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #e2e8f0;
-    z-index: 100;
+    flex-shrink: 0;
 }
 
 .nav-left {
@@ -194,19 +160,19 @@ body {
 }
 
 .btn-back-minimal {
-    background: #f8fafc;
+    background: #f1f5f9;
     border: 1px solid #e2e8f0;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 .nav-logo-tiny {
     height: 35px;
     width: auto;
-    opacity: 0.8;
+    opacity: 0.7;
 }
 
 .nav-middle span {
@@ -215,38 +181,55 @@ body {
     color: var(--text-dark);
 }
 
-.course-header {
-    background: var(--primary-color);
-    padding: 30px 60px;
-    color: white;
+.split-container {
+    flex-grow: 1;
     display: flex;
-    align-items: center;
-    gap: 30px;
-    border-bottom: 4px solid rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background: #f1f5f9;
 }
 
-.header-gba-logo {
-    height: 80px;
+/* SIDEBAR IZQUIERDA */
+.sidebar-content {
+    width: 400px;
+    min-width: 400px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.02);
 }
 
-.header-text h1 {
-    font-size: 2.2rem;
-    font-weight: 900;
+.course-header-mini {
+    padding: 25px 25px 15px;
+    background: var(--primary-color);
+    color: white;
 }
 
-.student-content {
-    max-width: 900px;
-    margin: -30px auto 60px;
-    padding: 0 20px;
+.header-text-mini h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
 }
 
+.header-text-mini p {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.student-content-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* CARDS DE SEMANA */
 .week-card {
     background: white;
-    border-radius: 20px;
-    padding: 25px;
+    border-radius: 16px;
+    padding: 18px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
-    border-left: 5px solid var(--primary-color);
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: var(--transition);
 }
 
 .week-header {
@@ -257,69 +240,194 @@ body {
 }
 
 .week-header h3 {
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: 800;
 }
 
 .week-body {
-    padding-top: 20px;
-    display: flex;
+    padding-top: 15px;
+    display: none;
+    /* Se controla con la clase 'opened' */
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+}
+
+.week-card.opened {
+    border-color: var(--primary-color);
+}
+
+.week-card.opened .week-body {
+    display: flex;
 }
 
 .content-item {
     background: #f8fafc;
-    padding: 16px;
-    border-radius: 14px;
+    padding: 12px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     cursor: pointer;
     transition: var(--transition);
-    border: 1px solid #f1f5f9;
+    border: 1px solid transparent;
 }
 
 .content-item:hover {
     background: var(--primary-light);
     border-color: var(--primary-color);
-    transform: translateX(5px);
+}
+
+.content-item.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.content-item.active .item-info strong {
+    color: white;
+}
+
+.content-item.active .item-info p {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .content-item .icon {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     background: white;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 8px;
+    border-radius: 8px;
 }
 
 .content-item .item-info strong {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
     color: var(--text-dark);
+    display: block;
 }
 
 .content-item .item-info p {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.delivery-area {
+/* VISOR DERECHA */
+.main-viewer {
+    flex-grow: 1;
+    position: relative;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+}
+
+.viewer-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    background: #1e293b;
+    z-index: 5;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.placeholder-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.placeholder-content p {
+    color: #94a3b8;
+    max-width: 300px;
+}
+
+.viewer-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.viewer-toolbar {
+    height: 50px;
+    background: #ffffff;
+    padding: 0 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.viewer-toolbar h3 {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-toolbar {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid var(--primary-color);
+    padding: 4px 12px;
+    border-radius: 6px;
+}
+
+.btn-toolbar-close {
     background: #f1f5f9;
-    padding: 20px;
-    border-radius: 15px;
-    margin-top: 10px;
-    border: 1px dashed #cbd5e1;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.viewer-wrapper {
+    flex-grow: 1;
+    position: relative;
+}
+
+.viewer-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    z-index: 20;
     text-align: center;
 }
 
-.btn-upload {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
+.loader-card {
+    padding: 40px;
+}
+
+.btn-retry {
+    display: inline-block;
+    margin-top: 15px;
+    color: var(--primary-color);
     font-weight: 700;
-    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+#pdf-viewer {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 /* UTILS */
@@ -334,7 +442,7 @@ body {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(15px);
+        transform: translateY(10px);
     }
 
     to {
@@ -343,26 +451,21 @@ body {
     }
 }
 
-@media (max-width: 768px) {
-    .header-content-unified {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
+@media (max-width: 900px) {
+    .sidebar-content {
+        width: 100%;
+        min-width: 0;
+        position: absolute;
+        z-index: 100;
+        height: 100%;
+        transition: transform 0.3s ease;
     }
 
-    .header-logo-side {
-        height: 60px;
+    .sidebar-content.minimized {
+        transform: translateX(-100%);
     }
 
-    .header-center-info h1 {
-        font-size: 2rem;
-    }
-
-    .course-header {
-        padding: 25px;
-    }
-
-    .header-gba-logo {
-        height: 60px;
+    .main-viewer {
+        width: 100%;
     }
 }
