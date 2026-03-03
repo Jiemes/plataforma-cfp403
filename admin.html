@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v6.8.5 | CFP 403</title>
+    <title>Panel Administrativo v6.8.6 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.8.5">
-    <link rel="stylesheet" href="css/admin.css?v=6.8.5">
+    <link rel="stylesheet" href="css/style.css?v=6.8.6">
+    <link rel="stylesheet" href="css/admin.css?v=6.8.6">
     <style>
         .success-glow {
             animation: successPulse 1.5s;
@@ -108,23 +108,25 @@
                 </div>
 
                 <div class="import-section card">
-                    <h3>Importar Alumnos (Excel)</h3>
+                    <h3>Importar Alumnos desde Excel</h3>
                     <div class="upload-controls">
-                        <div class="upload-item"><label>Habilidades Digitales</label><input type="file"
-                                id="upload-habilidades" accept=".xlsx, .xls"></div>
-                        <div class="upload-item"><label>Software & Videojuegos</label><input type="file"
-                                id="upload-programacion" accept=".xlsx, .xls"></div>
+                        <div class="upload-item"><label>💾 Habilidades Digitales</label><input type="file"
+                                id="upload-habilidades" accept=".xlsx, .xls" style="font-size: 0.8rem;"></div>
+                        <div class="upload-item"><label>💾 Software & Videojuegos</label><input type="file"
+                                id="upload-programacion" accept=".xlsx, .xls" style="font-size: 0.8rem;"></div>
                     </div>
                 </div>
             </section>
 
             <section id="clases-section" class="section hidden">
                 <div class="card" style="padding: 15px; margin-bottom: 20px;">
-                    <div class="tabs-clases">
-                        <button class="active tab-btn" onclick="switchClaseType('habilidades')" id="tab-hab">Habilidades
+                    <div class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
+                        <button class="tab-btn active" onclick="switchClaseType('habilidades')"
+                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Habilidades
                             Digitales</button>
-                        <button class="tab-btn" onclick="switchClaseType('programacion')" id="tab-prog"
-                            style="margin-left:10px;">Software & Videojuegos</button>
+                        <button class="tab-btn" onclick="switchClaseType('programacion')"
+                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Software &
+                            Videojuegos</button>
                     </div>
                 </div>
                 <div id="clases-list-container">
@@ -171,7 +173,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v8.js?v=6.8.5"></script>
+    <script src="js/admin_v9.js?v=6.8.6"></script>
 </body>
 
 </html>
