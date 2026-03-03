@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v6.9.0 (Soporte Universal de PDFs)
+// Mi Aula Virtual - Lógica del Alumno v6.9.1 (Solución Definitiva Iframe Drive)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -144,8 +144,8 @@ async function loadContent() {
 }
 
 /**
- * VISUALIZADOR DE PDF BLINDADO v6.9.0
- * Solución definitiva para bloqueos de Frame y Drive privado.
+ * VISUALIZADOR DE PDF BLINDADO v6.9.1
+ * Solución final para Google Drive: NO usar Docs Viewer para Drive, usar /preview directamente.
  */
 function visualizePdf(url, title) {
     if (!url) return alert("El material solicitado aún no ha sido cargado.");
@@ -163,10 +163,10 @@ function visualizePdf(url, title) {
         loader.style.display = "block";
         loader.innerHTML = `
             <div style="padding:20px;">
-                <p style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">⌛ Cargando archivo...</p>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Si el archivo tarda demasiado, asegúrate de que sea público en Google Drive.</p>
+                <p style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">⌛ Cargando material...</p>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Si el archivo no aparece, asegúrate de que sea <strong>Público</strong> en tu Google Drive.</p>
                 <a href="${url}" target="_blank" style="display:inline-block; margin-top:20px; padding:12px 25px; background:#10b981; color:white; border-radius:10px; text-decoration:none; font-weight:800; font-size:0.9rem; box-shadow:0 4px 10px rgba(16,185,129,0.3);">
-                    🔓 FORZAR APERTURA EXTERNA
+                    🔓 ABRIR EN PESTAÑA NUEVA
                 </a>
             </div>
         `;
@@ -177,14 +177,20 @@ function visualizePdf(url, title) {
     modal.classList.remove('hidden');
 
     let embedUrl = "";
-    // 2. Lógica de Enlace Inteligente
+    // 2. Lógica de Enlace Corregida
     if (url.includes('drive.google.com')) {
         let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
         fileId = idMatch ? idMatch[1] : "";
-        // Usamos el visor de Google Docs para Drive también, suele ser más tolerante a cookies
-        embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
+        if (fileId) {
+            // FORMATO CORRECTO PARA DRIVE EN IFRAME:
+            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        } else {
+            embedUrl = url;
+        }
     } else {
+        // Otros servidores: Usamos Docs Viewer
         embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
@@ -194,11 +200,11 @@ function visualizePdf(url, title) {
         viewer.style.display = "block";
     };
 
-    // A los 3 segundos mostramos el iframe haga lo que haga, para que si Google muestra algo (así sea un error), el usuario lo vea
+    // Fallback por si el iframe es bloqueado silenciosamente (CORS)
     setTimeout(() => {
         if (loader) loader.style.display = "none";
         viewer.style.display = "block";
-    }, 4500);
+    }, 4000);
 
     viewer.src = embedUrl;
 }
