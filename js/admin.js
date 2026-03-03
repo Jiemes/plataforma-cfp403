@@ -302,11 +302,15 @@ async function loadClasesAdmin() {
         const doc = await db.collection('config_cursos').doc(currentClaseTab).get();
         const data = doc.exists ? doc.data() : {};
 
-        // Compatibilidad con typo anterior y nuevos datos
+        // Fusión inteligente: Si hay datos en 'materials' y 'materiales', los combinamos
+        let materialesCombined = {};
+        if (data.materials) Object.assign(materialesCombined, data.materials);
+        if (data.materiales) Object.assign(materialesCombined, data.materiales);
+
         const config = {
             fecha_inicio: data.fecha_inicio || '',
             frecuencia_dias: data.frecuencia_dias || 7,
-            materiales: data.materiales || data.materials || {},
+            materiales: materialesCombined,
             welcome_url: data.welcome_url || '',
             syllabus_url: data.syllabus_url || '',
             excepciones: data.excepciones || []
@@ -315,7 +319,12 @@ async function loadClasesAdmin() {
         const materiales = config.materiales;
         const exceptions = config.excepciones;
 
-        console.log("Config recuperada:", config);
+        console.log("Config recuperada y fusionada:", config);
+
+        // Feedback Visual: Mostrar qué curso estamos operando
+        const badge = `<span style="background:#00B9E8; color:white; padding:2px 10px; border-radius:10px; font-size:0.7rem; margin-left:10px; vertical-align:middle;">${currentClaseTab === 'habilidades' ? 'HABILIDADES' : 'VIDEOJUEGOS'}</span>`;
+        const titleCont = document.querySelector('#clases-section h3');
+        if (titleCont) titleCont.innerHTML = `Listado de Clases y Actividades ${badge}`;
 
         // Llenar campos principales
         document.getElementById('course-start-date').value = config.fecha_inicio || '';
@@ -463,31 +472,39 @@ async function manualUpload(type, sem = null) {
             const storagePath = `materiales/${currentClaseTab}/${sem ? 'Semana_' + sem : 'General'}/${Date.now()}_${fileName}`;
             const refStorage = storage.ref().child(storagePath);
 
-            console.log(`[ManualUpload] Iniciando subida: ${storagePath}`);
+            console.log(`[ManualUpload] Subiendo a Storage: ${storagePath}`);
             alert(`⏳ Cargando ${fileName}... No cierres la plataforma.`);
 
             await refStorage.put(file);
             const fileUrl = await refStorage.getDownloadURL();
-            console.log("[ManualUpload] URL generada:", fileUrl);
+            console.log("[ManualUpload] URL obtenida:", fileUrl);
 
             const docRef = db.collection('config_cursos').doc(currentClaseTab);
             const snap = await docRef.get();
-            let config = snap.exists ? snap.data() : { materiales: {} };
+            let currentData = snap.exists ? snap.data() : {};
 
-            // Compatibilidad con typo anterior
-            if (!config.materiales) config.materiales = config.materials || {};
+            // Fusionar materiales antiguos para no perder nada
+            let materialesCombined = {};
+            if (currentData.materials) Object.assign(materialesCombined, currentData.materials);
+            if (currentData.materiales) Object.assign(materialesCombined, currentData.materiales);
 
-            if (type === 'welcome') config.welcome_url = fileUrl;
-            else if (type === 'syllabus') config.syllabus_url = fileUrl;
-            else if (type === 'clase' || type === 'actividad') {
-                if (!config.materiales[`sem_${sem}`]) config.materiales[`sem_${sem}`] = {};
-                config.materiales[`sem_${sem}`][type] = fileUrl;
+            if (type === 'welcome') {
+                currentData.welcome_url = fileUrl;
+            } else if (type === 'syllabus') {
+                currentData.syllabus_url = fileUrl;
+            } else if (type === 'clase' || type === 'actividad') {
+                if (!materialesCombined[`sem_${sem}`]) materialesCombined[`sem_${sem}`] = {};
+                materialesCombined[`sem_${sem}`][type] = fileUrl;
             }
 
-            console.log("[ManualUpload] Guardando en Firestore:", config);
-            await docRef.set(config, { merge: true });
+            // Guardar siempre como 'materiales' y limpiar el typo viejo
+            currentData.materiales = materialesCombined;
+            if (currentData.materials) delete currentData.materials;
 
-            console.log("[ManualUpload] DB actualizada con éxito.");
+            console.log("[ManualUpload] Registrando en Firestore:", currentData);
+            await docRef.set(currentData, { merge: true });
+
+            console.log("[ManualUpload] Sincronización completa.");
             alert("✅ ¡Archivo cargado con éxito!");
             await loadClasesAdmin();
         } catch (err) {

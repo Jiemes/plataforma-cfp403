@@ -49,7 +49,11 @@ async function loadContent() {
             return;
         }
         const config = configSnap.data();
-        const materiales = config.materiales || {};
+
+        // Fusión inteligente para el alumno
+        let materiales = {};
+        if (config.materials) Object.assign(materiales, config.materials);
+        if (config.materiales) Object.assign(materiales, config.materiales);
 
         const entregasSnap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
