@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v6.9.1 (Solución Definitiva Iframe Drive)
+// Mi Aula Virtual - Lógica del Alumno v7.0.0 (Navegación Multinivel)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -7,47 +7,61 @@ if (!studentSession) {
 }
 
 function initStudentDashboard() {
-    document.getElementById('student-name').innerText = studentSession.nombre;
-    const tabsContainer = document.getElementById('course-tabs');
+    // 1. Mostrar nombre en pantalla de inicio
+    const homeName = document.getElementById('home-student-name');
+    if (homeName) homeName.innerText = `¡Hola, ${studentSession.nombre.split(' ')[0]}!`;
 
-    if (studentSession.cursos.length > 1) {
-        tabsContainer.classList.remove('hidden');
-        tabsContainer.innerHTML = '';
-        studentSession.cursos.forEach((c, idx) => {
-            const btn = document.createElement('button');
-            btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
-            btn.innerText = c.id === 'habilidades' ? 'Habilidades Digitales' : 'Programación';
-            btn.onclick = () => switchCourse(c.id, btn);
-            tabsContainer.appendChild(btn);
-        });
-        currentCourseId = studentSession.cursos[0].id;
-    } else {
-        currentCourseId = studentSession.cursos[0].id;
-        document.getElementById('course-title').innerText = studentSession.cursos[0].nombre;
-    }
+    // 2. Poblar cuadrícula de cursos
+    const grid = document.getElementById('home-course-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    studentSession.cursos.forEach(curso => {
+        const card = document.createElement('div');
+        card.className = 'course-card animated-in';
+        card.innerHTML = `
+            <div class="course-icon">${curso.id === 'habilidades' ? '💻' : '🚀'}</div>
+            <h3>${curso.nombre}</h3>
+            <p style="font-size:0.9rem; color:#64748b;">Haga clic para acceder al material semanal y actividades.</p>
+            <button class="btn-enter-course">INGRESAR AL AULA</button>
+        `;
+        card.onclick = () => selectCourse(curso.id, curso.nombre);
+        grid.appendChild(card);
+    });
+}
+
+function selectCourse(courseId, courseName) {
+    currentCourseId = courseId;
+
+    // Cambiar vistas
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('course-view').classList.remove('hidden');
+
+    // Actualizar UI
+    document.getElementById('course-title').innerText = courseName;
+    document.getElementById('nav-course-name').innerText = courseName;
+    document.getElementById('student-name-nav').innerText = studentSession.nombre;
+
     loadContent();
 }
 
-function switchCourse(courseId, btn) {
-    if (currentCourseId === courseId) return;
-    currentCourseId = courseId;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const cursoInfo = studentSession.cursos.find(c => c.id === courseId);
-    document.getElementById('course-title').innerText = cursoInfo.nombre;
-    loadContent();
+function backToHome() {
+    document.getElementById('course-view').classList.add('hidden');
+    document.getElementById('home-view').classList.remove('hidden');
+    currentCourseId = '';
 }
 
 async function loadContent() {
     try {
         const weeksContainer = document.getElementById('weeks-container');
-        weeksContainer.innerHTML = '<p class="loader" style="text-align:center; padding:40px;">⏳ Organizando tu material de estudio...</p>';
+        weeksContainer.innerHTML = '<div style="text-align:center; padding:50px;"><p style="font-size:1.1rem; color:#64748b;">⏳ Cargando tus contenidos...</p></div>';
 
         const configSnap = await db.collection('config_cursos').doc(currentCourseId).get();
         if (!configSnap.exists) {
             weeksContainer.innerHTML = '<p class="empty-msg">El curso aún no ha sido configurado por el administrador.</p>';
             return;
         }
+
         const config = configSnap.data();
         let materiales = {};
         if (config.materials) Object.assign(materiales, config.materials);
@@ -62,27 +76,30 @@ async function loadContent() {
         weeksContainer.innerHTML = '';
         const hoy = new Date();
 
-        // 1. BIENVENIDA Y PROGRAMA
-        const matInicio = materiales['inicio'] || { welcome: config.welcome_url || '', syllabus: config.syllabus_url || '', fecha: config.fecha_inicio || '' };
+        // 1. BIENVENIDA Y PROGRAMA (Siempre primero)
+        const matInicio = materiales['inicio'] || {
+            welcome: config.welcome_url || '',
+            syllabus: config.syllabus_url || '',
+            fecha: config.fecha_inicio || ''
+        };
         const fechaInicio = matInicio.fecha ? new Date(matInicio.fecha + "T00:00:00") : null;
 
         if (fechaInicio && hoy >= fechaInicio) {
             const introCard = document.createElement('div');
-            introCard.className = 'card week-card active animated-in';
-            introCard.style.borderLeft = '6px solid #10b981';
+            introCard.className = 'week-card active animated-in';
             introCard.innerHTML = `
                 <div class="week-header"><h3>📚 Bienvenida y Programa</h3></div>
-                <div class="week-body" style="display:block; padding:20px;">
+                <div class="week-body" style="display:block;">
                     ${matInicio.welcome ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${matInicio.welcome}', 'Bienvenida')">
+                        <div class="content-item" onclick="visualizePdf('${matInicio.welcome}', 'Bienvenida')">
                             <span class="icon">👋</span>
-                            <div class="item-info"><strong>Mensaje de Bienvenida</strong><p>Clic para leer</p></div>
+                            <div class="item-info"><strong>Mensaje de Bienvenida</strong><p>Haga clic para ver el mensaje</p></div>
                         </div>
                     ` : ''}
                     ${matInicio.syllabus ? `
-                        <div class="content-item clickable" onclick="visualizePdf('${matInicio.syllabus}', 'Programa')">
+                        <div class="content-item" onclick="visualizePdf('${matInicio.syllabus}', 'Programa Académico')">
                             <span class="icon">📋</span>
-                            <div class="item-info"><strong>Programa Académico</strong><p>Clic para ver objetivos</p></div>
+                            <div class="item-info"><strong>Programa del Curso</strong><p>Contenidos y organización</p></div>
                         </div>
                     ` : ''}
                 </div>
@@ -90,14 +107,12 @@ async function loadContent() {
             weeksContainer.appendChild(introCard);
         }
 
-        // 2. SEMANAS
+        // 2. SEMANAS LIBERADAS
         const exceptions = config.excepciones || [];
-        let weeksKeys = Object.keys(materiales).filter(k => k.startsWith('sem_')).map(k => parseInt(k.replace('sem_', ''))).sort((a, b) => b - a);
-
-        if (weeksKeys.length === 0 && (!fechaInicio || hoy < fechaInicio)) {
-            weeksContainer.innerHTML = '<p class="empty-msg">¡Próximamente verás aquí tus contenidos!</p>';
-            return;
-        }
+        let weeksKeys = Object.keys(materiales)
+            .filter(k => k.startsWith('sem_'))
+            .map(k => parseInt(k.replace('sem_', '')))
+            .sort((a, b) => b - a); // Inverso: lo último primero
 
         weeksKeys.forEach(i => {
             if (exceptions.includes(i)) return;
@@ -107,32 +122,28 @@ async function loadContent() {
 
             const entrega = entregas.find(e => e.semana === i);
             const card = document.createElement('div');
-            card.className = `card week-card animated-in ${i === weeksKeys[0] ? 'active' : ''}`;
+            card.className = 'week-card animated-in';
             card.innerHTML = `
-                <div class="week-header" onclick="this.parentElement.classList.toggle('active')">
+                <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>Semana ${i}</h3>
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <span class="badge success">Disponible</span>
-                        <span class="toggle-icon">▼</span>
-                    </div>
+                    <span class="badge success">Disponible</span>
                 </div>
-                <div class="week-body">
-                    <div class="content-item clickable" onclick="visualizePdf('${mat.clase || ''}', 'Clase ${i}')">
+                <div class="week-body" style="padding-top:15px;">
+                    <div class="content-item" onclick="visualizePdf('${mat.clase || ''}', 'Clase Semana ${i}')">
                         <span class="icon">📖</span>
-                        <div class="item-info"><strong>Clase ${i}</strong><p>${mat.clase ? 'Ver material teórico' : '⌛ Pendiente'}</p></div>
+                        <div class="item-info"><strong>Material de Clase ${i}</strong><p>Teoría y lectura</p></div>
                     </div>
-                    <div class="content-item clickable" onclick="visualizePdf('${mat.actividad || ''}', 'Actividad ${i}')">
+                    <div class="content-item" onclick="visualizePdf('${mat.actividad || ''}', 'Actividad Semana ${i}')">
                         <span class="icon">🛠️</span>
-                        <div class="item-info"><strong>Actividad ${i}</strong><p>${mat.actividad ? 'Ver consigna' : '⌛ Pendiente'}</p></div>
+                        <div class="item-info"><strong>Consigna Actividad ${i}</strong><p>Tarea práctica</p></div>
                     </div>
-                    <div class="delivery-section" style="background:#f8fafc; padding:20px; border-radius:12px; margin-top:15px;">
+                    <div class="delivery-area" style="background:#f1f5f9; padding:20px; border-radius:15px; margin-top:10px;">
                         <p style="font-size:0.9rem; margin-bottom:10px;">
-                            <strong>Estado Entrega:</strong> 
-                            <span class="status-badge ${entrega ? 'calificado' : 'pendiente'}">${entrega ? 'Entregado' : 'Pendiente'}</span>
+                            <strong>Estado:</strong> ${entrega ? '✅ Entregado' : '⌛ Pendiente'}
                         </p>
-                        <input type="file" id="file-${i}" class="hidden-input" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
+                        <input type="file" id="file-${i}" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
                         <button class="btn-upload" onclick="document.getElementById('file-${i}').click()">
-                            ${entrega ? '📤 Re-enviar Actividad' : 'Subir mi Actividad (PDF)'}
+                            ${entrega ? 'Re-enviar PDF' : 'Subir Actividad (PDF)'}
                         </button>
                     </div>
                 </div>
@@ -140,73 +151,65 @@ async function loadContent() {
             weeksContainer.appendChild(card);
         });
 
-    } catch (e) { console.error(e); }
+        if (weeksContainer.innerHTML === '') {
+            weeksContainer.innerHTML = '<p class="empty-msg">Aún no hay contenidos liberados para hoy.</p>';
+        }
+
+    } catch (e) {
+        console.error(e);
+        alert("Error al cargar contenidos. Intenta refrescar la página.");
+    }
 }
 
 /**
- * VISUALIZADOR DE PDF BLINDADO v6.9.1
- * Solución final para Google Drive: NO usar Docs Viewer para Drive, usar /preview directamente.
+ * VISUALIZADOR DE ARCHIVOS v7.0.0
+ * Si falla el visualizador embebido, ofrece apertura directa al usuario.
  */
 function visualizePdf(url, title) {
-    if (!url) return alert("El material solicitado aún no ha sido cargado.");
+    if (!url || url === 'undefined') return alert("Este archivo aún no ha sido cargado por el docente.");
 
     const modal = document.getElementById('pdf-modal');
     const viewer = document.getElementById('pdf-viewer');
     const titleEl = document.getElementById('pdf-title');
     const externalLink = document.getElementById('pdf-external-link');
+    const retryBtn = document.getElementById('pdf-retry-btn');
     const loader = document.getElementById('pdf-loader');
 
-    // 1. Resetear visor y mostrar loader
+    // Resetear
     viewer.src = "about:blank";
-    viewer.style.display = "none";
-    if (loader) {
-        loader.style.display = "block";
-        loader.innerHTML = `
-            <div style="padding:20px;">
-                <p style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">⌛ Cargando material...</p>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Si el archivo no aparece, asegúrate de que sea <strong>Público</strong> en tu Google Drive.</p>
-                <a href="${url}" target="_blank" style="display:inline-block; margin-top:20px; padding:12px 25px; background:#10b981; color:white; border-radius:10px; text-decoration:none; font-weight:800; font-size:0.9rem; box-shadow:0 4px 10px rgba(16,185,129,0.3);">
-                    🔓 ABRIR EN PESTAÑA NUEVA
-                </a>
-            </div>
-        `;
-    }
+    viewer.style.visibility = "hidden";
+    if (loader) loader.style.display = "block";
     if (titleEl) titleEl.innerText = title;
     if (externalLink) externalLink.href = url;
+    if (retryBtn) retryBtn.href = url;
 
     modal.classList.remove('hidden');
 
-    let embedUrl = "";
-    // 2. Lógica de Enlace Corregida
+    let finalUrl = url;
+    // Conversión Drive
     if (url.includes('drive.google.com')) {
-        let fileId = "";
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        fileId = idMatch ? idMatch[1] : "";
-
-        if (fileId) {
-            // FORMATO CORRECTO PARA DRIVE EN IFRAME:
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        } else {
-            embedUrl = url;
-        }
-    } else {
-        // Otros servidores: Usamos Docs Viewer
-        embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+    } else if (!url.toLowerCase().endsWith('.pdf')) {
+        finalUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     }
 
-    // 3. Control de Carga
+    // Control de carga
     viewer.onload = () => {
         if (loader) loader.style.display = "none";
-        viewer.style.display = "block";
+        viewer.style.visibility = "visible";
     };
 
-    // Fallback por si el iframe es bloqueado silenciosamente (CORS)
+    // Fallback manual a los 4 segundos
     setTimeout(() => {
-        if (loader) loader.style.display = "none";
-        viewer.style.display = "block";
-    }, 4000);
+        if (loader) {
+            // No ocultamos el loader para que el botón de "FORZAR" siga visible si falla el frame
+            // pero permitimos ver el viewer si cargó algo
+            viewer.style.visibility = "visible";
+        }
+    }, 4500);
 
-    viewer.src = embedUrl;
+    viewer.src = finalUrl;
 }
 
 document.getElementById('close-pdf')?.addEventListener('click', () => {
@@ -242,15 +245,23 @@ async function uploadHomework(semana) {
         if (!q.empty) await db.collection('entregas').doc(q.docs[0].id).update(data);
         else await db.collection('entregas').add(data);
 
-        alert("✅ ¡Actividad enviada!");
+        alert("✅ ¡Actividad enviada con éxito!");
         loadContent();
-    } catch (error) { alert("Error: " + error.message); }
-    finally { btn.innerText = "Subir mi Actividad (PDF)"; btn.disabled = false; }
+    } catch (error) {
+        alert("Error al subir: " + error.message);
+    } finally {
+        btn.innerText = "Subir Actividad (PDF)";
+        btn.disabled = false;
+    }
 }
 
-document.getElementById('btn-logout-student')?.addEventListener('click', () => {
+// Eventos de Navegación
+document.getElementById('btn-logout-home')?.addEventListener('click', () => {
     localStorage.removeItem('user_session');
     window.location.href = 'index.html';
 });
 
+document.getElementById('btn-back-home')?.addEventListener('click', backToHome);
+
+// Inicio
 initStudentDashboard();

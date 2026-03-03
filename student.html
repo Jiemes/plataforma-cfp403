@@ -4,10 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v6.9.1 | CFP 403</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6.9.0">
-    <link rel="stylesheet" href="css/student.css?v=6.9.0">
+    <title>Mi Aula Virtual v7.0.0 | CFP 403</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=7.0.0">
+    <link rel="stylesheet" href="css/student.css?v=7.0.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -16,69 +17,97 @@
 </head>
 
 <body>
-    <div class="student-layout">
+    <!-- 1. PANTALLA DE INICIO (Selector de Cursos) -->
+    <div id="home-view" class="home-container animated-in">
+        <header class="home-header">
+            <div class="logos-container">
+                <img src="assets/CFP 403.png" alt="Logo CFP" class="home-logo-cfp">
+                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="home-logo-gba">
+            </div>
+            <div class="welcome-banner">
+                <h1 id="home-student-name">¡Hola!</h1>
+                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+            </div>
+        </header>
+
+        <main class="home-main">
+            <h2>Mis Cursos Inscritos</h2>
+            <div id="home-course-grid" class="course-grid">
+                <!-- Se poblará dinámicamente -->
+                <div class="loader">Cargando tus cursos...</div>
+            </div>
+        </main>
+
+        <footer class="home-footer">
+            <button id="btn-logout-home" class="btn-logout-lg">Cerrar Sesión</button>
+        </footer>
+    </div>
+
+    <!-- 2. VISTA DASHBOARD DEL CURSO -->
+    <div id="course-view" class="student-layout hidden">
         <nav class="top-nav">
             <div class="nav-brand">
-                <img src="assets/CFP 403.png" alt="Logo" class="nav-logo">
-                <div class="nav-titles">
-                    <span>CFP N° 403 Mercedes</span>
-                </div>
+                <button id="btn-back-home" class="btn-back">
+                    <span>⬅</span> Volver al Inicio
+                </button>
             </div>
-
+            <div class="nav-titles">
+                <span id="nav-course-name">Aula Virtual</span>
+            </div>
             <div class="nav-right">
-                <div class="nav-user">
-                    <span id="student-name">Cargando Alumno...</span>
-                    <button id="btn-logout-student" class="btn-logout-sm">Salir</button>
-                </div>
+                <span id="student-name-nav" style="font-weight: 600; font-size: 0.85rem; color: #64748b;">Alumno</span>
             </div>
         </nav>
 
         <header class="course-header">
             <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-gba-logo">
             <div class="header-text">
-                <h1 id="course-title">Mi Aula Virtual</h1>
-                <p>Bienvenido a tu espacio de aprendizaje semanal.</p>
-                <div id="course-tabs" class="tabs-container hidden">
-                    <!-- Dinámico: Habilidades / Programación -->
-                </div>
+                <h1 id="course-title">Cargando...</h1>
+                <p>Tu espacio de aprendizaje semanal.</p>
             </div>
         </header>
 
         <main class="student-content">
             <div class="week-list" id="weeks-container">
-                <!-- Se poblará dinámicamente -->
-                <div class="loading-spinner">Cargando tus clases...</div>
+                <div class="loading-spinner">Organizando material...</div>
             </div>
         </main>
     </div>
 
-    <!-- Modal para ver PDF -->
+    <!-- MODAL VISUALIZADOR PDF -->
     <div id="pdf-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header-pdf"
                 style="padding: 15px 25px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
-                <h3 id="pdf-title" style="font-size: 1rem; color: #1e293b;">Material de Clase</h3>
+                <h3 id="pdf-title" style="font-size: 1rem; color: #1e293b; font-weight:800;">Material de Clase</h3>
                 <div style="display:flex; gap:15px; align-items:center;">
                     <a id="pdf-external-link" href="#" target="_blank"
-                        style="font-size: 0.85rem; color: var(--primary-color); text-decoration:none; font-weight:600;">
-                        🔗 Abrir en pestaña nueva
-                    </a>
-                    <span class="close-modal" id="close-pdf" style="position:static; font-size: 30px;">&times;</span>
+                        style="font-size:0.85rem; color: #00B9E8; text-decoration:none; font-weight:700;">🔗 Abrir
+                        Externamente</a>
+                    <span class="close-modal" id="close-pdf" style="cursor:pointer; font-size: 28px;">&times;</span>
                 </div>
             </div>
+
             <div id="pdf-loader"
-                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 80%; z-index: 5;">
-                <p style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">⌛ Cargando archivo...</p>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Si tarda demasiado, el archivo puede
-                    ser privado en Google Drive.</p>
+                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 85%; z-index: 5;">
+                <div
+                    style="background:white; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border:1px solid #e2e8f0;">
+                    <p style="font-size: 1.25rem; color: #1e293b; font-weight: 800;">⌛ Procesando archivo...</p>
+                    <p style="font-size: 0.9rem; color: #64748b; margin-top: 10px;">Si el navegador lo bloquea, usa el
+                        botón de abajo para verlo en una pestaña nueva.</p>
+                    <a id="pdf-retry-btn" href="#" target="_blank"
+                        style="display:inline-block; margin-top:25px; padding:15px 35px; background:#10b981; color:white; border-radius:12px; text-decoration:none; font-weight:900; box-shadow:0 5px 15px rgba(16,185,129,0.3);">🔓
+                        ABRIR EN PESTAÑA NUEVA</a>
+                </div>
             </div>
+
             <iframe id="pdf-viewer" src="" frameborder="0"
-                style="width:100%; height: calc(100% - 60px); position: relative; z-index: 2;"></iframe>
+                style="width:100%; height: calc(100% - 60px); visibility: hidden;"></iframe>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=6.9.1"></script>
+    <script src="js/student.js?v=7.0.0"></script>
 </body>
 
 </html>
