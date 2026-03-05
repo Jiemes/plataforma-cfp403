@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v8.3.0 (Light PDF Viewer)
+// Mi Aula Virtual - Lógica del Alumno v8.4.0 (Stable Full-Width PDF)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -198,8 +198,7 @@ function visualizePdf(url, title, element) {
     let finalUrl = url;
     if (url.includes('drive.google.com')) {
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        // Usamos el visor de Google Docs que tiene un fondo más claro y mejor integración
-        if (idMatch) finalUrl = `https://docs.google.com/viewer?srcid=${idMatch[1]}&embedded=true`;
+        if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
     }
 
     viewer.onload = () => { if (loader) loader.style.display = "none"; viewer.style.visibility = "visible"; };
