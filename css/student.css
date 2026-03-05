@@ -222,8 +222,9 @@ body {
 }
 
 .mode-viewer .course-body-container {
-    max-width: 1300px;
+    max-width: 1600px;
 }
+
 
 
 .week-list {
@@ -311,10 +312,11 @@ body {
 .main-viewer {
     display: none;
     width: 100%;
-    height: calc(100vh - 130px);
+    height: calc(100vh - 120px);
     margin: 0 auto;
-    max-width: 1300px;
+    max-width: 1600px;
 }
+
 
 .viewer-wrapper {
     flex-grow: 1;
@@ -328,9 +330,13 @@ body {
 
 #pdf-viewer {
     width: 100%;
-    height: 100%;
+    height: calc(100% + 56px);
+    /* Compensar el recorte superior */
+    margin-top: -56px;
+    /* Ocultar la barra de herramientas de Google Drive */
     border: none;
 }
+
 
 /* MODO LECTURA */
 .mode-viewer .course-banner-blue,
@@ -341,8 +347,9 @@ body {
 .mode-viewer .main-viewer {
     display: flex !important;
     height: calc(100vh - 130px);
-    max-width: 1300px;
+    max-width: 1600px;
 }
+
 
 
 .mode-viewer .main-container-unified {
