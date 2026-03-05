@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v7.6.0 (Unified Header + Cleaner View)
+// Mi Aula Virtual - Lógica del Alumno v7.7.0 (Cleaner PDF Viewer)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -187,20 +187,13 @@ function visualizePdf(url, title, element) {
 
     const container = document.getElementById('viewer-container');
     const viewer = document.getElementById('pdf-viewer');
-    const titleEl = document.getElementById('pdf-title');
-    const externalLink = document.getElementById('pdf-external-link');
     const loader = document.getElementById('pdf-loader');
-    const retryBtn = document.getElementById('pdf-retry-btn');
 
     document.getElementById('course-view').classList.add('mode-viewer');
 
     container.classList.remove('hidden');
     viewer.style.visibility = "hidden";
     if (loader) loader.style.display = "block";
-
-    titleEl.innerText = title;
-    externalLink.href = url;
-    retryBtn.href = url;
 
     let finalUrl = url;
     if (url.includes('drive.google.com')) {

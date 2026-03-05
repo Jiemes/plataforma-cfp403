@@ -218,7 +218,13 @@ body {
     max-width: 1100px;
     width: 100%;
     padding: 0 10px;
+    transition: max-width 0.3s ease;
 }
+
+.mode-viewer .course-body-container {
+    max-width: 1300px;
+}
+
 
 .week-list {
     display: flex;
@@ -305,21 +311,9 @@ body {
 .main-viewer {
     display: none;
     width: 100%;
-    height: calc(100vh - 120px);
-}
-
-.viewer-toolbar {
-    padding: 15px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #f1f5f9;
-    margin-bottom: 20px;
-}
-
-.viewer-toolbar h3 {
-    font-size: 1.3rem;
-    font-weight: 900;
+    height: calc(100vh - 130px);
+    margin: 0 auto;
+    max-width: 1300px;
 }
 
 .viewer-wrapper {
@@ -329,6 +323,7 @@ body {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
 }
 
 #pdf-viewer {
@@ -345,8 +340,10 @@ body {
 
 .mode-viewer .main-viewer {
     display: flex !important;
-    height: calc(100vh - 150px);
+    height: calc(100vh - 130px);
+    max-width: 1300px;
 }
+
 
 .mode-viewer .main-container-unified {
     width: 100%;
