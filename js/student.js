@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v7.3.0 (Visor Integrado + Split View)
+// Mi Aula Virtual - Lógica del Alumno v7.4.0 (Visor Integrado + Split View)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
