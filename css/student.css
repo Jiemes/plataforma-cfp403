@@ -252,65 +252,55 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v9.1.0 - STABLE RESTORED) */
-body.mode-viewer .course-banner-blue,
-body.mode-viewer .weeks-container-wrapper {
+/* 4. MODO LECTURA TOTAL (v8.2.0) */
+.mode-viewer .course-banner-blue,
+.mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
-/* Reducimos el header para dar más espacio al PDF */
-body.mode-viewer .home-header-professional {
-    padding: 10px 30px !important;
-}
-
-body.mode-viewer .header-center-info h1 {
-    font-size: 1.2rem !important;
-    /* Saludo compacto */
-}
-
-body.mode-viewer .header-center-info p {
-    display: none !important;
-    /* Ocultamos el subtítulo */
-}
-
-body.mode-viewer .header-logo-side {
-    height: 40px !important;
-}
-
-/* Contenedor al 100% sin zoom hacks para máxima estabilidad */
-body.mode-viewer .main-container-unified,
-body.mode-viewer .student-layout,
-body.mode-viewer .main-viewer {
+/* Eliminamos todas las restricciones de ancho y forzamos el 100% de la ventana */
+.mode-viewer .main-container-unified,
+.mode-viewer .student-layout,
+.mode-viewer .course-body-container,
+.mode-viewer .main-viewer {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;
-    height: calc(100vh - 65px) !important;
-    /* Header reducido */
-    background: white;
+    /* Block para evitar comportamientos extraños de flex */
 }
 
-body.mode-viewer .viewer-wrapper {
+.mode-viewer .main-viewer {
+    height: calc(100vh - 100px);
+    /* Ajuste según la altura del header */
+    overflow: hidden;
+}
+
+.mode-viewer .viewer-container {
+    width: 100%;
+    height: 100%;
+}
+
+.mode-viewer .viewer-wrapper {
     width: 100%;
     height: 100%;
     background: white;
+    border: none !important;
+    border-radius: 0 !important;
     overflow: hidden;
+    position: relative;
 }
 
 #pdf-viewer {
     width: 100% !important;
-    /* VOLVEMOS AL 100% ESTABLE */
     height: calc(100% + 56px);
+    /* Compensación para el recorte */
     margin-top: -56px;
+    /* Para ocultar la barra de Google Drive */
     border: none;
     background: white;
 }
-
-
-
-
-
 
 /* UTILS */
 .hidden {
