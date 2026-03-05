@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v8.6.0 (Optimized PDF View)
+// Mi Aula Virtual - Lógica del Alumno v8.7.0 (CSS Zoom PDF)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -198,10 +198,7 @@ function visualizePdf(url, title, element) {
     let finalUrl = url;
     if (url.includes('drive.google.com')) {
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        if (idMatch) {
-            // Usamos el fragmento '#' que es el estándar para parámetros de visualización PDF
-            finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview#view=FitH`;
-        }
+        if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
     }
 
     viewer.onload = () => { if (loader) loader.style.display = "none"; viewer.style.visibility = "visible"; };

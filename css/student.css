@@ -252,13 +252,12 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.3.0) */
+/* 4. MODO LECTURA TOTAL (v8.7.0 - CSS ZOOM) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
-/* Eliminamos todas las restricciones de ancho y forzamos el 100% de la ventana */
 .mode-viewer .main-container-unified,
 .mode-viewer .student-layout,
 .mode-viewer .course-body-container,
@@ -274,12 +273,6 @@ body {
     height: calc(100vh - 100px);
     overflow: hidden;
     background: white;
-    /* Aseguramos fondo blanco en el contenedor */
-}
-
-.mode-viewer .viewer-container {
-    width: 100%;
-    height: 100%;
 }
 
 .mode-viewer .viewer-wrapper {
@@ -290,17 +283,21 @@ body {
     border-radius: 0 !important;
     overflow: hidden;
     position: relative;
+    /* CENTRADO PARA ZOOM CSS */
+    display: flex !important;
+    justify-content: center !important;
 }
 
 #pdf-viewer {
-    width: 100% !important;
-    height: calc(100% + 40px);
-    /* El visor de Docs es más compacto */
-    margin-top: -40px;
-    /* Ocultar barra de herramientas light */
+    width: 140% !important;
+    /* SIMULA ZOOM AL 140% */
+    height: calc(100% + 56px);
+    margin-top: -56px;
     border: none;
     background: white;
+    flex-shrink: 0;
 }
+
 
 /* UTILS */
 .hidden {
