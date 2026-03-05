@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v7.4.0 (Visor Integrado + Split View)
+// Mi Aula Virtual - Lógica del Alumno v7.5.0 (Visor Integrado + Split View)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 
@@ -154,7 +154,6 @@ function visualizePdf(url, title, element) {
     document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));
     element?.classList.add('active');
 
-    const placeholder = document.getElementById('viewer-placeholder');
     const container = document.getElementById('viewer-container');
     const viewer = document.getElementById('pdf-viewer');
     const titleEl = document.getElementById('pdf-title');
@@ -165,7 +164,6 @@ function visualizePdf(url, title, element) {
     const courseView = document.getElementById('course-view');
     courseView.classList.add('mode-viewer');
 
-    placeholder.classList.add('hidden');
     container.classList.remove('hidden');
     viewer.style.visibility = "hidden";
     if (loader) loader.style.display = "block";
@@ -187,7 +185,6 @@ function visualizePdf(url, title, element) {
 function closeViewer() {
     document.getElementById('course-view').classList.remove('mode-viewer');
     document.getElementById('viewer-container').classList.add('hidden');
-    document.getElementById('viewer-placeholder').classList.remove('hidden');
     document.getElementById('pdf-viewer').src = "about:blank";
     document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));
 }
