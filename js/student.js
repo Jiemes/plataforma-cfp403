@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v8.4.0 (Stable Full-Width PDF)
+// Mi Aula Virtual - Lógica del Alumno v8.5.0 (Zoom Fit-Width PDF)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -198,7 +198,10 @@ function visualizePdf(url, title, element) {
     let finalUrl = url;
     if (url.includes('drive.google.com')) {
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+        if (idMatch) {
+            // Aplicamos zoom automático para ajustar al ancho (FitH) y evitar fondo negro
+            finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview?view=FitH&zoom=100`;
+        }
     }
 
     viewer.onload = () => { if (loader) loader.style.display = "none"; viewer.style.visibility = "visible"; };
