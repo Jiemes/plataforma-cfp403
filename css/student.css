@@ -24,7 +24,7 @@ body {
     flex-direction: column;
 }
 
-/* 1. HEADER UNIFICADO (Fijado arriba) */
+/* 1. HEADER UNIFICADO */
 .home-header-professional {
     width: 100%;
     background: white;
@@ -101,19 +101,14 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 2. PANTALLA PRINCIPAL (Grilla y Curso) */
+/* 2. CONTENEDOR PRINCIPAL */
 .main-container-unified {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-bottom: 40px;
-}
-
-/* HOME VIEW */
-.home-view {
     width: 100%;
-    max-width: 1100px;
 }
 
 .home-main {
@@ -132,7 +127,6 @@ body {
 .section-title h2 {
     font-weight: 900;
     font-size: 1.8rem;
-    letter-spacing: -0.02em;
 }
 
 .course-grid {
@@ -142,7 +136,6 @@ body {
     padding: 0 10px;
 }
 
-/* COURSE CARDS */
 .course-card {
     background: white;
     padding: 50px 40px;
@@ -182,7 +175,7 @@ body {
     text-transform: uppercase;
 }
 
-/* 3. VISTA DASHBOARD DEL CURSO */
+/* 3. VISTA CUR_SO */
 .student-layout {
     width: 100%;
     display: flex;
@@ -206,42 +199,20 @@ body {
 .banner-content h1 {
     font-size: 1.8rem;
     font-weight: 900;
-    letter-spacing: -0.02em;
-}
-
-.banner-content p {
-    font-size: 0.9rem;
-    opacity: 0.9;
 }
 
 .course-body-container {
     max-width: 1100px;
     width: 100%;
     padding: 0 10px;
-    transition: max-width 0.3s ease;
 }
 
-.mode-viewer .course-body-container {
-    max-width: 100% !important;
-    padding: 0 !important;
-}
-
-
-
-
-.week-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* CARDS DE SEMANA / BIENVENIDA */
 .week-card {
     background: white;
     border-radius: 20px;
     padding: 25px 30px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    margin-bottom: 15px;
     transition: var(--transition);
 }
 
@@ -255,7 +226,6 @@ body {
 .week-header h3 {
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--text-dark);
 }
 
 .week-body {
@@ -263,11 +233,6 @@ body {
     display: none;
     flex-direction: column;
     gap: 12px;
-}
-
-.week-card.opened {
-    border-color: var(--primary-color);
-    box-shadow: 0 10px 25px rgba(0, 185, 232, 0.05);
 }
 
 .week-card.opened .week-body {
@@ -282,7 +247,6 @@ body {
     align-items: center;
     gap: 15px;
     cursor: pointer;
-    transition: var(--transition);
     border: 1px solid transparent;
 }
 
@@ -291,83 +255,49 @@ body {
     border-color: var(--primary-color);
 }
 
-.content-item .icon {
-    font-size: 1.4rem;
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.item-info strong {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    display: block;
-}
-
-.item-info p {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-/* VISOR PDF */
-.main-viewer {
-    display: none;
-    width: 100%;
-    height: calc(100vh - 100px);
-    margin: 0;
-}
-
-
-
-.viewer-wrapper {
-    flex-grow: 1;
-    height: 100%;
-    background: white;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-    position: relative;
-}
-
-.mode-viewer .viewer-wrapper {
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-
-#pdf-viewer {
-    width: 100%;
-    height: calc(100% + 56px);
-    /* Compensar el recorte superior */
-    margin-top: -56px;
-    /* Ocultar la barra de herramientas de Google Drive */
-    border: none;
-}
-
-
-/* MODO LECTURA */
+/* 4. MODO LECTURA (Ensanchado Radical) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
+.mode-viewer .main-container-unified,
+.mode-viewer .student-layout,
+.mode-viewer .course-body-container,
 .mode-viewer .main-viewer {
-    display: flex !important;
-    height: calc(100vh - 100px);
-    width: 100%;
+    width: 100% !important;
     max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+    display: flex !important;
 }
 
+.mode-viewer .main-viewer {
+    height: calc(100vh - 100px);
+    overflow: hidden;
+}
 
-
-
-.mode-viewer .main-container-unified {
+.mode-viewer .viewer-wrapper {
     width: 100%;
-    max-width: 100% !important;
-    padding-bottom: 0;
+    height: 100%;
+    background: white;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: hidden;
+    position: relative;
+}
+
+#pdf-viewer {
+    width: 140%;
+    /* Ensanchar el iframe mucho más allá de la pantalla */
+    height: calc(100% + 60px);
+    margin-top: -60px;
+    /* Ocultar barra superior de Google */
+    margin-left: -20%;
+    /* Recortar bordes grises laterales de Google */
+    border: none;
+    background: white;
 }
 
 /* UTILS */
@@ -402,9 +332,5 @@ body {
 
     .header-center-info p {
         font-size: 0.8rem;
-    }
-
-    .course-grid {
-        grid-template-columns: 1fr;
     }
 }
