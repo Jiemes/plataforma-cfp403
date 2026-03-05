@@ -162,6 +162,9 @@ function visualizePdf(url, title, element) {
     const loader = document.getElementById('pdf-loader');
     const retryBtn = document.getElementById('pdf-retry-btn');
 
+    const courseView = document.getElementById('course-view');
+    courseView.classList.add('mode-viewer');
+
     placeholder.classList.add('hidden');
     container.classList.remove('hidden');
     viewer.style.visibility = "hidden";
@@ -182,6 +185,7 @@ function visualizePdf(url, title, element) {
 }
 
 function closeViewer() {
+    document.getElementById('course-view').classList.remove('mode-viewer');
     document.getElementById('viewer-container').classList.add('hidden');
     document.getElementById('viewer-placeholder').classList.remove('hidden');
     document.getElementById('pdf-viewer').src = "about:blank";

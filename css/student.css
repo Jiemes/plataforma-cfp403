@@ -188,6 +188,28 @@ body {
     background: #f1f5f9;
 }
 
+/* MODO LECTURA FULL SCREEN */
+.mode-viewer .course-nav-compact,
+.mode-viewer .sidebar-content {
+    display: none !important;
+}
+
+.mode-viewer .main-viewer {
+    width: 100%;
+}
+
+.mode-viewer .viewer-toolbar {
+    background: white;
+    padding: 10px 30px;
+    height: 70px;
+}
+
+.mode-viewer .viewer-toolbar h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+
 /* SIDEBAR IZQUIERDA */
 .sidebar-content {
     width: 400px;
@@ -378,23 +400,41 @@ body {
 
 .btn-toolbar {
     text-decoration: none;
-    color: var(--primary-color);
+    color: var(--text-muted);
     font-size: 0.8rem;
-    font-weight: 700;
-    border: 1px solid var(--primary-color);
-    padding: 4px 12px;
-    border-radius: 6px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: var(--transition);
 }
 
-.btn-toolbar-close {
-    background: #f1f5f9;
-    border: none;
-    padding: 4px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 0.8rem;
+.btn-toolbar:hover {
+    color: var(--primary-color);
+    background: var(--primary-light);
 }
+
+
+
+.btn-back-viewer {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 0.8rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-back-viewer:hover {
+    background: var(--primary-hover);
+    transform: translateX(-5px);
+}
+
 
 .viewer-wrapper {
     flex-grow: 1;
