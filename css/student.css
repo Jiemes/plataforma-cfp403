@@ -252,7 +252,7 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.7.0 - CSS ZOOM) */
+/* 4. MODO LECTURA TOTAL (v8.8.0 - CROPPED ZOOM) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
@@ -283,20 +283,21 @@ body {
     border-radius: 0 !important;
     overflow: hidden;
     position: relative;
-    /* CENTRADO PARA ZOOM CSS */
-    display: flex !important;
-    justify-content: center !important;
+    display: block !important;
+    /* Volvemos a block */
 }
 
 #pdf-viewer {
-    width: 140% !important;
-    /* SIMULA ZOOM AL 140% */
+    width: 120% !important;
+    /* ZOOM CSS CONTROLADO */
+    margin-left: -10% !important;
+    /* CENTRADO DEL ZOOM */
     height: calc(100% + 56px);
     margin-top: -56px;
     border: none;
     background: white;
-    flex-shrink: 0;
 }
+
 
 
 /* UTILS */
