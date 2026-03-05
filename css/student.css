@@ -252,7 +252,7 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.8.0 - CROPPED ZOOM) */
+/* 4. MODO LECTURA TOTAL (v8.9.0 - STABLE FULL-WIDTH) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
@@ -284,19 +284,17 @@ body {
     overflow: hidden;
     position: relative;
     display: block !important;
-    /* Volvemos a block */
 }
 
 #pdf-viewer {
-    width: 120% !important;
-    /* ZOOM CSS CONTROLADO */
-    margin-left: -10% !important;
-    /* CENTRADO DEL ZOOM */
+    width: 100% !important;
+    /* VOLVEMOS AL 100% ESTABLE */
     height: calc(100% + 56px);
     margin-top: -56px;
     border: none;
     background: white;
 }
+
 
 
 
