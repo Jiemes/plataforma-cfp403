@@ -252,7 +252,7 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.2.0) */
+/* 4. MODO LECTURA TOTAL (v8.3.0) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
@@ -268,13 +268,13 @@ body {
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;
-    /* Block para evitar comportamientos extraños de flex */
 }
 
 .mode-viewer .main-viewer {
     height: calc(100vh - 100px);
-    /* Ajuste según la altura del header */
     overflow: hidden;
+    background: white;
+    /* Aseguramos fondo blanco en el contenedor */
 }
 
 .mode-viewer .viewer-container {
@@ -294,10 +294,10 @@ body {
 
 #pdf-viewer {
     width: 100% !important;
-    height: calc(100% + 56px);
-    /* Compensación para el recorte */
-    margin-top: -56px;
-    /* Para ocultar la barra de Google Drive */
+    height: calc(100% + 40px);
+    /* El visor de Docs es más compacto */
+    margin-top: -40px;
+    /* Ocultar barra de herramientas light */
     border: none;
     background: white;
 }
