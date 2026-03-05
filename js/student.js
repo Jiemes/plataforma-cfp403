@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.0.0 (Pro Full-Width Viewer)
+// Mi Aula Virtual - Lógica del Alumno v9.1.0 (Stable Legacy Viewer)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'

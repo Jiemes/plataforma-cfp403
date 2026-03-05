@@ -252,30 +252,42 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v9.0.0 - PRO INTEGRATION) */
-body.mode-viewer {
-    overflow: hidden !important;
-    /* Evita scroll doble */
-}
-
+/* 4. MODO LECTURA TOTAL (v9.1.0 - STABLE RESTORED) */
 body.mode-viewer .course-banner-blue,
 body.mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
-/* Forzamos al contenedor a ocupar TODO el espacio debajo del header */
+/* Reducimos el header para dar más espacio al PDF */
+body.mode-viewer .home-header-professional {
+    padding: 10px 30px !important;
+}
+
+body.mode-viewer .header-center-info h1 {
+    font-size: 1.2rem !important;
+    /* Saludo compacto */
+}
+
+body.mode-viewer .header-center-info p {
+    display: none !important;
+    /* Ocultamos el subtítulo */
+}
+
+body.mode-viewer .header-logo-side {
+    height: 40px !important;
+}
+
+/* Contenedor al 100% sin zoom hacks para máxima estabilidad */
 body.mode-viewer .main-container-unified,
 body.mode-viewer .student-layout,
 body.mode-viewer .main-viewer {
     width: 100% !important;
     max-width: 100% !important;
-    height: calc(100vh - 91px) !important;
-    /* 100vh - altura del header approx */
-    margin: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
     display: block !important;
-    position: relative;
-    overflow: hidden;
+    height: calc(100vh - 65px) !important;
+    /* Header reducido */
     background: white;
 }
 
@@ -284,19 +296,17 @@ body.mode-viewer .viewer-wrapper {
     height: 100%;
     background: white;
     overflow: hidden;
-    position: relative;
 }
 
 #pdf-viewer {
-    /* ZOOM Y RECORTE PRO: Iframe ligeramente más ancho para tapar barras negras */
-    width: 115% !important;
-    margin-left: -7.5% !important;
-    /* Centrado del zoom de 115% */
+    width: 100% !important;
+    /* VOLVEMOS AL 100% ESTABLE */
     height: calc(100% + 56px);
     margin-top: -56px;
     border: none;
     background: white;
 }
+
 
 
 
