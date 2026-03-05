@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v7.8.0 (Cropped PDF Viewer)
+// Mi Aula Virtual - Lógica del Alumno v7.9.0 (Full Edge-to-Edge PDF Viewer)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
