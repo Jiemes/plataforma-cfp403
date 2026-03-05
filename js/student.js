@@ -1,6 +1,7 @@
-// Mi Aula Virtual - Lógica del Alumno v7.5.0 (Visor Integrado + Split View)
+// Mi Aula Virtual - Lógica del Alumno v7.6.0 (Unified Header + Cleaner View)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
+let currentViewState = 'home'; // 'home', 'course', 'viewer'
 
 if (!studentSession) { window.location.href = 'index.html'; }
 
@@ -20,31 +21,60 @@ function initStudentDashboard() {
         card.className = 'course-card animated-in';
         card.innerHTML = `
             <div class="course-icon">${curso.id === 'habilidades' ? '💻' : '🚀'}</div>
-            <h3>${curso.nombre}</h3>
-            <p style="font-size:0.9rem; color:#64748b; margin-bottom:25px;">Accede a tus materiales y realiza tus entregas.</p>
+            <h3 style="font-size:1.4rem; font-weight:800; margin-bottom:10px;">${curso.nombre}</h3>
+            <p style="font-size:0.95rem; color:#64748b; margin-bottom:30px;">Accede a tus materiales y realiza tus entregas.</p>
             <button class="btn-enter-course">INGRESAR AL CURSO</button>
         `;
         card.onclick = () => selectCourse(curso.id, curso.nombre);
         grid.appendChild(card);
     });
+
+    updateHeaderButton();
+}
+
+function updateHeaderButton() {
+    const btn = document.getElementById('btn-header-action');
+    if (!btn) return;
+
+    // Remover listeners viejos para evitar duplicados
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    if (currentViewState === 'home') {
+        newBtn.innerText = 'Cerrar Sesión Segura';
+        newBtn.onclick = () => {
+            localStorage.removeItem('user_session');
+            window.location.href = 'index.html';
+        };
+    } else if (currentViewState === 'course') {
+        newBtn.innerText = '← Volver al Inicio';
+        newBtn.onclick = backToHome;
+    } else if (currentViewState === 'viewer') {
+        newBtn.innerText = '← Volver al Curso';
+        newBtn.onclick = closeViewer;
+    }
 }
 
 function selectCourse(courseId, courseName) {
     currentCourseId = courseId;
+    currentViewState = 'course';
+
     document.getElementById('home-view').classList.add('hidden');
     document.getElementById('course-view').classList.remove('hidden');
     document.getElementById('course-title').innerText = courseName;
-    document.getElementById('nav-course-name').innerText = courseName;
 
-    // Reset visor
-    closeViewer();
+    updateHeaderButton();
     loadContent();
 }
 
 function backToHome() {
+    currentCourseId = '';
+    currentViewState = 'home';
+
     document.getElementById('course-view').classList.add('hidden');
     document.getElementById('home-view').classList.remove('hidden');
-    currentCourseId = '';
+
+    updateHeaderButton();
 }
 
 async function loadContent() {
@@ -72,11 +102,10 @@ async function loadContent() {
         const matInicio = materiales['inicio'] || {};
         const welcomeUrl = matInicio.welcome || config.welcome_url;
         const syllabusUrl = matInicio.syllabus || config.syllabus_url;
-        const fInicioStr = matInicio.fecha || config.fecha_inicio;
 
         if (welcomeUrl || syllabusUrl) {
             const introCard = document.createElement('div');
-            introCard.className = 'week-card opened';
+            introCard.className = 'week-card'; // Cerrado por defecto
             introCard.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>📚 Bienvenida y Programa</h3>
@@ -99,7 +128,7 @@ async function loadContent() {
             weeksContainer.appendChild(introCard);
         }
 
-        // 2. SEMANAS (Orden Inverso - Sin badge "Liberado")
+        // 2. SEMANAS (Orden Inverso)
         let weeksKeys = Object.keys(materiales)
             .filter(k => k.startsWith('sem_'))
             .map(k => parseInt(k.replace('sem_', '')))
@@ -114,7 +143,7 @@ async function loadContent() {
 
             const entrega = entregas.find(e => e.semana === i);
             const card = document.createElement('div');
-            card.className = `week-card ${i === weeksKeys[0] ? 'opened' : ''}`;
+            card.className = `week-card`; // Todas cerradas por defecto
             card.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>Semana ${i}</h3>
@@ -150,7 +179,9 @@ async function loadContent() {
 function visualizePdf(url, title, element) {
     if (!url) return alert("Material no disponible.");
 
-    // UI Feedback: Marcar item activo
+    currentViewState = 'viewer';
+    updateHeaderButton();
+
     document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));
     element?.classList.add('active');
 
@@ -161,8 +192,7 @@ function visualizePdf(url, title, element) {
     const loader = document.getElementById('pdf-loader');
     const retryBtn = document.getElementById('pdf-retry-btn');
 
-    const courseView = document.getElementById('course-view');
-    courseView.classList.add('mode-viewer');
+    document.getElementById('course-view').classList.add('mode-viewer');
 
     container.classList.remove('hidden');
     viewer.style.visibility = "hidden";
@@ -183,6 +213,9 @@ function visualizePdf(url, title, element) {
 }
 
 function closeViewer() {
+    currentViewState = 'course';
+    updateHeaderButton();
+
     document.getElementById('course-view').classList.remove('mode-viewer');
     document.getElementById('viewer-container').classList.add('hidden');
     document.getElementById('pdf-viewer').src = "about:blank";
@@ -212,9 +245,5 @@ async function uploadHomework(semana) {
         loadContent();
     } catch (error) { alert("Error: " + error.message); }
 }
-
-document.getElementById('btn-logout-home')?.addEventListener('click', () => { localStorage.removeItem('user_session'); window.location.href = 'index.html'; });
-document.getElementById('btn-back-home')?.addEventListener('click', backToHome);
-document.getElementById('btn-close-viewer')?.addEventListener('click', closeViewer);
 
 initStudentDashboard();

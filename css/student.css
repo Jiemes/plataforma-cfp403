@@ -20,26 +20,22 @@ body {
     background: var(--bg-light);
     color: var(--text-dark);
     min-height: 100vh;
-    overflow: hidden;
-}
-
-/* 1. HOME VIEW */
-.home-container {
-    height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
 }
 
+/* 1. HEADER UNIFICADO (Fijado arriba) */
 .home-header-professional {
     width: 100%;
     background: white;
-    padding: 25px 60px;
+    padding: 15px 40px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .header-content-unified {
@@ -48,11 +44,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 40px;
+    gap: 30px;
 }
 
 .header-logo-side {
-    height: 70px;
+    height: 60px;
     width: auto;
 }
 
@@ -62,29 +58,95 @@ body {
 }
 
 .header-center-info h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 900;
     letter-spacing: -0.05em;
     margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.header-center-info p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.header-right-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.btn-action-header {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--text-dark);
+    transition: var(--transition);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.btn-action-header:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* 2. PANTALLA PRINCIPAL (Grilla y Curso) */
+.main-container-unified {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 40px;
+}
+
+/* HOME VIEW */
+.home-view {
+    width: 100%;
+    max-width: 1100px;
 }
 
 .home-main {
-    max-width: 1000px;
-    margin: 40px auto;
+    max-width: 1100px;
     width: 100%;
-    padding: 0 20px;
+    margin: 40px auto;
+}
+
+.section-title {
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.section-title h2 {
+    font-weight: 900;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
 }
 
 .course-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 40px;
+    padding: 0 10px;
 }
 
+/* COURSE CARDS */
 .course-card {
     background: white;
-    padding: 40px;
-    border-radius: 30px;
+    padding: 50px 40px;
+    border-radius: 40px;
     cursor: pointer;
     transition: var(--transition);
     border: 1px solid #e2e8f0;
@@ -94,165 +156,82 @@ body {
 .course-card:hover {
     transform: translateY(-10px);
     border-color: var(--primary-color);
-    box-shadow: 0 25px 45px -15px rgba(0, 185, 232, 0.15);
+    box-shadow: 0 35px 60px -15px rgba(0, 185, 232, 0.15);
 }
 
 .course-icon {
-    font-size: 3rem;
-    margin-bottom: 20px;
-    background: var(--primary-light);
-    width: 80px;
-    height: 80px;
+    font-size: 3.5rem;
+    background: #f8fafc;
+    width: 90px;
+    height: 90px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 20px;
-    margin: 0 auto 20px;
+    border-radius: 25px;
+    margin: 0 auto 30px;
 }
 
 .btn-enter-course {
     background: var(--primary-color);
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 12px;
+    padding: 15px 40px;
+    border-radius: 15px;
     font-weight: 800;
     cursor: pointer;
+    text-transform: uppercase;
 }
 
-.home-footer {
-    padding: 40px;
-    text-align: center;
-}
-
-.btn-logout-elegant {
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    padding: 10px 25px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    color: #64748b;
-}
-
-/* 2. SPLIT LAYOUT v7.3.0 */
+/* 3. VISTA DASHBOARD DEL CURSO */
 .student-layout {
-    height: 100vh;
+    width: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.course-nav-compact {
-    height: 60px;
-    background: white;
-    padding: 0 30px;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #e2e8f0;
-    flex-shrink: 0;
 }
 
-.nav-left {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.btn-back-minimal {
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.nav-logo-tiny {
-    height: 35px;
-    width: auto;
-    opacity: 0.7;
-}
-
-.nav-middle span {
-    font-weight: 800;
-    font-size: 1rem;
-    color: var(--text-dark);
-}
-
-.split-container {
-    flex-grow: 1;
-    display: flex;
-    overflow: hidden;
-    background: #f1f5f9;
+.course-banner-blue {
     width: 100%;
-    max-width: 1000px;
+    background: var(--primary-color);
+    color: white;
+    padding: 30px 40px;
+    margin-bottom: 30px;
+}
+
+.banner-content {
+    max-width: 1100px;
     margin: 0 auto;
 }
 
-
-/* MODO LECTURA FULL SCREEN */
-.mode-viewer .course-nav-compact,
-.mode-viewer .sidebar-content {
-    display: none !important;
+.banner-content h1 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
 }
 
-.mode-viewer .main-viewer {
-    width: 100%;
-}
-
-.mode-viewer .viewer-toolbar {
-    background: white;
-    padding: 10px 30px;
-    height: 70px;
-}
-
-.mode-viewer .viewer-toolbar h3 {
-    font-size: 1.1rem;
-    font-weight: 800;
-}
-
-
-/* SIDEBAR IZQUIERDA */
-.sidebar-content {
-    width: 100%;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #e2e8f0;
-}
-
-
-.course-header-mini {
-    padding: 25px 25px 15px;
-    background: var(--primary-color);
-    color: white;
-}
-
-.header-text-mini h1 {
-    font-size: 1.3rem;
-    font-weight: 800;
-}
-
-.header-text-mini p {
-    font-size: 0.8rem;
+.banner-content p {
+    font-size: 0.9rem;
     opacity: 0.9;
 }
 
-.student-content-scroll {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
+.course-body-container {
+    max-width: 1100px;
+    width: 100%;
+    padding: 0 10px;
 }
 
-/* CARDS DE SEMANA */
+.week-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* CARDS DE SEMANA / BIENVENIDA */
 .week-card {
     background: white;
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 12px;
-    border: 1px solid #f1f5f9;
+    border-radius: 20px;
+    padding: 25px 30px;
+    border: 1px solid #e2e8f0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     transition: var(--transition);
 }
@@ -265,20 +244,21 @@ body {
 }
 
 .week-header h3 {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 800;
+    color: var(--text-dark);
 }
 
 .week-body {
-    padding-top: 15px;
+    padding-top: 25px;
     display: none;
-    /* Se controla con la clase 'opened' */
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .week-card.opened {
     border-color: var(--primary-color);
+    box-shadow: 0 10px 25px rgba(0, 185, 232, 0.05);
 }
 
 .week-card.opened .week-body {
@@ -287,11 +267,11 @@ body {
 
 .content-item {
     background: #f8fafc;
-    padding: 12px;
+    padding: 15px 20px;
     border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     cursor: pointer;
     transition: var(--transition);
     border: 1px solid transparent;
@@ -302,166 +282,76 @@ body {
     border-color: var(--primary-color);
 }
 
-.content-item.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-.content-item.active .item-info strong {
-    color: white;
-}
-
-.content-item.active .item-info p {
-    color: rgba(255, 255, 255, 0.8);
-}
-
 .content-item .icon {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     background: white;
-    padding: 8px;
-    border-radius: 8px;
+    padding: 10px;
+    border-radius: 10px;
 }
 
-.content-item .item-info strong {
-    font-size: 0.9rem;
+.item-info strong {
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-dark);
     display: block;
 }
 
-.content-item .item-info p {
-    font-size: 0.75rem;
+.item-info p {
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
-/* VISOR DERECHA */
+/* VISOR PDF */
 .main-viewer {
     display: none;
-    flex-grow: 1;
-    position: relative;
-    background: white;
-    flex-direction: column;
-}
-
-
-/* MODO LECTURA FULL SCREEN (Sobrescribe lo anterior) */
-.mode-viewer .split-container {
-    max-width: 100% !important;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-}
-
-.mode-viewer .sidebar-content {
-    display: none !important;
-}
-
-.mode-viewer .main-viewer {
-    display: flex !important;
     width: 100%;
-    height: 100%;
-}
-
-
-.viewer-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    z-index: 10;
+    height: calc(100vh - 120px);
 }
 
 .viewer-toolbar {
-    height: 50px;
-    background: #ffffff;
-    padding: 0 25px;
+    padding: 15px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 20px;
 }
 
 .viewer-toolbar h3 {
-    font-size: 0.9rem;
-    font-weight: 800;
-    color: #1e293b;
+    font-size: 1.3rem;
+    font-weight: 900;
 }
-
-.toolbar-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-toolbar {
-    text-decoration: none;
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 8px;
-    transition: var(--transition);
-}
-
-.btn-toolbar:hover {
-    color: var(--primary-color);
-    background: var(--primary-light);
-}
-
-
-
-.btn-back-viewer {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 800;
-    font-size: 0.8rem;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-back-viewer:hover {
-    background: var(--primary-hover);
-    transform: translateX(-5px);
-}
-
 
 .viewer-wrapper {
     flex-grow: 1;
-    position: relative;
-}
-
-.viewer-loader {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: 100%;
     background: white;
-    z-index: 20;
-    text-align: center;
-}
-
-.loader-card {
-    padding: 40px;
-}
-
-.btn-retry {
-    display: inline-block;
-    margin-top: 15px;
-    color: var(--primary-color);
-    font-weight: 700;
-    font-size: 0.85rem;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
 }
 
 #pdf-viewer {
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* MODO LECTURA */
+.mode-viewer .course-banner-blue,
+.mode-viewer .weeks-container-wrapper {
+    display: none !important;
+}
+
+.mode-viewer .main-viewer {
+    display: flex !important;
+    height: calc(100vh - 150px);
+}
+
+.mode-viewer .main-container-unified {
+    width: 100%;
+    max-width: 100% !important;
+    padding-bottom: 0;
 }
 
 /* UTILS */
@@ -485,21 +375,20 @@ body {
     }
 }
 
-@media (max-width: 900px) {
-    .sidebar-content {
-        width: 100%;
-        min-width: 0;
-        position: absolute;
-        z-index: 100;
-        height: 100%;
-        transition: transform 0.3s ease;
+@media (max-width: 768px) {
+    .header-logo-side {
+        height: 40px;
     }
 
-    .sidebar-content.minimized {
-        transform: translateX(-100%);
+    .header-center-info h1 {
+        font-size: 1.5rem;
     }
 
-    .main-viewer {
-        width: 100%;
+    .header-center-info p {
+        font-size: 0.8rem;
+    }
+
+    .course-grid {
+        grid-template-columns: 1fr;
     }
 }

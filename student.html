@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Aula Virtual v7.5.0 | CFP 403</title>
+    <title>Mi Aula Virtual v7.6.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7.5.0">
-    <link rel="stylesheet" href="css/student.css?v=7.5.0">
+    <link rel="stylesheet" href="css/style.css?v=7.6.0">
+    <link rel="stylesheet" href="css/student.css?v=7.6.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -17,98 +17,86 @@
 </head>
 
 <body>
-    <!-- 1. PANTALLA DE INICIO (Selector de Cursos) -->
-    <div id="home-view" class="home-container animated-in">
-        <header class="home-header-professional">
-            <div class="header-content-unified">
-                <img src="assets/CFP 403.png" alt="Logo CFP" class="header-logo-side">
-                <div class="header-center-info">
-                    <h1 id="home-student-name">¡Hola, Alumno!</h1>
-                    <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
-                </div>
+    <!-- HEADER UNIFICADO (Fijo en todas las vistas) -->
+    <header class="home-header-professional">
+        <div class="header-content-unified">
+            <img src="assets/CFP 403.png" alt="Logo CFP" class="header-logo-side">
+            <div class="header-center-info">
+                <h1 id="home-student-name">¡Hola, Alumno!</h1>
+                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+            </div>
+            <div class="header-right-container">
                 <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-logo-side">
+                <div class="header-actions">
+                    <button id="btn-header-action" class="btn-action-header">Cerrar Sesión</button>
+                    <!-- El texto y función de este botón cambiarán dinámicamente -->
+                </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main class="home-main">
-            <div class="section-title">
-                <span class="dot"></span>
-                <h2>Mis Cursos</h2>
-            </div>
-            <div id="home-course-grid" class="course-grid">
-                <div class="loader">Sincronizando información...</div>
-            </div>
-        </main>
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="main-container-unified">
 
-        <footer class="home-footer">
-            <button id="btn-logout-home" class="btn-logout-elegant">Cerrar Sesión Segura</button>
-        </footer>
-    </div>
+        <!-- 1. PANTALLA DE INICIO (Selector de Cursos) -->
+        <div id="home-view" class="home-container animated-in">
+            <main class="home-main">
+                <div class="section-title">
+                    <span class="dot"></span>
+                    <h2>Mis Cursos</h2>
+                </div>
+                <div id="home-course-grid" class="course-grid">
+                    <div class="loader">Sincronizando información...</div>
+                </div>
+            </main>
+        </div>
 
-    <!-- 2. VISTA DASHBOARD DEL CURSO (Layuot Dividido v7.3.0) -->
-    <div id="course-view" class="student-layout hidden">
-        <nav class="course-nav-compact">
-            <div class="nav-left">
-                <button id="btn-back-home" class="btn-back-minimal">
-                    <span>←</span> Inicio
-                </button>
-                <img src="assets/CFP 403.png" alt="Logo CFP" class="nav-logo-tiny">
+        <!-- 2. VISTA DASHBOARD DEL CURSO -->
+        <div id="course-view" class="student-layout hidden">
+            <!-- Banner del Curso -->
+            <div class="course-banner-blue">
+                <div class="banner-content">
+                    <h1 id="course-title">Curso</h1>
+                    <p>Materiales y actividades</p>
+                </div>
             </div>
-            <div class="nav-middle">
-                <span id="nav-course-name">Curso Actual</span>
-            </div>
-            <div class="nav-right">
-                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="nav-logo-tiny">
-            </div>
-        </nav>
 
-        <div class="split-container">
-            <!-- Columna Izquierda: Contenidos -->
-            <aside class="sidebar-content" id="sidebar-content">
-                <header class="course-header-mini">
-                    <div class="header-text-mini">
-                        <h1 id="course-title">Curso</h1>
-                        <p>Materiales y actividades</p>
-                    </div>
-                </header>
-                <div class="student-content-scroll">
+            <div class="course-body-container">
+                <!-- Listado de Contenidos -->
+                <div id="weeks-container-wrapper" class="weeks-container-wrapper">
                     <div class="week-list" id="weeks-container">
                         <div class="loading-spinner">Cargando material...</div>
                     </div>
                 </div>
-            </aside>
 
-            <!-- Columna Derecha: Visor de PDF (Oculto por defecto) -->
-            <main class="main-viewer" id="main-viewer">
-
-                <div id="viewer-container" class="viewer-container hidden">
-                    <div class="viewer-toolbar">
-                        <h3 id="pdf-title">Material de Clase</h3>
-                        <div class="toolbar-actions">
+                <!-- Visor de PDF -->
+                <main class="main-viewer" id="main-viewer">
+                    <div id="viewer-container" class="viewer-container hidden">
+                        <div class="viewer-toolbar">
+                            <h3 id="pdf-title">Material de Clase</h3>
                             <a id="pdf-external-link" href="#" target="_blank" class="btn-toolbar">🔗 Ver Pantalla
                                 Completa</a>
-                            <button id="btn-close-viewer" class="btn-back-viewer">← VOLVER AL CURSO</button>
                         </div>
-                    </div>
 
-                    <div class="viewer-wrapper">
-                        <div id="pdf-loader" class="viewer-loader">
-                            <div class="loader-card">
-                                <h3>⌛ Cargando archivo...</h3>
-                                <p>Estamos preparando tu material de lectura.</p>
-                                <a id="pdf-retry-btn" href="#" target="_blank" class="btn-retry">¿No carga? Abrir en
-                                    pestaña nueva</a>
+                        <div class="viewer-wrapper">
+                            <div id="pdf-loader" class="viewer-loader">
+                                <div class="loader-card">
+                                    <h3>⌛ Cargando archivo...</h3>
+                                    <p>Estamos preparando tu material de lectura.</p>
+                                    <a id="pdf-retry-btn" href="#" target="_blank" class="btn-retry">¿No carga? Abrir en
+                                        pestaña nueva</a>
+                                </div>
                             </div>
+                            <iframe id="pdf-viewer" src="" frameborder="0"></iframe>
                         </div>
-                        <iframe id="pdf-viewer" src="" frameborder="0"></iframe>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=7.5.0"></script>
+    <script src="js/student.js?v=7.6.0"></script>
 </body>
 
 </html>
