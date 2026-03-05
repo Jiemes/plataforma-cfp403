@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v8.9.0 (Stable Legacy Viewer)
+// Mi Aula Virtual - Lógica del Alumno v9.0.0 (Pro Full-Width Viewer)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -189,7 +189,7 @@ function visualizePdf(url, title, element) {
     const viewer = document.getElementById('pdf-viewer');
     const loader = document.getElementById('pdf-loader');
 
-    document.getElementById('course-view').classList.add('mode-viewer');
+    document.body.classList.add('mode-viewer');
 
     container.classList.remove('hidden');
     viewer.style.visibility = "hidden";
@@ -209,7 +209,7 @@ function closeViewer() {
     currentViewState = 'course';
     updateHeaderButton();
 
-    document.getElementById('course-view').classList.remove('mode-viewer');
+    document.body.classList.remove('mode-viewer');
     document.getElementById('viewer-container').classList.add('hidden');
     document.getElementById('pdf-viewer').src = "about:blank";
     document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));

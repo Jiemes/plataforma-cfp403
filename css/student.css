@@ -252,48 +252,52 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.9.0 - STABLE FULL-WIDTH) */
-.mode-viewer .course-banner-blue,
-.mode-viewer .weeks-container-wrapper {
+/* 4. MODO LECTURA TOTAL (v9.0.0 - PRO INTEGRATION) */
+body.mode-viewer {
+    overflow: hidden !important;
+    /* Evita scroll doble */
+}
+
+body.mode-viewer .course-banner-blue,
+body.mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
-.mode-viewer .main-container-unified,
-.mode-viewer .student-layout,
-.mode-viewer .course-body-container,
-.mode-viewer .main-viewer {
+/* Forzamos al contenedor a ocupar TODO el espacio debajo del header */
+body.mode-viewer .main-container-unified,
+body.mode-viewer .student-layout,
+body.mode-viewer .main-viewer {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 0 !important;
+    height: calc(100vh - 91px) !important;
+    /* 100vh - altura del header approx */
     margin: 0 !important;
+    padding: 0 !important;
     display: block !important;
-}
-
-.mode-viewer .main-viewer {
-    height: calc(100vh - 100px);
+    position: relative;
     overflow: hidden;
     background: white;
 }
 
-.mode-viewer .viewer-wrapper {
+body.mode-viewer .viewer-wrapper {
     width: 100%;
     height: 100%;
     background: white;
-    border: none !important;
-    border-radius: 0 !important;
     overflow: hidden;
     position: relative;
-    display: block !important;
 }
 
 #pdf-viewer {
-    width: 100% !important;
-    /* VOLVEMOS AL 100% ESTABLE */
+    /* ZOOM Y RECORTE PRO: Iframe ligeramente más ancho para tapar barras negras */
+    width: 115% !important;
+    margin-left: -7.5% !important;
+    /* Centrado del zoom de 115% */
     height: calc(100% + 56px);
     margin-top: -56px;
     border: none;
     background: white;
 }
+
 
 
 
