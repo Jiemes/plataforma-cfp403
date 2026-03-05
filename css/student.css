@@ -24,7 +24,7 @@ body {
     flex-direction: column;
 }
 
-/* 1. HEADER UNIFICADO */
+/* 1. HEADER UNIFICADO (Fijado arriba) */
 .home-header-professional {
     width: 100%;
     background: white;
@@ -101,7 +101,7 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 2. CONTENEDOR PRINCIPAL */
+/* 2. PANTALLA PRINCIPAL (Grilla y Curso) */
 .main-container-unified {
     flex-grow: 1;
     display: flex;
@@ -111,6 +111,7 @@ body {
     width: 100%;
 }
 
+/* HOME VIEW */
 .home-main {
     max-width: 1100px;
     width: 100%;
@@ -127,6 +128,7 @@ body {
 .section-title h2 {
     font-weight: 900;
     font-size: 1.8rem;
+    letter-spacing: -0.02em;
 }
 
 .course-grid {
@@ -136,6 +138,7 @@ body {
     padding: 0 10px;
 }
 
+/* COURSE CARDS */
 .course-card {
     background: white;
     padding: 50px 40px;
@@ -175,7 +178,7 @@ body {
     text-transform: uppercase;
 }
 
-/* 3. VISTA CUR_SO */
+/* 3. VISTA DASHBOARD DEL CURSO */
 .student-layout {
     width: 100%;
     display: flex;
@@ -199,6 +202,12 @@ body {
 .banner-content h1 {
     font-size: 1.8rem;
     font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.banner-content p {
+    font-size: 0.9rem;
+    opacity: 0.9;
 }
 
 .course-body-container {
@@ -207,12 +216,19 @@ body {
     padding: 0 10px;
 }
 
+.week-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* CARDS DE SEMANA / BIENVENIDA */
 .week-card {
     background: white;
     border-radius: 20px;
     padding: 25px 30px;
     border: 1px solid #e2e8f0;
-    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     transition: var(--transition);
 }
 
@@ -226,6 +242,7 @@ body {
 .week-header h3 {
     font-size: 1.2rem;
     font-weight: 800;
+    color: var(--text-dark);
 }
 
 .week-body {
@@ -233,6 +250,11 @@ body {
     display: none;
     flex-direction: column;
     gap: 12px;
+}
+
+.week-card.opened {
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 25px rgba(0, 185, 232, 0.05);
 }
 
 .week-card.opened .week-body {
@@ -247,6 +269,7 @@ body {
     align-items: center;
     gap: 15px;
     cursor: pointer;
+    transition: var(--transition);
     border: 1px solid transparent;
 }
 
@@ -255,7 +278,26 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA (Ensanchado Radical) */
+.content-item .icon {
+    font-size: 1.4rem;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.item-info strong {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: block;
+}
+
+.item-info p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* 4. MODO LECTURA (Ensanchado Integrado) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
@@ -269,7 +311,8 @@ body {
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
-    align-items: stretch !important;
+    align-items: center !important;
+    /* Volvemos a centrar los elementos internos */
     display: flex !important;
 }
 
@@ -284,18 +327,16 @@ body {
     background: white;
     border: none !important;
     border-radius: 0 !important;
+    box-shadow: none !important;
     overflow: hidden;
-    position: relative;
 }
 
 #pdf-viewer {
-    width: 140%;
-    /* Ensanchar el iframe mucho más allá de la pantalla */
+    width: 100%;
+    /* Iframe ocupa el 100% del contenedor */
     height: calc(100% + 60px);
     margin-top: -60px;
-    /* Ocultar barra superior de Google */
-    margin-left: -20%;
-    /* Recortar bordes grises laterales de Google */
+    /* Seguimos ocultando la barra de Google */
     border: none;
     background: white;
 }
