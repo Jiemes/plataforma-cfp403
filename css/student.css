@@ -24,7 +24,7 @@ body {
     flex-direction: column;
 }
 
-/* 1. HEADER UNIFICADO (Fijado arriba) */
+/* 1. HEADER UNIFICADO (Fijo arriba) */
 .home-header-professional {
     width: 100%;
     background: white;
@@ -76,12 +76,6 @@ body {
     gap: 20px;
 }
 
-.header-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
 .btn-action-header {
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
@@ -101,7 +95,7 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 2. PANTALLA PRINCIPAL (Grilla y Curso) */
+/* 2. PANTALLA PRINCIPAL */
 .main-container-unified {
     flex-grow: 1;
     display: flex;
@@ -111,7 +105,6 @@ body {
     width: 100%;
 }
 
-/* HOME VIEW */
 .home-main {
     max-width: 1100px;
     width: 100%;
@@ -138,7 +131,6 @@ body {
     padding: 0 10px;
 }
 
-/* COURSE CARDS */
 .course-card {
     background: white;
     padding: 50px 40px;
@@ -178,7 +170,7 @@ body {
     text-transform: uppercase;
 }
 
-/* 3. VISTA DASHBOARD DEL CURSO */
+/* 3. VISTA DEL CURSO */
 .student-layout {
     width: 100%;
     display: flex;
@@ -202,12 +194,6 @@ body {
 .banner-content h1 {
     font-size: 1.8rem;
     font-weight: 900;
-    letter-spacing: -0.02em;
-}
-
-.banner-content p {
-    font-size: 0.9rem;
-    opacity: 0.9;
 }
 
 .course-body-container {
@@ -216,20 +202,14 @@ body {
     padding: 0 10px;
 }
 
-.week-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
 /* CARDS DE SEMANA / BIENVENIDA */
 .week-card {
     background: white;
     border-radius: 20px;
     padding: 25px 30px;
     border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-    transition: var(--transition);
 }
 
 .week-header {
@@ -252,11 +232,6 @@ body {
     gap: 12px;
 }
 
-.week-card.opened {
-    border-color: var(--primary-color);
-    box-shadow: 0 10px 25px rgba(0, 185, 232, 0.05);
-}
-
 .week-card.opened .week-body {
     display: flex;
 }
@@ -269,7 +244,6 @@ body {
     align-items: center;
     gap: 15px;
     cursor: pointer;
-    transition: var(--transition);
     border: 1px solid transparent;
 }
 
@@ -278,31 +252,13 @@ body {
     border-color: var(--primary-color);
 }
 
-.content-item .icon {
-    font-size: 1.4rem;
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.item-info strong {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    display: block;
-}
-
-.item-info p {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-/* 4. MODO LECTURA (Ensanchado Integrado) */
+/* 4. MODO LECTURA TOTAL (v8.2.0) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
 }
 
+/* Eliminamos todas las restricciones de ancho y forzamos el 100% de la ventana */
 .mode-viewer .main-container-unified,
 .mode-viewer .student-layout,
 .mode-viewer .course-body-container,
@@ -311,14 +267,19 @@ body {
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
-    align-items: center !important;
-    /* Volvemos a centrar los elementos internos */
-    display: flex !important;
+    display: block !important;
+    /* Block para evitar comportamientos extraños de flex */
 }
 
 .mode-viewer .main-viewer {
     height: calc(100vh - 100px);
+    /* Ajuste según la altura del header */
     overflow: hidden;
+}
+
+.mode-viewer .viewer-container {
+    width: 100%;
+    height: 100%;
 }
 
 .mode-viewer .viewer-wrapper {
@@ -327,16 +288,16 @@ body {
     background: white;
     border: none !important;
     border-radius: 0 !important;
-    box-shadow: none !important;
     overflow: hidden;
+    position: relative;
 }
 
 #pdf-viewer {
-    width: 100%;
-    /* Iframe ocupa el 100% del contenedor */
-    height: calc(100% + 60px);
-    margin-top: -60px;
-    /* Seguimos ocultando la barra de Google */
+    width: 100% !important;
+    height: calc(100% + 56px);
+    /* Compensación para el recorte */
+    margin-top: -56px;
+    /* Para ocultar la barra de Google Drive */
     border: none;
     background: white;
 }
