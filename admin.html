@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v7.4.0 | CFP 403</title>
+    <title>Panel Administrativo v7.5.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7.4.0">
-    <link rel="stylesheet" href="css/admin.css?v=7.4.0">
+    <link rel="stylesheet" href="css/style.css?v=7.5.0">
+    <link rel="stylesheet" href="css/admin.css?v=7.5.0">
     <style>
         .success-glow {
             animation: successPulse 1.5s;
@@ -136,7 +136,7 @@
 
             <section id="table-section" class="section hidden">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                         <h3 id="current-course-title">Listado de Alumnos</h3>
                         <div class="table-actions-top">
                             <button class="btn-danger-outline" id="btn-clear-course">Vaciar Lista</button>
@@ -150,7 +150,7 @@
                                     <th>DNI</th>
                                     <th>Teléfono</th>
                                     <th>Email</th>
-                                    <th>Edad</th>
+                                    <th style="text-align:center">Edad</th>
                                     <th style="text-align:center">Tareas</th>
                                     <th style="text-align:center">Promedio</th>
                                     <th>Acciones</th>
@@ -158,6 +158,47 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="correction-section" class="section hidden">
+                <div class="correction-header"
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h3 id="correction-student-name" style="font-size:1.5rem; font-weight:800;">Nombre del Alumno
+                        </h3>
+                        <p id="correction-course-name" style="color:#64748b; font-size:0.9rem;">Curso Actual</p>
+                    </div>
+                    <button class="btn-primary-sm" onclick="backToTable()" style="padding:10px 20px;">← Volver al
+                        Listado</button>
+                </div>
+
+                <div class="correction-container">
+                    <div class="correction-viewer">
+                        <iframe id="correction-pdf-viewer" src="about:blank"></iframe>
+                        <div id="correction-viewer-placeholder"
+                            style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                            <span style="font-size:3rem;">📄</span>
+                            <p style="color:#64748b; margin-top:10px;">Selecciona una actividad para corregir</p>
+                        </div>
+                    </div>
+
+                    <div class="correction-sidebar">
+                        <h4 style="font-weight:800; color:#1e293b; margin-bottom:5px;">Actividades Entregadas</h4>
+                        <div id="correction-activities-list" class="activities-list">
+                            <!-- Dynamic Buttons -->
+                        </div>
+
+                        <div id="grading-panel-root" class="grading-panel hidden">
+                            <label
+                                style="display:block; font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:8px;">Calificación
+                                (1-10)</label>
+                            <input type="number" id="input-grade-val" class="input-grade" min="1" max="10"
+                                placeholder="-">
+                            <button class="btn-primary" onclick="saveCorrectionGrade()"
+                                style="width:100%; border-radius:10px;">GUARDAR NOTA</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -173,7 +214,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=7.4.0"></script>
+    <script src="js/admin_v11.js?v=7.5.0"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.6.0 (Link Correction System)
+// Administración CFP 403 - Lógica Pulida v9.8.0 (Integrated Correction View)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -154,6 +154,10 @@ async function showTable(course) {
     tbody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
 
     try {
+        const configDoc = await db.collection('config_cursos').doc(course).get();
+        const materiales = configDoc.exists ? (configDoc.data().materiales || {}) : {};
+        const currWeeksCount = Object.keys(materiales).filter(k => k.startsWith('sem_')).length;
+
         const snapEnt = await db.collection('entregas').where('curso', '==', course).get();
         const entregas = snapEnt.docs.map(doc => doc.data());
         tbody.innerHTML = '';
@@ -162,7 +166,7 @@ async function showTable(course) {
             const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const pend = eAlu.filter(e => e.estado === 'Pendiente');
-            const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota), 0) / corr.length).toFixed(1) : '-';
+            const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '-';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -171,16 +175,108 @@ async function showTable(course) {
                 <td>${s.telefono || '---'}</td>
                 <td>${s.email}</td>
                 <td style="text-align:center">${s.edad}</td>
-                <td style="text-align:center">${corr.length}</td>
+                <td style="text-align:center">${corr.length} / ${currWeeksCount}</td>
                 <td style="text-align:center"><strong>${prom}</strong></td>
                 <td>
-                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" onclick="viewWorks('${s.dni}')">${pend.length > 0 ? '🔔 Revisar' : '📂 Ver'}</button>
+                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" style="white-space:nowrap;" onclick="openCorrectionView('${s.dni}', '${s.full_name}')">
+                        ${pend.length > 0 ? '🔔 CORREGIR' : '📂 ACTIVIDADES ENTREGADAS'}
+                    </button>
                     <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
     } catch (err) { console.error(err); }
+}
+
+let currentCorrectionData = { dni: '', name: '', docId: '', week: '' };
+
+async function openCorrectionView(dni, name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.getElementById('correction-section').classList.remove('hidden');
+
+    document.getElementById('correction-student-name').innerText = name;
+    document.getElementById('correction-course-name').innerText = currentViewedCourse === 'habilidades' ? 'Curso: Habilidades Digitales & IA' : 'Curso: Software & Videojuegos';
+
+    const listCont = document.getElementById('correction-activities-list');
+    listCont.innerHTML = '<p style="font-size:0.8rem; color:#64748b;">Cargando entregas...</p>';
+
+    // Reset viewer
+    document.getElementById('correction-pdf-viewer').src = "about:blank";
+    document.getElementById('correction-viewer-placeholder').classList.remove('hidden');
+    document.getElementById('grading-panel-root').classList.add('hidden');
+
+    try {
+        const snap = await db.collection('entregas')
+            .where('alumno_dni', '==', dni)
+            .where('curso', '==', currentViewedCourse)
+            .get();
+
+        const docs = snap.docs.sort((a, b) => b.data().semana - a.data().semana);
+        listCont.innerHTML = docs.length === 0 ? '<p style="font-size:0.8rem; color:#64748b;">Sin entregas aún.</p>' : '';
+
+        docs.forEach(doc => {
+            const data = doc.data();
+            const btn = document.createElement('button');
+            btn.className = 'btn-activity';
+            btn.innerHTML = `
+                <strong>Actividad ${data.semana}</strong>
+                <small>${data.estado === 'Calificado' ? `Calificado (${data.nota}) ✅` : '⌛ Pendiente'}</small>
+            `;
+            btn.onclick = () => {
+                document.querySelectorAll('.btn-activity').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                visualizeStudentTask(data.archivo_url || data.file_url, data.semana, doc.id, data.nota);
+            };
+            listCont.appendChild(btn);
+        });
+    } catch (e) {
+        listCont.innerHTML = 'Error.';
+    }
+}
+
+function visualizeStudentTask(url, sem, docId, grade) {
+    const viewer = document.getElementById('correction-pdf-viewer');
+    const placeholder = document.getElementById('correction-viewer-placeholder');
+    const gradingPanel = document.getElementById('grading-panel-root');
+    const gradeInput = document.getElementById('input-grade-val');
+
+    placeholder.classList.add('hidden');
+    gradingPanel.classList.remove('hidden');
+    gradeInput.value = grade || '';
+
+    currentCorrectionData.docId = docId;
+    currentCorrectionData.week = sem;
+
+    let finalUrl = url;
+    if (url.includes('drive.google.com')) {
+        const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
+        if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview?view=fitH`;
+    }
+    viewer.src = finalUrl;
+}
+
+async function saveCorrectionGrade() {
+    const grade = document.getElementById('input-grade-val').value;
+    if (!grade) return alert("Ingresa una nota");
+
+    try {
+        await db.collection('entregas').doc(currentCorrectionData.docId).update({
+            nota: grade,
+            estado: 'Calificado'
+        });
+        alert("✅ Nota guardada.");
+        // Refrescar sidebar para mostrar el cambio
+        const studentName = document.getElementById('correction-student-name').innerText;
+        const snap = await db.collection('entregas').doc(currentCorrectionData.docId).get();
+        if (snap.exists) openCorrectionView(snap.data().alumno_dni, studentName);
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+function backToTable() {
+    document.getElementById('correction-section').classList.add('hidden');
+    document.getElementById('table-section').classList.remove('hidden');
+    if (currentViewedCourse) showTable(currentViewedCourse);
 }
 
 async function deleteStudent(course, dni) {
@@ -460,6 +556,7 @@ async function saveGrade(id) {
 }
 
 // UI HANDLERS
+// Modal listeners removed as we use integrated view now
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
 document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
