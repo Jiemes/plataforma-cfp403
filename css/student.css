@@ -28,7 +28,8 @@ body {
 .home-header-professional {
     width: 100%;
     background: white;
-    padding: 15px 40px;
+    padding: 10px 40px;
+    /* Reducido a la mitad */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     border-bottom: 1px solid #e2e8f0;
     display: flex;
@@ -39,69 +40,62 @@ body {
 }
 
 .header-content-unified {
-    max-width: 1200px;
+    max-width: 1300px;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* 3 columnas */
+}
+
+.header-left-brand {
+    display: flex;
+    align-items: center;
+}
+
+.logo-cfp-ultra {
+    height: 110px;
+    /* Grandote para que ocupe "2 renglones" */
+    width: auto;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
+}
+
+.header-center-stack {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    flex-grow: 1;
 }
 
 .header-top-logo {
     display: flex;
     justify-content: center;
     width: 100%;
-    padding-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .logo-gba-horizontal {
-    height: 110px;
-    /* Doble de lo anterior + ajuste */
+    height: 65px;
+    /* Reducido */
     width: auto;
     object-fit: contain;
 }
 
-.header-middle-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    width: 100%;
-}
-
-.logo-cfp-small {
-    height: 60px;
-    width: auto;
-}
-
 #home-student-name {
-    font-size: 2.5rem;
+    font-size: 2.22rem;
+    /* Balanceado */
     font-weight: 900;
     letter-spacing: -0.05em;
     margin: 0;
     text-transform: uppercase;
 }
 
-.header-bottom-info {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-}
-
-.header-bottom-info p {
-    font-size: 1.1rem;
-    color: var(--text-muted);
-    margin: 0;
-    max-width: 600px;
-}
+/* Se eliminaron subtextos para achicar el banner */
 
 .header-actions-inline {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-left: 20px;
+    gap: 10px;
 }
 
 .btn-config-main {
@@ -710,16 +704,17 @@ body {
     }
 }
 
-@media (max-width: 768px) {
-    .header-logo-side {
-        height: 40px;
+@media (max-width: 900px) {
+    .header-content-unified {
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .header-center-info h1 {
-        font-size: 1.5rem;
+    .header-center-stack {
+        order: -1;
     }
+}
 
-    .header-center-info p {
-        font-size: 0.8rem;
-    }
+.header-logo-side {
+    height: 40px;
 }

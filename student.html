@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aula Virtual CFP 403 v9.15.1</title>
+    <title>Aula Virtual CFP 403 v9.17.0</title>
     <link rel="icon" type="image/png" href="assets/CFP 403.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.15.1">
-    <link rel="stylesheet" href="css/student.css?v=9.15.1">
+    <link rel="stylesheet" href="css/style.css?v=9.17.0">
+    <link rel="stylesheet" href="css/student.css?v=9.17.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -20,28 +20,25 @@
 <body>
     <header class="home-header-professional">
         <div class="header-content-unified">
-            <!-- Logo Provincia Top Centered -->
-            <div class="header-top-logo">
-                <img src="assets/Logo GBA Vertical.png" alt="Logo Provincia" class="logo-gba-horizontal">
+            <!-- 1. Izquierda: Logo CFP Grande -->
+            <div class="header-left-brand">
+                <img src="assets/CFP 403.png" alt="Logo CFP" class="logo-cfp-ultra">
             </div>
 
-            <!-- Greeting Row -->
-            <div class="header-middle-row"
-                style="display:flex; align-items:center; justify-content:center; gap:25px; width:100%; margin: 10px 0;">
-                <img src="assets/CFP 403.png" alt="Logo CFP" class="logo-cfp-small">
-                <h1 id="home-student-name" style="margin:0; font-size:2.8rem;">¡Hola, Alumno!</h1>
-
-                <div class="header-actions-inline">
-                    <button id="btn-header-action" class="btn-action-header">Inicio</button>
-                    <button class="btn-config-main" onclick="openConfigModal()"
-                        style="font-weight:900; padding: 10px 15px;">⚙️ CONFIG</button>
+            <!-- 2. Centro: Provincia + Saludo -->
+            <div class="header-center-stack">
+                <div class="header-top-logo">
+                    <img src="assets/Logo GBA Vertical.png" alt="Logo Provincia" class="logo-gba-horizontal">
                 </div>
+                <h1 id="home-student-name">¡Hola, Alumno!</h1>
             </div>
 
-            <!-- Dashboard Subtext -->
-            <div class="header-bottom-info">
-                <p>Tu progreso académico y materiales de estudio en un solo lugar.</p>
-                <small style="opacity:0.4; font-size:0.7rem; margin-top:5px;">Plataforma v9.15.1</small>
+            <!-- 3. Derecha: Botones -->
+            <div class="header-actions-inline">
+                <button id="btn-header-action" class="btn-action-header">Inicio</button>
+                <button class="btn-config-main" onclick="openConfigModal()"
+                    style="font-weight:900; padding: 10px 15px;">⚙️
+                    CONFIG</button>
             </div>
         </div>
     </header>
@@ -123,7 +120,8 @@
 
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:30px;">
                 <button class="btn-submit-task" onclick="saveNewPassword()"
-                    style="width:100%; border-radius:12px;">GUARDAR CAMBIOS</button>
+                    style="width:100%; border-radius:12px;">GUARDAR
+                    CAMBIOS</button>
                 <button class="btn-secondary" onclick="closeConfigModal()"
                     style="width:100%; border-radius:12px; height:45px;">CANCELAR</button>
             </div>
@@ -161,7 +159,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=9.15.1"></script>
+    <script src="js/student.js?v=9.17.0"></script>
 </body>
 
 </html>
