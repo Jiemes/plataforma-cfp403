@@ -1,4 +1,4 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.3
+// Lógica de inicio de sesión con Firebase Auth v9.16.4 (Resilience Patch)
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
@@ -85,14 +85,18 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }));
             window.location.href = 'student.html';
         } else {
-            alert('Error: Usuario autenticado pero no encontrado en los listados de cursos.');
+            alert('Error: Alumno autenticado pero NO encontrado en las planillas del CFP. Consulte al docente.');
             btn.innerText = originalText;
             btn.disabled = false;
         }
 
     } catch (error) {
         console.error("Error en el login:", error);
-        alert(error.message || 'Error al ingresar. Verifique sus datos.');
+        if (error.code === 'permission-denied' || error.message.includes('permission')) {
+            alert("⚠️ ERROR DE SEGURIDAD: Falta permiso para leer tu DNI. \n\nDocente: Verifique que las 'Reglas de Seguridad' en Firebase permitan 'get' en las colecciones de alumnos.");
+        } else {
+            alert(error.message || 'Error al ingresar. Verifique sus datos.');
+        }
         btn.innerText = originalText;
         btn.disabled = false;
     }

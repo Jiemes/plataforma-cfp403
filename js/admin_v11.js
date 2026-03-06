@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.13.0 (Foro Index-Free)
+// Administración CFP 403 - Lógica Pulida v9.13.1 (Excel & Reset Fix)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -698,8 +698,71 @@ async function saveGrade(id) {
     }
 }
 
+// GESTIÓN DE DATOS (EXCEL Y VACIADO)
+async function processExcel(file, type) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            const trans = json.map(r => {
+                const getVal = (patterns) => {
+                    const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
+                    return key ? r[key] : '';
+                };
+                return {
+                    dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
+                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
+                    full_name: `${getVal(['APELLIDO']) || ''}, ${getVal(['NOMBRE']) || ''}`.toUpperCase().trim() || String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO']) || '').toUpperCase().trim(),
+                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                    nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
+                    busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
+                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
+                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                    nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
+                    password: String(getVal(['DOCUMENTO', 'DNI']) || '').trim() // Password inicial = DNI
+                };
+            }).filter(s => s.dni.length > 5);
+
+            if (trans.length === 0) return alert("❌ No se encontraron datos válidos en el Excel.");
+
+            const batch = db.batch();
+            const coll = type === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+            trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
+
+            alert("🚀 Procesando " + trans.length + " alumnos... espera confirmación.");
+            await batch.commit();
+            alert("✅ ¡Importación de " + trans.length + " alumnos exitosa!");
+            loadStudentsFromFirebase();
+        } catch (err) { alert("Error al procesar: " + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function deleteCourseData() {
+    if (!currentViewedCourse) return alert("Selecciona un curso primero.");
+    if (!confirm(`⚠️ ALERTA: ¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse.toUpperCase()}? Esta acción no se puede deshacer.`)) return;
+
+    try {
+        const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+        const snap = await db.collection(coll).get();
+        if (snap.empty) return alert("La lista ya está vacía.");
+
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        alert("🗑️ Lista vaciada correctamente.");
+        await loadStudentsFromFirebase();
+        showTable(currentViewedCourse);
+    } catch (err) { alert("Error al vaciar: " + err.message); }
+}
+
 // UI HANDLERS
-// Modal listeners removed as we use integrated view now
+document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
 document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
