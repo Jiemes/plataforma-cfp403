@@ -1,4 +1,4 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.2
+// Lógica de inicio de sesión con Firebase Auth v9.16.3
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
@@ -32,20 +32,24 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         } catch (authError) {
             // Si el usuario no existe en Auth pero sí es un alumno válido, lo creamos
             // Firebase tira 'invalid-login-credentials' por seguridad en lugar de 'user-not-found'
-            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-login-credentials') {
+            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-login-credentials' || authError.code === 'permission-denied') {
                 // Verificar si existe como alumno en Firestore
                 let info_alumno = null;
-                const habSnapshot = await db.collection('alumnos_habilidades').doc(password).get();
-                if (habSnapshot.exists) info_alumno = habSnapshot.data();
-                else {
-                    const progSnapshot = await db.collection('alumnos_programacion').doc(password).get();
-                    if (progSnapshot.exists) info_alumno = progSnapshot.data();
+                try {
+                    const habSnapshot = await db.collection('alumnos_habilidades').doc(password).get();
+                    if (habSnapshot.exists) info_alumno = habSnapshot.data();
+                    else {
+                        const progSnapshot = await db.collection('alumnos_programacion').doc(password).get();
+                        if (progSnapshot.exists) info_alumno = progSnapshot.data();
+                    }
+                } catch (pErr) {
+                    console.log("Error de permiso esperado, intentando fallback...");
                 }
 
                 if (info_alumno && info_alumno.email.toLowerCase() === email.toLowerCase()) {
                     await authFirebase.createUserWithEmailAndPassword(email, password);
                 } else {
-                    throw new Error("Credenciales no encontradas o incorrectas.");
+                    throw new Error("Credenciales incorrectas o el usuario no existe en este curso.");
                 }
             } else if (authError.code === 'auth/wrong-password') {
                 throw new Error("Contraseña incorrecta. Si es tu primer ingreso, usa tu DNI.");
