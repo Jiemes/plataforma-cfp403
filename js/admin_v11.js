@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v6.9.0 (Diseño Compacto + Alta Legibilidad)
+// Administración CFP 403 - Lógica Pulida v9.6.0 (Link Correction System)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -396,34 +396,67 @@ async function viewWorks(dni) {
     const modal = document.getElementById('grade-modal');
     const listCont = document.getElementById('student-works-list');
     modal.classList.remove('hidden');
-    listCont.innerHTML = 'Cargando trabajos...';
+    listCont.innerHTML = '<p style="text-align:center;">⌛ Consultando entregas...</p>';
     try {
         const snap = await db.collection('entregas').where('alumno_dni', '==', dni).get();
-        listCont.innerHTML = snap.size === 0 ? 'No hay entregas.' : '';
-        snap.forEach(doc => {
+        listCont.innerHTML = snap.size === 0 ? '<p style="text-align:center; color:#64748b;">No hay entregas registradas para este alumno.</p>' : '';
+
+        // Ordenar por semana descendente
+        const docs = snap.docs.sort((a, b) => b.data().semana - a.data().semana);
+
+        docs.forEach(doc => {
             const data = doc.data();
             const div = document.createElement('div');
-            div.className = 'work-item';
-            div.style = "background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0; font-size: 0.85rem;";
+            div.className = 'work-item card';
+            div.style = "background:#f8fafc; padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #e2e8f0; border-left: 5px solid ${data.estado === 'Calificado' ? '#10b981' : '#f59e0b'};";
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>Semana ${data.semana}</strong></div>
-                    <a href="${data.archivo_url || data.file_url}" target="_blank" class="btn-primary-sm" style="text-decoration:none; padding: 4px 10px;">Ver PDF</a>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div>
+                        <strong style="font-size:1rem;">Semana ${data.semana}</strong>
+                        <p style="font-size:0.75rem; color:#64748b; margin:0;">${new Date(data.fecha_entrega).toLocaleDateString('es-AR')} ${new Date(data.fecha_entrega).toLocaleTimeString('es-AR')}</p>
+                    </div>
+                    <a href="${data.archivo_url || data.file_url}" target="_blank" class="btn-primary-sm" 
+                       style="text-decoration:none; padding: 6px 12px; background:#1e293b; color:white; border-radius:8px; font-weight:700; font-size:0.75rem;">
+                       📂 ABRIR EN DRIVE
+                    </a>
                 </div>
-                <div style="margin-top:8px; display:flex; gap:10px; align-items:center;">
-                    <input type="number" id="nota-${doc.id}" value="${data.nota || ''}" placeholder="Nota" style="width:50px; padding:4px; border-radius:5px; border:1px solid #cbd5e1; font-size:0.8rem;">
-                    <button class="btn-primary-sm" onclick="saveGrade('${doc.id}')" style="padding:4px 10px;">Guardar</button>
-                    ${data.estado === 'Calificado' ? '✅' : '⏳'}
+                <div style="padding-top:10px; border-top:1px solid #e2e8f0; display:flex; gap:12px; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.8rem; font-weight:700;">Nota:</span>
+                        <input type="number" id="nota-${doc.id}" value="${data.nota || ''}" min="1" max="10"
+                               style="width:55px; padding:6px; border-radius:8px; border:1px solid #cbd5e1; font-weight:800; text-align:center;">
+                    </div>
+                    <button class="btn-primary-sm" onclick="saveGrade('${doc.id}')" 
+                            style="padding:6px 15px; background:#00B9E8; border:none; color:white; border-radius:8px; font-weight:800; cursor:pointer;">
+                        CALIFICAR
+                    </button>
+                    <span style="font-size:1.2rem;">${data.estado === 'Calificado' ? '✅' : '⏳'}</span>
                 </div>
             `;
             listCont.appendChild(div);
         });
-    } catch (e) { }
+    } catch (e) { listCont.innerHTML = 'Error al cargar trabajos.'; }
 }
+
 async function saveGrade(id) {
-    const nota = document.getElementById(`nota-${id}`).value;
-    await db.collection('entregas').doc(id).update({ nota: nota, estado: 'Calificado' });
-    alert("Nota guardada.");
+    const notaInput = document.getElementById(`nota-${id}`);
+    const nota = notaInput.value;
+    if (!nota) return alert("Por favor, ingresa una calificación.");
+
+    try {
+        await db.collection('entregas').doc(id).update({
+            nota: nota,
+            estado: 'Calificado'
+        });
+        alert("✅ Trabajo calificado correctamente.");
+        // Refrescar modal
+        const snap = await db.collection('entregas').doc(id).get();
+        if (snap.exists) viewWorks(snap.data().alumno_dni);
+        // Refrescar tabla de fondo si está visible
+        if (currentViewedCourse) showTable(currentViewedCourse);
+    } catch (e) {
+        alert("Error al guardar nota: " + e.message);
+    }
 }
 
 // UI HANDLERS

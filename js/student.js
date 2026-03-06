@@ -143,10 +143,10 @@ async function loadContent() {
 
             const entrega = entregas.find(e => e.semana === i);
             const card = document.createElement('div');
-            card.className = `week-card`; // Todas cerradas por defecto
+            card.className = `week-card`;
             card.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
-                    <h3>Semana ${i}</h3>
+                    <h3>Semana ${i} ${entrega ? '✅' : '⌛'}</h3>
                 </div>
                 <div class="week-body">
                     ${mat.clase ? `
@@ -161,11 +161,26 @@ async function loadContent() {
                             <div class="item-info"><strong>Actividad ${i}</strong><p>Consigna práctica</p></div>
                         </div>
                     ` : ''}
-                    <div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-top:10px; border: 1px dashed #cbd5e1; text-align:center;">
-                        <p style="font-size:0.8rem; margin-bottom:10px;">${entrega ? '✅ Tarea Entregada' : '⌛ Entrega Pendiente'}</p>
-                        <input type="file" id="file-${i}" style="display:none" accept=".pdf" onchange="uploadHomework(${i})">
-                        <button style="background:var(--primary-color); color:white; border:none; padding:8px 15px; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer;" onclick="document.getElementById('file-${i}').click()">
-                            ${entrega ? 'ACTUALIZAR' : 'ELEVADO ARCHIVO'}
+                    
+                    <!-- NUEVO SISTEMA DE ENTREGA POR LINK -->
+                    <div class="assignment-container">
+                        <div class="status-label ${entrega ? 'status-sent' : 'status-pending'}">
+                            ${entrega ? '✅ Actividad Enviada' : '⌛ Entrega Pendiente'}
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="link-${i}">Pega aquí el link de Drive con tu actividad:</label>
+                            <input type="text" id="link-${i}" class="input-premium-task" 
+                                   placeholder="https://drive.google.com/..." 
+                                   value="${entrega ? (entrega.archivo_url || '') : ''}">
+                        </div>
+
+                        <div class="help-text-task">
+                            <p>💡 <strong>Ayuda:</strong> Sube tu archivo a Google Drive, asegúrate de que el acceso sea público (Cualquier persona con el enlace) y pega el link aquí. Si te equivocaste, pega el nuevo link y dale a ENVIAR nuevamente.</p>
+                        </div>
+
+                        <button class="btn-submit-task" onclick="submitTask(${i})">
+                            ${entrega ? 'ACTUALIZAR ACTIVIDAD' : 'ENVIAR ACTIVIDAD'}
                         </button>
                     </div>
                 </div>
@@ -216,28 +231,47 @@ function closeViewer() {
     document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));
 }
 
-async function uploadHomework(semana) {
-    const fileInput = document.getElementById(`file-${semana}`);
-    const file = fileInput.files[0];
-    if (!file) return;
-    try {
-        const path = `entregas/${studentSession.dni}/${currentCourseId}/Semana_${semana}/${Date.now()}_${file.name}`;
-        const ref = storage.ref().child(path);
-        await ref.put(file);
-        const url = await ref.getDownloadURL();
+async function submitTask(semana) {
+    const linkInput = document.getElementById(`link-${semana}`);
+    const rawUrl = linkInput.value.trim();
 
-        await db.collection('entregas').add({
-            alumno_dni: studentSession.dni,
-            alumno_nombre: studentSession.nombre,
-            curso: currentCourseId,
-            semana: semana,
-            archivo_url: url,
-            fecha_entrega: new Date().toISOString(),
-            estado: 'Pendiente'
-        });
-        alert("✅ Tarea enviada.");
+    if (!rawUrl) return alert("Por favor, pega el link de tu actividad en Drive.");
+    if (!rawUrl.includes('drive.google.com')) return alert("El link no parece ser de Google Drive. Por favor, verifica.");
+
+    try {
+        // Buscamos si ya existe una entrega para actualizarla
+        const snapshot = await db.collection('entregas')
+            .where('alumno_dni', '==', studentSession.dni)
+            .where('curso', '==', currentCourseId)
+            .where('semana', '==', semana)
+            .get();
+
+        if (!snapshot.empty) {
+            // Actualizar existente
+            const docId = snapshot.docs[0].id;
+            await db.collection('entregas').doc(docId).update({
+                archivo_url: rawUrl,
+                fecha_entrega: new Date().toISOString(),
+                estado: 'Pendiente' // Se vuelve a poner en pendiente para que el admin lo vea
+            });
+        } else {
+            // Crear nueva
+            await db.collection('entregas').add({
+                alumno_dni: studentSession.dni,
+                alumno_nombre: studentSession.nombre,
+                curso: currentCourseId,
+                semana: semana,
+                archivo_url: rawUrl,
+                fecha_entrega: new Date().toISOString(),
+                estado: 'Pendiente'
+            });
+        }
+
+        alert("🚀 ¡Actividad Enviada con éxito!");
         loadContent();
-    } catch (error) { alert("Error: " + error.message); }
+    } catch (error) {
+        alert("Error al enviar: " + error.message);
+    }
 }
 
 initStudentDashboard();

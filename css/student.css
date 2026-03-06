@@ -252,7 +252,99 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 4. MODO LECTURA TOTAL (v8.2.0) */
+/* 4. ENTREGA DE ACTIVIDADES (v9.6.0 - DRIVE LINK SYSTEM) */
+.assignment-container {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 16px;
+    margin-top: 20px;
+    border: 1px dashed #cbd5e1;
+    text-align: left;
+}
+
+.status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.status-pending {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.status-sent {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.input-group {
+    margin: 15px 0;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.input-premium-task {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.input-premium-task:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 185, 232, 0.1);
+    outline: none;
+}
+
+.btn-submit-task {
+    width: 100%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+}
+
+.btn-submit-task:hover {
+    background: #0099cc;
+    transform: translateY(-2px);
+}
+
+.help-text-task {
+    background: #fffbeb;
+    border-left: 4px solid #fbbf24;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.help-text-task p {
+    font-size: 0.75rem;
+    color: #92400e;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* 5. MODO LECTURA TOTAL (v8.2.0) */
 .mode-viewer .course-banner-blue,
 .mode-viewer .weeks-container-wrapper {
     display: none !important;
