@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.3.0 (Auto-Zoom FitH)
+// Mi Aula Virtual - Lógica del Alumno v9.4.0 (Simplified Labels)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -41,16 +41,16 @@ function updateHeaderButton() {
     btn.parentNode.replaceChild(newBtn, btn);
 
     if (currentViewState === 'home') {
-        newBtn.innerText = 'Cerrar Sesión Segura';
+        newBtn.innerText = 'Salir';
         newBtn.onclick = () => {
             localStorage.removeItem('user_session');
             window.location.href = 'index.html';
         };
     } else if (currentViewState === 'course') {
-        newBtn.innerText = '← Volver al Inicio';
+        newBtn.innerText = 'Inicio';
         newBtn.onclick = backToHome;
     } else if (currentViewState === 'viewer') {
-        newBtn.innerText = '← Volver al Curso';
+        newBtn.innerText = 'Volver';
         newBtn.onclick = closeViewer;
     }
 }
