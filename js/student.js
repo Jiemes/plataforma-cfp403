@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.5.0 (Branding & Icons)
+// Mi Aula Virtual - Lógica del Alumno v9.7.0 (Smart Order & UI Symbols)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -98,37 +98,7 @@ async function loadContent() {
         const hoy = new Date();
         hoy.setHours(23, 59, 59, 999);
 
-        // 1. BIENVENIDA Y PROGRAMA
-        const matInicio = materiales['inicio'] || {};
-        const welcomeUrl = matInicio.welcome || config.welcome_url;
-        const syllabusUrl = matInicio.syllabus || config.syllabus_url;
-
-        if (welcomeUrl || syllabusUrl) {
-            const introCard = document.createElement('div');
-            introCard.className = 'week-card'; // Cerrado por defecto
-            introCard.innerHTML = `
-                <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
-                    <h3>📚 Bienvenida y Programa</h3>
-                </div>
-                <div class="week-body">
-                    ${welcomeUrl ? `
-                        <div class="content-item" onclick="visualizePdf('${welcomeUrl}', 'Bienvenida', this)">
-                            <span class="icon">👋</span>
-                            <div class="item-info"><strong>Mensaje Inicial</strong><p>Lectura de bienvenida</p></div>
-                        </div>
-                    ` : ''}
-                    ${syllabusUrl ? `
-                        <div class="content-item" onclick="visualizePdf('${syllabusUrl}', 'Programa Académico', this)">
-                            <span class="icon">📋</span>
-                            <div class="item-info"><strong>Programa</strong><p>Contenidos del curso</p></div>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            weeksContainer.appendChild(introCard);
-        }
-
-        // 2. SEMANAS (Orden Inverso)
+        // 1. SEMANAS (Orden Inverso: 5, 4, 3...) - AHORA PRIMERO
         let weeksKeys = Object.keys(materiales)
             .filter(k => k.startsWith('sem_'))
             .map(k => parseInt(k.replace('sem_', '')))
@@ -147,6 +117,7 @@ async function loadContent() {
             card.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>Semana ${i} ${entrega ? '✅' : '⌛'}</h3>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="week-body">
                     ${mat.clase ? `
@@ -187,6 +158,38 @@ async function loadContent() {
             `;
             weeksContainer.appendChild(card);
         });
+
+        // 2. BIENVENIDA Y PROGRAMA - AHORA AL FINAL
+        const matInicio = materiales['inicio'] || {};
+        const welcomeUrl = matInicio.welcome || config.welcome_url;
+        const syllabusUrl = matInicio.syllabus || config.syllabus_url;
+
+        if (welcomeUrl || syllabusUrl) {
+            const introCard = document.createElement('div');
+            introCard.className = 'week-card'; // Cerrado por defecto
+            introCard.innerHTML = `
+                <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
+                    <h3>📚 Bienvenida y Programa</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="week-body">
+                    ${welcomeUrl ? `
+                        <div class="content-item" onclick="visualizePdf('${welcomeUrl}', 'Bienvenida', this)">
+                            <span class="icon">👋</span>
+                            <div class="item-info"><strong>Mensaje Inicial</strong><p>Lectura de bienvenida</p></div>
+                        </div>
+                    ` : ''}
+                    ${syllabusUrl ? `
+                        <div class="content-item" onclick="visualizePdf('${syllabusUrl}', 'Programa Académico', this)">
+                            <span class="icon">📋</span>
+                            <div class="item-info"><strong>Programa</strong><p>Contenidos del curso</p></div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            weeksContainer.appendChild(introCard);
+        }
+
 
     } catch (e) { console.error(e); }
 }
