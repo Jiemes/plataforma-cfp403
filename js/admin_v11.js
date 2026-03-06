@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.9.0 (1-100 Scale & Refined Workspace)
+// Administración CFP 403 - Lógica Pulida v9.10.0 (Manual Management & Export)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -178,15 +178,137 @@ async function showTable(course) {
                 <td style="text-align:center">${corr.length} / ${currWeeksCount}</td>
                 <td style="text-align:center"><strong>${prom}</strong></td>
                 <td>
-                    <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" style="white-space:nowrap;" onclick="openCorrectionView('${s.dni}', '${s.full_name}')">
-                        ${pend.length > 0 ? '🔔 CORREGIR' : '📂 ACTIVIDADES ENTREGADAS'}
-                    </button>
-                    <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" style="white-space:nowrap; flex-grow:1;" onclick="openCorrectionView('${s.dni}', '${s.full_name}')">
+                            ${pend.length > 0 ? '🔔 CORREGIR' : '📂 ENTREGAS'}
+                        </button>
+                        <button class="btn-primary-sm" onclick="openStudentModal('${s.dni}')" style="background:#f1f5f9; border-color:#e2e8f0; color:#1e293b; padding:0 10px;">✏️</button>
+                        <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
     } catch (err) { console.error(err); }
+}
+
+// GESTIÓN MANUAL DE ALUMNOS
+let editingDni = null;
+
+function openStudentModal(dni = null) {
+    editingDni = dni;
+    const modal = document.getElementById('student-modal');
+    const title = document.getElementById('student-modal-title');
+
+    // Limpiar campos
+    document.getElementById('stu-name').value = '';
+    document.getElementById('stu-dni').value = '';
+    document.getElementById('stu-email').value = '';
+    document.getElementById('stu-tel').value = '';
+    document.getElementById('stu-age').value = '';
+
+    if (dni) {
+        title.innerText = "Editar Alumno";
+        const student = studentData[currentViewedCourse].find(s => s.dni === dni);
+        if (student) {
+            document.getElementById('stu-name').value = student.full_name || '';
+            document.getElementById('stu-dni').value = student.dni || '';
+            document.getElementById('stu-email').value = student.email || '';
+            document.getElementById('stu-tel').value = student.telefono || '';
+            document.getElementById('stu-age').value = student.edad || '';
+            document.getElementById('stu-dni').disabled = true; // No permitir cambiar DNI al editar
+        }
+    } else {
+        title.innerText = "Agregar Alumno";
+        document.getElementById('stu-dni').disabled = false;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeStudentModal() {
+    document.getElementById('student-modal').classList.add('hidden');
+}
+
+async function saveStudent() {
+    const name = document.getElementById('stu-name').value.trim();
+    const dni = document.getElementById('stu-dni').value.trim();
+    const email = document.getElementById('stu-email').value.trim();
+    const tel = document.getElementById('stu-tel').value.trim();
+    const age = document.getElementById('stu-age').value.trim();
+
+    if (!name || !dni || !email) return alert("Por favor, completa los campos obligatorios (Nombre, DNI, Email).");
+
+    try {
+        const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
+        const data = {
+            full_name: name.toUpperCase(),
+            dni: dni,
+            email: email,
+            telefono: tel,
+            edad: age,
+            password: dni.slice(-4) // Password por defecto los últimos 4 del DNI
+        };
+
+        if (editingDni) {
+            // Actualizar
+            await db.collection(coll).doc(dni).update(data);
+            alert("✅ Alumno actualizado.");
+        } else {
+            // Crear nuevo
+            // Verificar si ya existe
+            const check = await db.collection(coll).doc(dni).get();
+            if (check.exists) return alert("El alumno con ese DNI ya existe.");
+
+            await db.collection(coll).doc(dni).set(data);
+            alert("🚀 Alumno agregado con éxito.");
+        }
+
+        closeStudentModal();
+        loadStudentsFromFirebase();
+    } catch (e) {
+        alert("Error al guardar: " + e.message);
+    }
+}
+
+// EXPORTAR A EXCEL
+async function downloadCourseExcel() {
+    if (!currentViewedCourse) return;
+
+    try {
+        const configDoc = await db.collection('config_cursos').doc(currentViewedCourse).get();
+        const materiales = configDoc.exists ? (configDoc.data().materiales || {}) : {};
+        const weeksCount = Object.keys(materiales).filter(k => k.startsWith('sem_')).length;
+
+        const snapEnt = await db.collection('entregas').where('curso', '==', currentViewedCourse).get();
+        const entregas = snapEnt.docs.map(doc => doc.data());
+
+        const excelData = studentData[currentViewedCourse].map(s => {
+            const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
+            const corr = eAlu.filter(e => e.estado === 'Calificado');
+            const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '---';
+
+            return {
+                "ALUMNO": s.full_name,
+                "DNI": s.dni,
+                "EMAIL": s.email,
+                "TELÉFONO": s.telefono || '---',
+                "EDAD": s.edad,
+                "ENTREGAS": `${corr.length} / ${weeksCount}`,
+                "PROMEDIO": prom
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Alumnos");
+
+        const fileName = `${currentViewedCourse.toUpperCase()}_ALUMNOS_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+
+    } catch (e) {
+        alert("Error al exportar: " + e.message);
+    }
 }
 
 let currentCorrectionData = { dni: '', name: '', docId: '', week: '' };

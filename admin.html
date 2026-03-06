@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v7.6.0 | CFP 403</title>
+    <title>Panel Administrativo v7.7.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=7.6.0">
     <link rel="stylesheet" href="css/admin.css?v=7.6.0">
@@ -216,7 +216,11 @@
                 <div class="card">
                     <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                         <h3 id="current-course-title">Listado de Alumnos</h3>
-                        <div class="table-actions-top">
+                        <div class="table-actions-top" style="display:flex; gap:10px;">
+                            <button class="btn-primary-sm" onclick="downloadCourseExcel()"
+                                style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
+                                Listado</button>
+                            <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
                             <button class="btn-danger-outline" id="btn-clear-course">Vaciar Lista</button>
                         </div>
                     </div>
@@ -304,8 +308,43 @@
         </div>
     </div>
 
+    <!-- Modal para Agregar/Editar Alumno -->
+    <div id="student-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:500px;">
+            <h3 id="student-modal-title" style="margin-bottom:20px;">Agregar Alumno</h3>
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr; gap:15px; text-align:left;">
+                <div class="field-item">
+                    <label style="font-size:0.8rem; font-weight:700;">Apellido y Nombre</label>
+                    <input type="text" id="stu-name" placeholder="Ej: PEREZ, JUAN" class="input-premium">
+                </div>
+                <div class="field-item">
+                    <label style="font-size:0.8rem; font-weight:700;">DNI (Sin puntos)</label>
+                    <input type="number" id="stu-dni" placeholder="12345678" class="input-premium">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div class="field-item">
+                        <label style="font-size:0.8rem; font-weight:700;">Teléfono</label>
+                        <input type="text" id="stu-tel" placeholder="2324..." class="input-premium">
+                    </div>
+                    <div class="field-item">
+                        <label style="font-size:0.8rem; font-weight:700;">Edad</label>
+                        <input type="number" id="stu-age" placeholder="20" class="input-premium">
+                    </div>
+                </div>
+                <div class="field-item">
+                    <label style="font-size:0.8rem; font-weight:700;">Email</label>
+                    <input type="email" id="stu-email" placeholder="correo@ejemplo.com" class="input-premium">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button class="btn-secondary" onclick="closeStudentModal()" style="flex:1;">CANCELAR</button>
+                <button class="btn-primary" onclick="saveStudent()" style="flex:1;">GUARDAR ALUMNO</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.9.0"></script>
+    <script src="js/admin_v11.js?v=9.10.0"></script>
 </body>
 
 </html>
