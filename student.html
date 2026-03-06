@@ -25,16 +25,22 @@
                 <img src="assets/Logo GBA Vertical.png" alt="Logo Provincia" class="logo-gba-horizontal">
             </div>
 
-            <!-- Main Greeting Row -->
-            <div class="header-middle-row">
+            <!-- Greeting Row -->
+            <div class="header-middle-row"
+                style="display:flex; align-items:center; justify-content:center; gap:20px; width:100%;">
                 <img src="assets/CFP 403.png" alt="Logo CFP" class="logo-cfp-small">
-                <h1 id="home-student-name">¡Hola, Alumno!</h1>
-                <button id="btn-header-action" class="btn-action-header">Salir</button>
+                <h1 id="home-student-name" style="margin:0; font-size:2.6rem;">¡Hola, Alumno!</h1>
             </div>
 
+            <!-- Dashboard Actions / Subtext -->
             <div class="header-bottom-info">
-                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
-                <button class="btn-config-main" onclick="openConfigModal()">⚙️ CONFIG</button>
+                <p style="margin-bottom:15px; font-weight:600; opacity:0.8;">Bienvenido a tu plataforma educativa del
+                    CFP 403 Mercedes.</p>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                    <button id="btn-header-action" class="btn-action-header" style="min-width:140px;">Inicio</button>
+                    <button class="btn-config-main" onclick="openConfigModal()" style="font-weight:900;">⚙️
+                        CONFIGURACIÓN</button>
+                </div>
             </div>
         </div>
     </header>
