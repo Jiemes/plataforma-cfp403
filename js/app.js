@@ -1,4 +1,4 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.1
+// Lógica de inicio de sesión con Firebase Auth v9.16.2
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
@@ -26,13 +26,14 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             return;
         }
 
-        // 2. Intentar loguear con Firebase Auth
+        // 2. Intentar loguear con Firebase Auth (Alumnos)
         try {
             await authFirebase.signInWithEmailAndPassword(email, password);
         } catch (authError) {
             // Si el usuario no existe en Auth pero sí es un alumno válido, lo creamos
-            if (authError.code === 'auth/user-not-found') {
-                // Verificar si existe como alumno en Firestore (usamos password como DNI para la búsqueda inicial)
+            // Firebase tira 'invalid-login-credentials' por seguridad en lugar de 'user-not-found'
+            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-login-credentials') {
+                // Verificar si existe como alumno en Firestore
                 let info_alumno = null;
                 const habSnapshot = await db.collection('alumnos_habilidades').doc(password).get();
                 if (habSnapshot.exists) info_alumno = habSnapshot.data();
@@ -42,10 +43,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                 }
 
                 if (info_alumno && info_alumno.email.toLowerCase() === email.toLowerCase()) {
-                    // El alumno es válido, creamos su usuario en Auth por única vez
                     await authFirebase.createUserWithEmailAndPassword(email, password);
                 } else {
-                    throw new Error("Credenciales no encontradas en el registro escolar.");
+                    throw new Error("Credenciales no encontradas o incorrectas.");
                 }
             } else if (authError.code === 'auth/wrong-password') {
                 throw new Error("Contraseña incorrecta. Si es tu primer ingreso, usa tu DNI.");
