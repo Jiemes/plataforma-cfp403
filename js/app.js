@@ -1,8 +1,10 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.4 (Resilience Patch)
+// Lógica de inicio de sesión con Firebase Auth v9.16.5 (Clean & Resilient)
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim(); // DNI por defecto o pass nueva
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const rawPass = document.getElementById('password').value.trim();
+    // Limpiar DNI de puntos o guiones para la búsqueda
+    const cleanDni = rawPass.replace(/\./g, '').replace(/-/g, '');
 
     const btn = e.target.querySelector('button');
     const originalText = btn.innerText;
@@ -11,16 +13,14 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
     try {
         // 1. Caso especial: Administrador
-        if (email === 'sanchezjuanmanuel@abc.gob.ar' && password === 'Perroloco2026') {
+        if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') {
             try {
-                await authFirebase.signInWithEmailAndPassword(email, password);
+                await authFirebase.signInWithEmailAndPassword(email, rawPass);
             } catch (err) {
                 // Si el admin no existe en Auth (primera vez), lo creamos
                 if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') {
-                    await authFirebase.createUserWithEmailAndPassword(email, password);
-                } else {
-                    throw err;
-                }
+                    await authFirebase.createUserWithEmailAndPassword(email, rawPass);
+                } else { throw err; }
             }
             window.location.href = 'admin.html';
             return;
@@ -28,31 +28,35 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
         // 2. Intentar loguear con Firebase Auth (Alumnos)
         try {
-            await authFirebase.signInWithEmailAndPassword(email, password);
+            await authFirebase.signInWithEmailAndPassword(email, rawPass);
         } catch (authError) {
+            const code = authError.code;
             // Si el usuario no existe en Auth pero sí es un alumno válido, lo creamos
             // Firebase tira 'invalid-login-credentials' por seguridad en lugar de 'user-not-found'
-            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-login-credentials' || authError.code === 'permission-denied') {
-                // Verificar si existe como alumno en Firestore
+            if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'permission-denied') {
+
                 let info_alumno = null;
                 try {
-                    const habSnapshot = await db.collection('alumnos_habilidades').doc(password).get();
+                    // Intentamos buscar por el DNI limpio (ID del documento)
+                    const habSnapshot = await db.collection('alumnos_habilidades').doc(cleanDni).get();
                     if (habSnapshot.exists) info_alumno = habSnapshot.data();
                     else {
-                        const progSnapshot = await db.collection('alumnos_programacion').doc(password).get();
+                        const progSnapshot = await db.collection('alumnos_programacion').doc(cleanDni).get();
                         if (progSnapshot.exists) info_alumno = progSnapshot.data();
                     }
                 } catch (pErr) {
-                    console.log("Error de permiso esperado, intentando fallback...");
+                    console.error("Fallo de permisos al buscar DNI:", pErr);
+                    throw new Error("⚠️ ERROR DE SEGURIDAD: La plataforma no tiene permiso para verificar tu identidad. Por favor, avisar al docente que configure 'allow get: if true' en las Reglas de Firebase.");
                 }
 
-                if (info_alumno && info_alumno.email.toLowerCase() === email.toLowerCase()) {
-                    await authFirebase.createUserWithEmailAndPassword(email, password);
+                if (info_alumno && info_alumno.email.toLowerCase() === email) {
+                    // Si encontramos al alumno, le creamos la cuenta en Auth
+                    await authFirebase.createUserWithEmailAndPassword(email, rawPass);
                 } else {
-                    throw new Error("Credenciales incorrectas o el usuario no existe en este curso.");
+                    throw new Error("❌ No se encontró ningún alumno con ese Email y DNI (" + cleanDni + "). Verifique con el docente si está correctamente inscripto.");
                 }
-            } else if (authError.code === 'auth/wrong-password') {
-                throw new Error("Contraseña incorrecta. Si es tu primer ingreso, usa tu DNI.");
+            } else if (code === 'auth/wrong-password') {
+                throw new Error("🔑 Contraseña incorrecta. Si es tu primer ingreso, recordá que tu contraseña es tu DNI sin puntos.");
             } else {
                 throw authError;
             }

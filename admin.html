@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v7.9.0 | CFP 403</title>
+    <title>Panel Administrativo v9.13.2 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=7.8.0">
     <link rel="stylesheet" href="css/admin.css?v=7.8.0">
@@ -262,7 +262,7 @@
                                 style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
                                 Listado</button>
                             <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
-                            <button class="btn-danger-outline" id="btn-clear-course">Vaciar Lista</button>
+                            <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
                         </div>
                     </div>
                     <div class="table-container">
@@ -393,7 +393,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.13.1"></script>
+    <script src="js/admin_v11.js?v=9.13.2"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.13.1 (Excel & Reset Fix)
+// Administración CFP 403 - Lógica Pulida v9.13.2 (Reset Fix)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -762,7 +762,6 @@ async function deleteCourseData() {
 }
 
 // UI HANDLERS
-document.getElementById('btn-clear-course')?.addEventListener('click', deleteCourseData);
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
 document.getElementById('btn-logout')?.addEventListener('click', () => authFirebase.signOut().then(() => window.location.href = 'index.html'));
