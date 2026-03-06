@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.4.0 (Simplified Labels)
+// Mi Aula Virtual - Lógica del Alumno v9.5.0 (Branding & Icons)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
