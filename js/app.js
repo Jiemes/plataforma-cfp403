@@ -1,4 +1,4 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.0
+// Lógica de inicio de sesión con Firebase Auth v9.16.1
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
@@ -12,7 +12,16 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     try {
         // 1. Caso especial: Administrador
         if (email === 'sanchezjuanmanuel@abc.gob.ar' && password === 'Perroloco2026') {
-            await authFirebase.signInWithEmailAndPassword(email, password);
+            try {
+                await authFirebase.signInWithEmailAndPassword(email, password);
+            } catch (err) {
+                // Si el admin no existe en Auth (primera vez), lo creamos
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') {
+                    await authFirebase.createUserWithEmailAndPassword(email, password);
+                } else {
+                    throw err;
+                }
+            }
             window.location.href = 'admin.html';
             return;
         }
