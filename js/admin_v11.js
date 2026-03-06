@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.10.0 (Manual Management & Export)
+// Administración CFP 403 - Lógica Pulida v9.11.0 (Feedback & Averages)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -356,7 +356,7 @@ async function openCorrectionView(dni, name) {
             btn.onclick = () => {
                 document.querySelectorAll('.btn-activity').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                visualizeStudentTask(data.archivo_url || data.file_url, data.semana, doc.id, data.nota);
+                visualizeStudentTask(data.archivo_url || data.file_url, data.semana, doc.id, data.nota, data.devolucion);
             };
             listCont.appendChild(btn);
         });
@@ -365,15 +365,17 @@ async function openCorrectionView(dni, name) {
     }
 }
 
-function visualizeStudentTask(url, sem, docId, grade) {
+function visualizeStudentTask(url, sem, docId, grade, feedback) {
     const viewer = document.getElementById('correction-pdf-viewer');
     const placeholder = document.getElementById('correction-viewer-placeholder');
     const gradingPanel = document.getElementById('grading-panel-root');
     const gradeInput = document.getElementById('input-grade-val');
+    const feedbackInput = document.getElementById('input-feedback-val');
 
     placeholder.classList.add('hidden');
     gradingPanel.classList.remove('hidden');
     gradeInput.value = grade || '';
+    if (feedbackInput) feedbackInput.value = feedback || '';
 
     currentCorrectionData.docId = docId;
     currentCorrectionData.week = sem;
@@ -388,6 +390,7 @@ function visualizeStudentTask(url, sem, docId, grade) {
 
 async function saveCorrectionGrade() {
     const gradeVal = document.getElementById('input-grade-val').value;
+    const feedbackVal = document.getElementById('input-feedback-val')?.value || '';
     const grade = parseInt(gradeVal);
 
     if (isNaN(grade) || grade < 0 || grade > 100) {
@@ -397,6 +400,7 @@ async function saveCorrectionGrade() {
     try {
         await db.collection('entregas').doc(currentCorrectionData.docId).update({
             nota: grade,
+            devolucion: feedbackVal,
             estado: 'Calificado',
             fecha_calificacion: new Date().toISOString()
         });

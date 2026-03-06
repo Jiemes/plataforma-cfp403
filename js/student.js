@@ -1,11 +1,11 @@
-// Mi Aula Virtual - Lógica del Alumno v9.7.0 (Smart Order & UI Symbols)
+// Mi Aula Virtual - Lógica del Alumno v9.11.0 (Feedback & Averages)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
 
 if (!studentSession) { window.location.href = 'index.html'; }
 
-function initStudentDashboard() {
+async function initStudentDashboard() {
     const homeName = document.getElementById('home-student-name');
     if (homeName) {
         const nombre = studentSession.nombre.split(',')[1] || studentSession.nombre.split(' ')[0];
@@ -15,14 +15,33 @@ function initStudentDashboard() {
     const grid = document.getElementById('home-course-grid');
     if (!grid) return;
 
+    grid.innerHTML = '<div class="loader">Sincronizando tus promedios...</div>';
+
+    // Obtenemos todas las entregas para calcular promedios globales
+    const entregasSnap = await db.collection('entregas')
+        .where('alumno_dni', '==', studentSession.dni)
+        .where('estado', '==', 'Calificado')
+        .get();
+    const todasLasEntregas = entregasSnap.docs.map(doc => doc.data());
+
     grid.innerHTML = '';
     studentSession.cursos.forEach(curso => {
+        // Calcular promedio para este curso específico
+        const entregasCurso = todasLasEntregas.filter(e => e.curso === curso.id);
+        const total = entregasCurso.reduce((sum, e) => sum + parseFloat(e.nota || 0), 0);
+        const prom = entregasCurso.length > 0 ? (total / entregasCurso.length).toFixed(1) : '---';
+
         const card = document.createElement('div');
         card.className = 'course-card animated-in';
         card.innerHTML = `
             <div class="course-icon">${curso.id === 'habilidades' ? '💻' : '🚀'}</div>
-            <h3 style="font-size:1.4rem; font-weight:800; margin-bottom:10px;">${curso.nombre}</h3>
-            <p style="font-size:0.95rem; color:#64748b; margin-bottom:30px;">Accede a tus materiales y realiza tus entregas.</p>
+            <h3 style="font-size:1.4rem; font-weight:800; margin-bottom:5px;">${curso.nombre}</h3>
+            <div style="margin-bottom:15px;">
+                <span style="background:var(--primary-light); color:var(--primary-color); padding:4px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">
+                    🎯 Promedio: ${prom}
+                </span>
+            </div>
+            <p style="font-size:0.9rem; color:#64748b; margin-bottom:20px;">Accede a tus materiales y realiza tus entregas.</p>
             <button class="btn-enter-course">INGRESAR AL CURSO</button>
         `;
         card.onclick = () => selectCourse(curso.id, curso.nombre);
@@ -98,6 +117,22 @@ async function loadContent() {
         const hoy = new Date();
         hoy.setHours(23, 59, 59, 999);
 
+        const materialsKeys = Object.keys(materiales).filter(k => k.startsWith('sem_'));
+
+        // 0. CALCULAR ESTADÍSTICAS DEL CURSO
+        const calificados = entregas.filter(e => e.estado === 'Calificado');
+        const totalPuntos = calificados.reduce((sum, e) => sum + parseFloat(e.nota || 0), 0);
+        const promedioCurso = calificados.length > 0 ? (totalPuntos / calificados.length).toFixed(1) : '---';
+        const progreso = materialsKeys.length > 0 ? Math.round((calificados.length / materialsKeys.length) * 100) : 0;
+
+        const statsBanner = document.getElementById('course-stats-summary');
+        if (statsBanner) {
+            statsBanner.innerHTML = `
+                <div class="stat-item">🎯 Promedio: <strong>${promedioCurso}</strong></div>
+                <div class="stat-item">📈 Progreso: <strong>${progreso}%</strong></div>
+            `;
+        }
+
         // 1. SEMANAS (Orden Inverso: 5, 4, 3...) - AHORA PRIMERO
         let weeksKeys = Object.keys(materiales)
             .filter(k => k.startsWith('sem_'))
@@ -136,8 +171,13 @@ async function loadContent() {
                     <!-- NUEVO SISTEMA DE ENTREGA POR LINK -->
                     <div class="assignment-container">
                         <div class="status-label ${entrega ? 'status-sent' : 'status-pending'}">
-                            ${entrega ? '✅ Actividad Enviada' : '⌛ Entrega Pendiente'}
+                            ${entrega ? (entrega.estado === 'Calificado' ? '✅ Calificada' : '✅ Actividad Enviada') : '⌛ Entrega Pendiente'}
                         </div>
+
+                        ${entrega && entrega.estado === 'Calificado' ? `
+                            <div class="grade-badge-premium">NOTA: ${entrega.nota} / 100</div>
+                            ${entrega.devolucion ? `<div class="feedback-bubble">${entrega.devolucion}</div>` : ''}
+                        ` : ''}
                         
                         <div class="input-group">
                             <label for="link-${i}">Pega aquí el link de Drive con tu actividad:</label>

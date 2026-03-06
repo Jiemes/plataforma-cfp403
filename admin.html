@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v7.7.0 | CFP 403</title>
+    <title>Panel Administrativo v7.8.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7.6.0">
-    <link rel="stylesheet" href="css/admin.css?v=7.6.0">
+    <link rel="stylesheet" href="css/style.css?v=7.8.0">
+    <link rel="stylesheet" href="css/admin.css?v=7.8.0">
     <style>
         .correction-container {
             display: grid;
@@ -274,13 +274,21 @@
                                 Final (0-100)</label>
                             <input type="number" id="input-grade-val" class="input-grade-premium" min="0" max="100"
                                 placeholder="0">
+
+                            <label
+                                style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px; margin-top:15px;">Devolución
+                                / Comentarios</label>
+                            <textarea id="input-feedback-val" class="input-premium"
+                                style="width:100%; height:100px; resize:none; margin-bottom:15px; padding:12px; font-size:0.85rem;"
+                                placeholder="Escribe aquí tu devolución para el alumno..."></textarea>
+
                             <button class="btn-primary" onclick="saveCorrectionGrade()"
                                 style="width:100%; border-radius:15px; padding:18px; font-size:1.1rem; letter-spacing:0.02em;">GUARDAR
-                                NOTA</button>
+                                NOTA Y DEVOLUCIÓN</button>
                             <div
                                 style="text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:12px; line-height:1.4;">
                                 🎯 <strong>Aprobación: 70</strong><br>
-                                El promedio se calcula automáticamente.
+                                El alumno podrá ver tu comentario al instante.
                             </div>
                         </div>
                     </div>
@@ -344,7 +352,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.10.0"></script>
+    <script src="js/admin_v11.js?v=9.11.0"></script>
 </body>
 
 </html>
