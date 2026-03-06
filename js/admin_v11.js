@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.13.3 (DNI Normalization)
+// Administración CFP 403 - Lógica Pulida v9.17.1 (Sync & Cleanup Refined)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -20,7 +20,13 @@ async function loadStudentsFromFirebase() {
         updateDashboardView('global');
         if (currentViewedCourse) showTable(currentViewedCourse);
         initNotifications();
-    } catch (err) { console.error("Error crítico carga inicial:", err); }
+    } catch (err) {
+        console.error("Error crítico carga inicial:", err);
+        if (err.code === 'permission-denied') {
+            alert("⚠️ Sesión expirada o sin permisos. Por favor, vuelve a iniciar sesión.");
+            window.location.href = 'index.html';
+        }
+    }
 }
 
 function refreshCounters() {
@@ -622,12 +628,23 @@ async function deleteWeek(num) {
 }
 
 function initNotifications() {
-    db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
+    // Limpiar listener anterior si existe para evitar que se "cuelgue" la interfaz
+    if (notificationsListener) {
+        notificationsListener();
+        notificationsListener = null;
+    }
+    notificationsListener = db.collection('entregas').where('estado', '==', 'Pendiente').onSnapshot(snap => {
         const b = document.getElementById('notif-count');
         if (b) {
-            if (snap.size > 0) { b.innerText = snap.size; b.classList.remove('hidden'); }
-            else { b.classList.add('hidden'); }
+            if (snap.size > 0) {
+                b.innerText = snap.size;
+                b.classList.remove('hidden');
+            } else {
+                b.classList.add('hidden');
+            }
         }
+    }, err => {
+        console.error("Error en listener de notificaciones:", err);
     });
 }
 function closeGradeModal() { document.getElementById('grade-modal').classList.add('hidden'); }
@@ -747,18 +764,23 @@ async function processExcel(file, type) {
 
 async function deleteCourseData() {
     if (!currentViewedCourse) return alert("Selecciona un curso primero.");
-    if (!confirm(`⚠️ ALERTA: ¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse.toUpperCase()}? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`⚠️ ALERTA EXTREMA: ¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse.toUpperCase()}?\n\nEsto borrará:\n1. Todos los alumnos de este curso.\n2. Todas las entregas, notas y devoluciones subidas.\n\nEsta acción NO se puede deshacer.`)) return;
 
     try {
         const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-        const snap = await db.collection(coll).get();
-        if (snap.empty) return alert("La lista ya está vacía.");
 
+        // 1. Borrar Alumnos
+        const snapAlumnos = await db.collection(coll).get();
         const batch = db.batch();
-        snap.docs.forEach(doc => batch.delete(doc.ref));
+        snapAlumnos.docs.forEach(doc => batch.delete(doc.ref));
+
+        // 2. Borrar Entregas correspondientes
+        const snapEntregas = await db.collection('entregas').where('curso', '==', currentViewedCourse).get();
+        snapEntregas.docs.forEach(doc => batch.delete(doc.ref));
+
         await batch.commit();
 
-        alert("🗑️ Lista vaciada correctamente.");
+        alert(`🗑️ Lista y entregas de ${currentViewedCourse} eliminadas.`);
         await loadStudentsFromFirebase();
         showTable(currentViewedCourse);
     } catch (err) { alert("Error al vaciar: " + err.message); }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v9.13.2 | CFP 403</title>
+    <title>Panel Administrativo | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=7.8.0">
     <link rel="stylesheet" href="css/admin.css?v=7.8.0">
@@ -146,6 +146,9 @@
             <header class="content-header">
                 <h2>Administración CFP 403</h2>
                 <div class="header-right">
+                    <button class="btn-secondary" onclick="loadStudentsFromFirebase()"
+                        style="padding:8px 15px; border-radius:12px; margin-right:15px; font-weight:700;">🔄 ACTUALIZAR
+                        DATOS</button>
                     <div class="notifications">
                         <span id="notif-bell" class="bell-icon">🔔</span>
                         <span id="notif-count" class="notif-badge hidden">0</span>
@@ -393,7 +396,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.13.3"></script>
+    <script src="js/admin_v11.js?v=9.17.1"></script>
 </body>
 
 </html>

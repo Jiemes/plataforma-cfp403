@@ -61,24 +61,34 @@ body {
     text-align: center;
     margin-bottom: 48px;
     white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.sidebar:hover .sidebar-header {
     opacity: 1;
+    /* Siempre visible */
+    transition: all 0.3s ease;
 }
 
 .sidebar-logo {
-    width: 40px;
+    width: 32px;
+    /* Pequeño cuando está colapsado */
     height: auto;
     margin-bottom: 16px;
     filter: drop-shadow(0 4px 6px rgba(0, 185, 232, 0.3));
-    transition: width 0.3s;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar:hover .sidebar-logo {
-    width: 90px;
+    width: 80px;
+    /* Grande al expandir */
+}
+
+.sidebar-titles {
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.sidebar:hover .sidebar-titles {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .sidebar-titles h3 {
