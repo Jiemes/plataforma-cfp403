@@ -42,57 +42,92 @@ body {
     max-width: 1200px;
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: 15px;
 }
 
-.header-logo-side {
+.header-top-logo {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding-bottom: 5px;
+}
+
+.logo-gba-horizontal {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+.header-middle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.logo-cfp-small {
     height: 60px;
     width: auto;
 }
 
-.header-center-info {
-    text-align: center;
-    flex-grow: 1;
-}
-
-.header-center-info h1 {
-    font-size: 2.2rem;
+#home-student-name {
+    font-size: 2.5rem;
     font-weight: 900;
     letter-spacing: -0.05em;
-    margin-bottom: 5px;
+    margin: 0;
     text-transform: uppercase;
 }
 
-.header-center-info p {
-    font-size: 0.95rem;
-    color: var(--text-muted);
+.header-bottom-info {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
-.header-right-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+.header-bottom-info p {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.btn-config-main {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 6px 15px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-config-main:hover {
+    background: var(--primary-color);
+    color: white;
 }
 
 .btn-action-header {
-    background: #f1f5f9;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-weight: 800;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 900;
     cursor: pointer;
     color: var(--text-dark);
     transition: var(--transition);
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
 }
 
 .btn-action-header:hover {
     background: var(--primary-color);
     color: white;
-    border-color: var(--primary-color);
 }
 
 /* 2. PANTALLA PRINCIPAL */
@@ -573,7 +608,7 @@ body {
 
 .mode-viewer .main-viewer {
     height: calc(100vh - 100px);
-    /* Student Portal - Design System v9.13.0 (Banner Optimization) */
+    /* Student Portal - Design System v9.14.0 (Centered Branding & Security) */
     overflow: hidden;
 }
 

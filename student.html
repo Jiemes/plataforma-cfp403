@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aula Virtual CFP 403 v9.12.0</title>
+    <title>Aula Virtual CFP 403 v9.14.0</title>
     <link rel="icon" type="image/png" href="assets/CFP 403.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.12.0">
-    <link rel="stylesheet" href="css/student.css?v=9.12.0">
+    <link rel="stylesheet" href="css/style.css?v=9.14.0">
+    <link rel="stylesheet" href="css/student.css?v=9.14.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -18,20 +18,23 @@
 </head>
 
 <body>
-    <!-- HEADER UNIFICADO (Fijo en todas las vistas) -->
     <header class="home-header-professional">
         <div class="header-content-unified">
-            <img src="assets/CFP 403.png" alt="Logo CFP" class="header-logo-side">
-            <div class="header-center-info">
-                <h1 id="home-student-name">¡Hola, Alumno!</h1>
-                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+            <!-- Logo Provincia Top Centered -->
+            <div class="header-top-logo">
+                <img src="assets/Logo GBA Vertical.png" alt="Logo Provincia" class="logo-gba-horizontal">
             </div>
-            <div class="header-right-container">
-                <img src="assets/Logo GBA Vertical.png" alt="Logo GBA" class="header-logo-side">
-                <div class="header-actions">
-                    <button id="btn-header-action" class="btn-action-header">Cerrar Sesión</button>
-                    <!-- El texto y función de este botón cambiarán dinámicamente -->
-                </div>
+
+            <!-- Main Greeting Row -->
+            <div class="header-middle-row">
+                <img src="assets/CFP 403.png" alt="Logo CFP" class="logo-cfp-small">
+                <h1 id="home-student-name">¡Hola, Alumno!</h1>
+                <button id="btn-header-action" class="btn-action-header">Salir</button>
+            </div>
+
+            <div class="header-bottom-info">
+                <p>Bienvenido a tu plataforma educativa del CFP 403 Mercedes.</p>
+                <button class="btn-config-main" onclick="openConfigModal()">⚙️ CONFIG</button>
             </div>
         </div>
     </header>
@@ -92,7 +95,33 @@
         </div>
     </div>
 
-    <!-- MODAL FORO / MURO DE CONSULTAS -->
+    <!-- MODAL CONFIGURACIÓN (Cambiar contraseña) -->
+    <div id="config-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:400px; padding:35px;">
+            <h2 style="font-weight:900; color:var(--primary-color); text-align:center; margin-bottom:10px;">
+                Configuración</h2>
+            <p style="text-align:center; font-size:0.9rem; color:#64748b; margin-bottom:25px;">Cambia tu contraseña de
+                acceso</p>
+
+            <div class="input-group">
+                <label style="font-size:0.8rem; font-weight:800; color:var(--primary-color);">Nueva Contraseña</label>
+                <input type="password" id="new-password" class="input-premium-task"
+                    style="width:100%; border-radius:12px;" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="input-group" style="margin-top:15px;">
+                <label style="font-size:0.8rem; font-weight:800; color:var(--primary-color);">Repetir Contraseña</label>
+                <input type="password" id="repeat-password" class="input-premium-task"
+                    style="width:100%; border-radius:12px;" placeholder="Confirma tu contraseña">
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:30px;">
+                <button class="btn-submit-task" onclick="saveNewPassword()"
+                    style="width:100%; border-radius:12px;">GUARDAR CAMBIOS</button>
+                <button class="btn-secondary" onclick="closeConfigModal()"
+                    style="width:100%; border-radius:12px; height:45px;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
     <div id="foro-modal" class="modal hidden">
         <div class="modal-content"
             style="max-width:800px; height:80vh; display:flex; flex-direction:column; padding:30px;">
@@ -125,7 +154,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=9.11.0"></script>
+    <script src="js/student.js?v=9.14.0"></script>
 </body>
 
 </html>

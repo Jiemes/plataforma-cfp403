@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.13.0 (Banner & Forum Fix)
+// Mi Aula Virtual - Lógica del Alumno v9.14.0 (Centered & Secure)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -442,6 +442,46 @@ async function sendMessageStudent() {
 async function deleteMessageStudent(id) {
     if (confirm("¿Seguro que quieres borrar tu mensaje?")) {
         await db.collection('foro_mensajes').doc(id).delete();
+    }
+}
+
+// CONFIGURACIÓN Y SEGURIDAD
+function openConfigModal() {
+    document.getElementById('config-modal').classList.remove('hidden');
+}
+
+function closeConfigModal() {
+    document.getElementById('config-modal').classList.add('hidden');
+    document.getElementById('new-password').value = '';
+    document.getElementById('repeat-password').value = '';
+}
+
+async function saveNewPassword() {
+    const newPass = document.getElementById('new-password').value.trim();
+    const repeatPass = document.getElementById('repeat-password').value.trim();
+
+    if (newPass.length < 6) {
+        return alert("La contraseña debe tener al menos 6 caracteres por seguridad.");
+    }
+
+    if (newPass !== repeatPass) {
+        return alert("Las contraseñas no coinciden. Por favor, verifica.");
+    }
+
+    try {
+        const user = authFirebase.currentUser;
+        if (!user) return alert("Error de sesión. Por favor, vuelve a ingresar.");
+
+        await user.updatePassword(newPass);
+
+        alert("✅ Contraseña actualizada con éxito. Úsala en tu próximo ingreso.");
+        closeConfigModal();
+    } catch (error) {
+        if (error.code === 'auth/requires-recent-login') {
+            alert("⚠️ Por seguridad, esta acción requiere haber iniciado sesión recientemente. Por favor, sal y vuelve a entrar para cambiar tu contraseña.");
+        } else {
+            alert("Error al actualizar: " + error.message);
+        }
     }
 }
 
