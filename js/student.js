@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.15.0 (Resilient & Refined)
+// Mi Aula Virtual - Lógica del Alumno v9.15.1 (UI Refined & Logic Clean)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -11,6 +11,9 @@ async function initStudentDashboard() {
         const nombre = studentSession.nombre.split(',')[1] || studentSession.nombre.split(' ')[0];
         homeName.innerText = `¡Hola, ${nombre.trim()}!`;
     }
+
+    const btnConfig = document.querySelector('.btn-config-main');
+    if (btnConfig) btnConfig.classList.remove('hidden');
 
     const grid = document.getElementById('home-course-grid');
     if (!grid) return;
@@ -87,6 +90,11 @@ function selectCourse(courseId, courseName) {
     document.getElementById('course-view').classList.remove('hidden');
     document.getElementById('course-title').innerText = courseName;
 
+    // Ocultar botón config en los cursos
+    const btnConfig = document.querySelector('.btn-config-main');
+    if (btnConfig) btnConfig.classList.add('hidden');
+
+    closeAllModals();
     updateHeaderButton();
     loadContent();
 }
@@ -98,7 +106,17 @@ function backToHome() {
     document.getElementById('course-view').classList.add('hidden');
     document.getElementById('home-view').classList.remove('hidden');
 
+    // Mostrar botón config en el inicio
+    const btnConfig = document.querySelector('.btn-config-main');
+    if (btnConfig) btnConfig.classList.remove('hidden');
+
+    closeAllModals();
     updateHeaderButton();
+}
+
+function closeAllModals() {
+    closeConfigModal();
+    closeForo();
 }
 
 async function loadContent() {
