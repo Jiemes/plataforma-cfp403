@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.14.0 (Centered & Secure)
+// Mi Aula Virtual - Lógica del Alumno v9.15.0 (Resilient & Refined)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -17,12 +17,17 @@ async function initStudentDashboard() {
 
     grid.innerHTML = '<div class="loader">Sincronizando tus promedios...</div>';
 
-    // Obtenemos todas las entregas para calcular promedios globales
-    const entregasSnap = await db.collection('entregas')
-        .where('alumno_dni', '==', studentSession.dni)
-        .where('estado', '==', 'Calificado')
-        .get();
-    const todasLasEntregas = entregasSnap.docs.map(doc => doc.data());
+    let todasLasEntregas = [];
+    try {
+        // Obtenemos todas las entregas para calcular promedios globales
+        const entregasSnap = await db.collection('entregas')
+            .where('alumno_dni', '==', studentSession.dni)
+            .where('estado', '==', 'Calificado')
+            .get();
+        todasLasEntregas = entregasSnap.docs.map(doc => doc.data());
+    } catch (e) {
+        console.warn("No se pudieron cargar los promedios (permisos o red):", e);
+    }
 
     grid.innerHTML = '';
     studentSession.cursos.forEach(curso => {
