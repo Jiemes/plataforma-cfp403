@@ -1,4 +1,4 @@
-// Lógica de inicio de sesión con Firebase Auth v9.16.5 (Clean & Resilient)
+// Lógica de inicio de sesión con Firebase Auth v9.16.6 (Query & Clean Fix)
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -37,26 +37,35 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
                 let info_alumno = null;
                 try {
-                    // Intentamos buscar por el DNI limpio (ID del documento)
-                    const habSnapshot = await db.collection('alumnos_habilidades').doc(cleanDni).get();
+                    // Intentamos buscar por el DNI limpio
+                    let habSnapshot = await db.collection('alumnos_habilidades').doc(cleanDni).get();
                     if (habSnapshot.exists) info_alumno = habSnapshot.data();
                     else {
-                        const progSnapshot = await db.collection('alumnos_programacion').doc(cleanDni).get();
+                        // Fallback: por si quedó alguno con puntos en Firestore
+                        habSnapshot = await db.collection('alumnos_habilidades').doc(rawPass).get();
+                        if (habSnapshot.exists) info_alumno = habSnapshot.data();
+                    }
+
+                    if (!info_alumno) {
+                        let progSnapshot = await db.collection('alumnos_programacion').doc(cleanDni).get();
                         if (progSnapshot.exists) info_alumno = progSnapshot.data();
+                        else {
+                            progSnapshot = await db.collection('alumnos_programacion').doc(rawPass).get();
+                            if (progSnapshot.exists) info_alumno = progSnapshot.data();
+                        }
                     }
                 } catch (pErr) {
                     console.error("Fallo de permisos al buscar DNI:", pErr);
-                    throw new Error("⚠️ ERROR DE SEGURIDAD: La plataforma no tiene permiso para verificar tu identidad. Por favor, avisar al docente que configure 'allow get: if true' en las Reglas de Firebase.");
+                    throw new Error("⚠️ ERROR DE SEGURIDAD: Falta permiso 'get'. Verifique las Reglas de Firebase.");
                 }
 
                 if (info_alumno && info_alumno.email.toLowerCase() === email) {
-                    // Si encontramos al alumno, le creamos la cuenta en Auth
                     await authFirebase.createUserWithEmailAndPassword(email, rawPass);
                 } else {
-                    throw new Error("❌ No se encontró ningún alumno con ese Email y DNI (" + cleanDni + "). Verifique con el docente si está correctamente inscripto.");
+                    throw new Error("❌ No se encontró ningún alumno con ese Email y DNI (" + cleanDni + ").");
                 }
             } else if (code === 'auth/wrong-password') {
-                throw new Error("🔑 Contraseña incorrecta. Si es tu primer ingreso, recordá que tu contraseña es tu DNI sin puntos.");
+                throw new Error("🔑 Contraseña incorrecta.");
             } else {
                 throw authError;
             }

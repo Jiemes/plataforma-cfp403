@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.13.2 (Reset Fix)
+// Administración CFP 403 - Lógica Pulida v9.13.3 (DNI Normalization)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -712,8 +712,11 @@ async function processExcel(file, type) {
                     const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
                     return key ? r[key] : '';
                 };
+                const rawDni = String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim();
+                const cleanDniImport = rawDni.replace(/\./g, '').replace(/-/g, '');
+
                 return {
-                    dni: String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim(),
+                    dni: cleanDniImport,
                     email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
                     full_name: `${getVal(['APELLIDO']) || ''}, ${getVal(['NOMBRE']) || ''}`.toUpperCase().trim() || String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO']) || '').toUpperCase().trim(),
                     telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
@@ -723,7 +726,7 @@ async function processExcel(file, type) {
                     sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
                     edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
                     nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
-                    password: String(getVal(['DOCUMENTO', 'DNI']) || '').trim() // Password inicial = DNI
+                    password: cleanDniImport // Password inicial normalizada
                 };
             }).filter(s => s.dni.length > 5);
 
