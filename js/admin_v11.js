@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.12.0 (Foro & Muro)
+// Administración CFP 403 - Lógica Pulida v9.13.0 (Foro Index-Free)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -738,32 +738,36 @@ function loadForoAdmin() {
 
     foroUnsubscribe = db.collection('foro_mensajes')
         .where('curso_id', '==', currentForoTab)
-        .orderBy('fecha', 'asc')
         .onSnapshot(snap => {
             container.innerHTML = '';
             if (snap.empty) {
                 container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">No hay mensajes en este muro aún.</p>';
                 return;
             }
-            snap.forEach(doc => {
-                const msg = doc.data();
+
+            // Ordenar en JS para evitar problemas de índices de Firebase
+            let msgs = [];
+            snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+            msgs.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+            msgs.forEach(msg => {
                 const div = document.createElement('div');
                 div.className = `msg-bubble ${msg.is_admin ? 'msg-admin' : 'msg-student'}`;
 
                 div.innerHTML = `
                     <div class="msg-header">
-                        <span class="msg-author">${msg.is_admin ? '⭐ DOCENTE' : msg.alumno_nombre}</span>
+                        <span class="msg-author">${msg.is_admin ? '⭐ DOCENTE' : (msg.alumno_nombre || 'Alumno')}</span>
                         <span class="msg-time">${new Date(msg.fecha).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
                     </div>
                     ${msg.respuesta_a ? `
                         <div class="quote-box">
-                            <strong>${msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
+                            <strong>${msg.respuesta_a.name || msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
                         </div>
                     ` : ''}
                     <div class="msg-content">${msg.mensaje}</div>
                     <div class="msg-actions">
-                        <button class="btn-msg-action" onclick="replyToMessageAdmin('${doc.id}', '${msg.is_admin ? 'Docente' : msg.alumno_nombre}', '${msg.mensaje}')">🔄 Responder</button>
-                        <button class="btn-msg-action delete" onclick="deleteMessageAdmin('${doc.id}')">🗑️ Borrar</button>
+                        <button class="btn-msg-action" onclick="replyToMessageAdmin('${msg.id}', '${msg.is_admin ? 'Docente' : (msg.alumno_nombre || 'Alumno')}', '${msg.mensaje}')">🔄 Responder</button>
+                        <button class="btn-msg-action delete" onclick="deleteMessageAdmin('${msg.id}')">🗑️ Borrar</button>
                     </div>
                 `;
                 container.appendChild(div);

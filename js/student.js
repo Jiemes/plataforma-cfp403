@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.12.0 (Foro & Muro)
+// Mi Aula Virtual - Lógica del Alumno v9.13.0 (Banner & Forum Fix)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -128,8 +128,9 @@ async function loadContent() {
         const statsBanner = document.getElementById('course-stats-summary');
         if (statsBanner) {
             statsBanner.innerHTML = `
-                <div class="stat-item">🎯 Promedio: <strong>${promedioCurso}</strong></div>
-                <div class="stat-item">📈 Progreso: <strong>${progreso}%</strong></div>
+                <div class="stat-item">🎯 <strong>${promedioCurso}</strong></div>
+                <div class="stat-item">📈 <strong>${progreso}%</strong></div>
+                <button class="btn-foro-banner" onclick="openForo()">💬 MURO DE CONSULTAS</button>
             `;
         }
 
@@ -337,19 +338,20 @@ function loadForoStudent() {
     const container = document.getElementById('foro-student-container');
     container.innerHTML = '<p style="text-align:center; padding:20px;">Sincronizando muro...</p>';
 
-    foroUnsubscribe = db.collection('foro_mensaje') || db.collection('foro_mensajes'); // Use consistent naming
-    // Actually, I'll use 'foro_mensajes' as in admin
     foroUnsubscribe = db.collection('foro_mensajes')
         .where('curso_id', '==', currentCourseId)
-        .orderBy('fecha', 'asc')
         .onSnapshot(snap => {
             container.innerHTML = '';
             if (snap.empty) {
                 container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">Aún no hay consultas en este muro. ¡Sé el primero en preguntar!</p>';
                 return;
             }
-            snap.forEach(doc => {
-                const msg = doc.data();
+
+            // Ordenar en JS para evitar problemas de índices de Firebase
+            let msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            msgs.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+            msgs.forEach(msg => {
                 const isMe = msg.alumno_dni === studentSession.dni;
                 const isAdmin = msg.is_admin;
 
@@ -358,20 +360,20 @@ function loadForoStudent() {
 
                 div.innerHTML = `
                     <div class="msg-header">
-                        <span class="msg-author">${isAdmin ? '⭐ DOCENTE' : (isMe ? 'Tú' : msg.alumno_nombre)}</span>
+                        <span class="msg-author">${isAdmin ? '⭐ DOCENTE' : (isMe ? 'Tú' : (msg.alumno_nombre || 'Alumno'))}</span>
                         <span class="msg-time">${new Date(msg.fecha).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
                     </div>
                     ${msg.respuesta_a ? `
                         <div class="quote-box">
-                            <strong>${msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
+                            <strong>${msg.respuesta_a.name || msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
                         </div>
                     ` : ''}
-                    <div class="msg-content" id="msg-text-${doc.id}">${msg.mensaje}</div>
+                    <div class="msg-content" id="msg-text-${msg.id}">${msg.mensaje}</div>
                     <div class="msg-actions">
-                        <button class="btn-msg-action" onclick="replyToMessageStudent('${doc.id}', '${isAdmin ? 'Docente' : msg.alumno_nombre}', '${msg.mensaje}')">🔄 Responder</button>
+                        <button class="btn-msg-action" onclick="replyToMessageStudent('${msg.id}', '${isAdmin ? 'Docente' : (msg.alumno_nombre || 'Alumno')}', '${msg.mensaje}')">🔄 Responder</button>
                         ${isMe ? `
-                            <button class="btn-msg-action" onclick="prepareEditStudent('${doc.id}', \`${msg.mensaje.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">✏️ Editar</button>
-                            <button class="btn-msg-action" onclick="deleteMessageStudent('${doc.id}')">🗑️ Borrar</button>
+                            <button class="btn-msg-action" onclick="prepareEditStudent('${msg.id}', \`${msg.mensaje.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">✏️ Editar</button>
+                            <button class="btn-msg-action" onclick="deleteMessageStudent('${msg.id}')">🗑️ Borrar</button>
                         ` : ''}
                     </div>
                 `;
