@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.8.0 (Integrated Correction View)
+// Administración CFP 403 - Lógica Pulida v9.9.0 (1-100 Scale & Refined Workspace)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -205,6 +205,7 @@ async function openCorrectionView(dni, name) {
     document.getElementById('correction-pdf-viewer').src = "about:blank";
     document.getElementById('correction-viewer-placeholder').classList.remove('hidden');
     document.getElementById('grading-panel-root').classList.add('hidden');
+    currentCorrectionData.dni = dni; // Guardar DNI para refrescos
 
     try {
         const snap = await db.collection('entregas')
@@ -219,9 +220,16 @@ async function openCorrectionView(dni, name) {
             const data = doc.data();
             const btn = document.createElement('button');
             btn.className = 'btn-activity';
+
+            let statusText = '⌛ Pendiente';
+            if (data.estado === 'Calificado') {
+                const notaNum = parseFloat(data.nota);
+                statusText = `Calificado: ${notaNum} ${notaNum >= 70 ? '✅' : '❌'}`;
+            }
+
             btn.innerHTML = `
-                <strong>Actividad ${data.semana}</strong>
-                <small>${data.estado === 'Calificado' ? `Calificado (${data.nota}) ✅` : '⌛ Pendiente'}</small>
+                <strong style="font-size:0.95rem;">Actividad ${data.semana}</strong>
+                <small style="color: ${data.estado === 'Calificado' ? (parseFloat(data.nota) >= 70 ? '#10b981' : '#ef4444') : '#64748b'}">${statusText}</small>
             `;
             btn.onclick = () => {
                 document.querySelectorAll('.btn-activity').forEach(b => b.classList.remove('active'));
@@ -231,7 +239,7 @@ async function openCorrectionView(dni, name) {
             listCont.appendChild(btn);
         });
     } catch (e) {
-        listCont.innerHTML = 'Error.';
+        listCont.innerHTML = '<p style="color:#ef4444;">Error al cargar.</p>';
     }
 }
 
@@ -257,25 +265,34 @@ function visualizeStudentTask(url, sem, docId, grade) {
 }
 
 async function saveCorrectionGrade() {
-    const grade = document.getElementById('input-grade-val').value;
-    if (!grade) return alert("Ingresa una nota");
+    const gradeVal = document.getElementById('input-grade-val').value;
+    const grade = parseInt(gradeVal);
+
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+        return alert("Por favor, ingresa una nota válida entre 0 y 100.");
+    }
 
     try {
         await db.collection('entregas').doc(currentCorrectionData.docId).update({
             nota: grade,
-            estado: 'Calificado'
+            estado: 'Calificado',
+            fecha_calificacion: new Date().toISOString()
         });
-        alert("✅ Nota guardada.");
+
+        alert(grade >= 70 ? "🚀 Actividad Aprobada (" + grade + ")" : "⚠️ Nota guardada (" + grade + ").");
+
         // Refrescar sidebar para mostrar el cambio
         const studentName = document.getElementById('correction-student-name').innerText;
-        const snap = await db.collection('entregas').doc(currentCorrectionData.docId).get();
-        if (snap.exists) openCorrectionView(snap.data().alumno_dni, studentName);
-    } catch (e) { alert("Error: " + e.message); }
+        openCorrectionView(currentCorrectionData.dni || '', studentName);
+    } catch (e) {
+        alert("Error al guardar: " + e.message);
+    }
 }
 
 function backToTable() {
     document.getElementById('correction-section').classList.add('hidden');
     document.getElementById('table-section').classList.remove('hidden');
+    // Forzamos actualización por si se cambiaron notas
     if (currentViewedCourse) showTable(currentViewedCourse);
 }
 
