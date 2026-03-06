@@ -365,6 +365,131 @@ body {
     font-weight: 900;
 }
 
+.btn-foro-banner {
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-foro-banner:hover {
+    background: white;
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+/* FORO / MURO DE CONSULTAS STYLES */
+.foro-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.msg-bubble {
+    max-width: 85%;
+    padding: 12px 18px;
+    border-radius: 18px;
+    position: relative;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    transition: all 0.2s;
+}
+
+.msg-student-me {
+    align-self: flex-end;
+    background: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+
+.msg-student-others {
+    align-self: flex-start;
+    background: #f1f5f9;
+    color: #1e293b;
+    border-bottom-left-radius: 2px;
+}
+
+.msg-admin {
+    align-self: flex-start;
+    background: #e0f2fe;
+    border: 1.5px solid var(--primary-color);
+    border-bottom-left-radius: 2px;
+}
+
+.msg-student-me .msg-author,
+.msg-student-me .msg-time {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.msg-student-others .msg-author,
+.msg-admin .msg-author {
+    color: var(--primary-color);
+}
+
+.msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    gap: 15px;
+}
+
+.msg-author {
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.msg-time {
+    font-size: 0.65rem;
+    color: #94a3b8;
+}
+
+.quote-box {
+    background: rgba(0, 0, 0, 0.05);
+    border-left: 3px solid rgba(0, 0, 0, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.msg-student-me .quote-box {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.msg-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    justify-content: flex-end;
+}
+
+.btn-msg-action {
+    background: none;
+    border: none;
+    font-size: 0.7rem;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.btn-msg-action:hover {
+    opacity: 1;
+}
+
 .input-group {
     margin: 15px 0;
 }
@@ -447,7 +572,7 @@ body {
 
 .mode-viewer .main-viewer {
     height: calc(100vh - 100px);
-    /* Ajuste según la altura del header */
+    /* Student Portal - Design System v9.12.0 (Forum & Glassmorphism) */
     overflow: hidden;
 }
 

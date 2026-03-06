@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aula Virtual CFP 403 v9.11.0</title>
+    <title>Aula Virtual CFP 403 v9.12.0</title>
     <link rel="icon" type="image/png" href="assets/CFP 403.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.11.0">
-    <link rel="stylesheet" href="css/student.css?v=9.11.0">
+    <link rel="stylesheet" href="css/style.css?v=9.12.0">
+    <link rel="stylesheet" href="css/student.css?v=9.12.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -61,6 +61,7 @@
                     <div id="course-stats-summary" class="course-stats-container">
                         <!-- Carga dinámica: Promedio y Progreso -->
                     </div>
+                    <button class="btn-foro-banner" onclick="openForo()">💬 MURO DE CONSULTAS</button>
                 </div>
             </div>
 
@@ -88,6 +89,38 @@
                         </div>
                     </div>
                 </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORO / MURO DE CONSULTAS -->
+    <div id="foro-modal" class="modal hidden">
+        <div class="modal-content"
+            style="max-width:800px; height:80vh; display:flex; flex-direction:column; padding:30px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="font-weight:900; color:var(--primary-color);">Muro de Consultas</h2>
+                <button class="btn-icon" onclick="closeForo()" style="font-size:1.2rem;">✖️</button>
+            </div>
+
+            <div id="foro-student-container" class="foro-wrapper"
+                style="flex-grow:1; overflow-y:auto; padding-right:15px; text-align:left;">
+                <!-- Mensajes -->
+            </div>
+
+            <div class="foro-input-area" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                <div id="reply-preview-student" class="reply-preview-box hidden"
+                    style="background:#f1f5f9; padding:10px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <small style="color:#64748b;">🔄 Respondiendo a: <strong
+                            id="reply-to-name-student"></strong></small>
+                    <button onclick="cancelReplyStudent()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <textarea id="foro-input-student" class="input-premium-task"
+                        style="width:100%; height:60px; resize:none;"
+                        placeholder="Escribe tu consulta o comentario..."></textarea>
+                    <button class="btn-submit-task" id="btn-send-foro" onclick="sendMessageStudent()"
+                        style="width:120px;">ENVIAR</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.11.0 (Feedback & Averages)
+// Mi Aula Virtual - Lógica del Alumno v9.12.0 (Foro & Muro)
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home'; // 'home', 'course', 'viewer'
@@ -314,6 +314,132 @@ async function submitTask(semana) {
         loadContent();
     } catch (error) {
         alert("Error al enviar: " + error.message);
+    }
+}
+
+// FORO / MURO DE CONSULTAS - LÓGICA ALUMNO
+let foroUnsubscribe = null;
+let replyToStudent = null;
+let editingMsgId = null;
+
+function openForo() {
+    document.getElementById('foro-modal').classList.remove('hidden');
+    loadForoStudent();
+}
+
+function closeForo() {
+    document.getElementById('foro-modal').classList.add('hidden');
+    if (foroUnsubscribe) foroUnsubscribe();
+}
+
+function loadForoStudent() {
+    if (foroUnsubscribe) foroUnsubscribe();
+    const container = document.getElementById('foro-student-container');
+    container.innerHTML = '<p style="text-align:center; padding:20px;">Sincronizando muro...</p>';
+
+    foroUnsubscribe = db.collection('foro_mensaje') || db.collection('foro_mensajes'); // Use consistent naming
+    // Actually, I'll use 'foro_mensajes' as in admin
+    foroUnsubscribe = db.collection('foro_mensajes')
+        .where('curso_id', '==', currentCourseId)
+        .orderBy('fecha', 'asc')
+        .onSnapshot(snap => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">Aún no hay consultas en este muro. ¡Sé el primero en preguntar!</p>';
+                return;
+            }
+            snap.forEach(doc => {
+                const msg = doc.data();
+                const isMe = msg.alumno_dni === studentSession.dni;
+                const isAdmin = msg.is_admin;
+
+                const div = document.createElement('div');
+                div.className = `msg-bubble ${isAdmin ? 'msg-admin' : (isMe ? 'msg-student-me' : 'msg-student-others')}`;
+
+                div.innerHTML = `
+                    <div class="msg-header">
+                        <span class="msg-author">${isAdmin ? '⭐ DOCENTE' : (isMe ? 'Tú' : msg.alumno_nombre)}</span>
+                        <span class="msg-time">${new Date(msg.fecha).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+                    </div>
+                    ${msg.respuesta_a ? `
+                        <div class="quote-box">
+                            <strong>${msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
+                        </div>
+                    ` : ''}
+                    <div class="msg-content" id="msg-text-${doc.id}">${msg.mensaje}</div>
+                    <div class="msg-actions">
+                        <button class="btn-msg-action" onclick="replyToMessageStudent('${doc.id}', '${isAdmin ? 'Docente' : msg.alumno_nombre}', '${msg.mensaje}')">🔄 Responder</button>
+                        ${isMe ? `
+                            <button class="btn-msg-action" onclick="prepareEditStudent('${doc.id}', \`${msg.mensaje.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">✏️ Editar</button>
+                            <button class="btn-msg-action" onclick="deleteMessageStudent('${doc.id}')">🗑️ Borrar</button>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        });
+}
+
+function replyToMessageStudent(id, name, text) {
+    replyToStudent = { id, name, mensaje: text };
+    const preview = document.getElementById('reply-preview-student');
+    const nameSpan = document.getElementById('reply-to-name-student');
+    nameSpan.innerText = name;
+    preview.classList.remove('hidden');
+    document.getElementById('foro-input-student').focus();
+    editingMsgId = null; // Cancelar edicion si se responde
+    document.getElementById('btn-send-foro').innerText = 'ENVIAR';
+}
+
+function cancelReplyStudent() {
+    replyToStudent = null;
+    document.getElementById('reply-preview-student').classList.add('hidden');
+}
+
+function prepareEditStudent(id, text) {
+    editingMsgId = id;
+    const input = document.getElementById('foro-input-student');
+    input.value = text;
+    input.focus();
+    document.getElementById('btn-send-foro').innerText = 'GUARDAR';
+    cancelReplyStudent(); // Cancelar respuesta si se edita
+}
+
+async function sendMessageStudent() {
+    const input = document.getElementById('foro-input-student');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    try {
+        if (editingMsgId) {
+            // EDITAR
+            await db.collection('foro_mensajes').doc(editingMsgId).update({
+                mensaje: msg,
+                fecha_edicion: new Date().toISOString()
+            });
+            editingMsgId = null;
+            document.getElementById('btn-send-foro').innerText = 'ENVIAR';
+        } else {
+            // ENVIAR NUEVO
+            await db.collection('foro_mensajes').add({
+                curso_id: currentCourseId,
+                alumno_dni: studentSession.dni,
+                alumno_nombre: studentSession.nombre,
+                mensaje: msg,
+                fecha: new Date().toISOString(),
+                is_admin: false,
+                respuesta_a: replyToStudent
+            });
+        }
+        input.value = '';
+        cancelReplyStudent();
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+async function deleteMessageStudent(id) {
+    if (confirm("¿Seguro que quieres borrar tu mensaje?")) {
+        await db.collection('foro_mensajes').doc(id).delete();
     }
 }
 

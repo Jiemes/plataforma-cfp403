@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.11.0 (Feedback & Averages)
+// Administración CFP 403 - Lógica Pulida v9.12.0 (Foro & Muro)
 let studentData = { habilidades: [], programacion: [] };
 let currentViewedCourse = '';
 let currentClaseTab = 'habilidades';
@@ -714,7 +714,101 @@ document.querySelectorAll('.nav-link').forEach(l => {
         if (sec === 'clases') { document.getElementById('clases-section').classList.remove('hidden'); loadClasesAdmin(); }
         else if (sec === 'dashboard') { document.getElementById('dashboard-section').classList.remove('hidden'); updateDashboardView('global'); }
         else if (sec === 'habilidades' || sec === 'programacion') showTable(sec);
+        else if (sec === 'foro') { document.getElementById('foro-section').classList.remove('hidden'); loadForoAdmin(); }
     });
 });
+
+// FORO / MURO DE CONSULTAS - LÓGICA ADMIN
+let currentForoTab = 'habilidades';
+let foroUnsubscribe = null;
+let replyToAdmin = null;
+
+function switchForoType(type) {
+    currentForoTab = type;
+    document.querySelectorAll('.tab-btn-foro').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(type.slice(0, 4))));
+    document.getElementById('foro-title-admin').innerText = `FORO: ${type === 'habilidades' ? 'Habilidades Digitales' : 'Software & Videojuegos'}`;
+    loadForoAdmin();
+}
+
+function loadForoAdmin() {
+    if (foroUnsubscribe) foroUnsubscribe();
+
+    const container = document.getElementById('foro-admin-container');
+    container.innerHTML = '<p style="text-align:center; padding:20px;">Sincronizando muro...</p>';
+
+    foroUnsubscribe = db.collection('foro_mensajes')
+        .where('curso_id', '==', currentForoTab)
+        .orderBy('fecha', 'asc')
+        .onSnapshot(snap => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">No hay mensajes en este muro aún.</p>';
+                return;
+            }
+            snap.forEach(doc => {
+                const msg = doc.data();
+                const div = document.createElement('div');
+                div.className = `msg-bubble ${msg.is_admin ? 'msg-admin' : 'msg-student'}`;
+
+                div.innerHTML = `
+                    <div class="msg-header">
+                        <span class="msg-author">${msg.is_admin ? '⭐ DOCENTE' : msg.alumno_nombre}</span>
+                        <span class="msg-time">${new Date(msg.fecha).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+                    </div>
+                    ${msg.respuesta_a ? `
+                        <div class="quote-box">
+                            <strong>${msg.respuesta_a.nombre}:</strong> "${msg.respuesta_a.mensaje.slice(0, 50)}..."
+                        </div>
+                    ` : ''}
+                    <div class="msg-content">${msg.mensaje}</div>
+                    <div class="msg-actions">
+                        <button class="btn-msg-action" onclick="replyToMessageAdmin('${doc.id}', '${msg.is_admin ? 'Docente' : msg.alumno_nombre}', '${msg.mensaje}')">🔄 Responder</button>
+                        <button class="btn-msg-action delete" onclick="deleteMessageAdmin('${doc.id}')">🗑️ Borrar</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        });
+}
+
+function replyToMessageAdmin(id, name, text) {
+    replyToAdmin = { id, name, mensaje: text };
+    const preview = document.getElementById('reply-preview-admin');
+    const nameSpan = document.getElementById('reply-to-name-admin');
+    nameSpan.innerText = name;
+    preview.classList.remove('hidden');
+    document.getElementById('foro-input-admin').focus();
+}
+
+function cancelReplyAdmin() {
+    replyToAdmin = null;
+    document.getElementById('reply-preview-admin').classList.add('hidden');
+}
+
+async function sendMessageAdmin() {
+    const input = document.getElementById('foro-input-admin');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    try {
+        await db.collection('foro_mensajes').add({
+            curso_id: currentForoTab,
+            mensaje: msg,
+            fecha: new Date().toISOString(),
+            is_admin: true,
+            respuesta_a: replyToAdmin,
+            alumno_dni: 'admin'
+        });
+        input.value = '';
+        cancelReplyAdmin();
+    } catch (e) { alert("Error al enviar: " + e.message); }
+}
+
+async function deleteMessageAdmin(id) {
+    if (confirm("¿Seguro que quieres borrar este mensaje del muro?")) {
+        await db.collection('foro_mensajes').doc(id).delete();
+    }
+}
 
 loadStudentsFromFirebase();

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo v7.8.0 | CFP 403</title>
+    <title>Panel Administrativo v7.9.0 | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=7.8.0">
     <link rel="stylesheet" href="css/admin.css?v=7.8.0">
@@ -134,6 +134,8 @@
                         style="margin-left:10px;">Software & Videojuegos</span></a>
                 <a href="#" class="nav-link" data-section="clases">📚 <span class="nav-link-text"
                         style="margin-left:10px;">Gestión de Contenidos</span></a>
+                <a href="#" class="nav-link" data-section="foro">💬 <span class="nav-link-text"
+                        style="margin-left:10px;">Muro de Consultas</span></a>
             </nav>
             <div class="sidebar-footer">
                 <button id="btn-logout" class="btn-secondary">Cerrar Sesión</button>
@@ -209,6 +211,45 @@
                 </div>
                 <div id="clases-list-container">
                     <!-- Dynamic load -->
+                </div>
+            </section>
+
+            <section id="foro-section" class="section hidden">
+                <div class="card" style="padding: 15px; margin-bottom: 20px;">
+                    <div class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
+                        <button class="tab-btn-foro active" onclick="switchForoType('habilidades')"
+                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Habilidades
+                            Digitales</button>
+                        <button class="tab-btn-foro" onclick="switchForoType('programacion')"
+                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Software &
+                            Videojuegos</button>
+                    </div>
+                </div>
+                <div class="card"
+                    style="padding: 25px; height: calc(100vh - 250px); display:flex; flex-direction:column;">
+                    <h3 id="foro-title-admin"
+                        style="font-weight: 800; margin-bottom: 20px; color: var(--primary-color);">FORO: Habilidades
+                        Digitales</h3>
+                    <div id="foro-admin-container" class="foro-wrapper"
+                        style="flex-grow:1; overflow-y:auto; padding-right:10px;">
+                        <!-- Mensajes cargados dinámicamente -->
+                    </div>
+                    <div class="foro-input-area"
+                        style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                        <div id="reply-preview-admin" class="reply-preview-box hidden"
+                            style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                            <small style="color:#64748b;">🔄 Respondiendo a: <strong
+                                    id="reply-to-name-admin"></strong></small>
+                            <button onclick="cancelReplyAdmin()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <textarea id="foro-input-admin" class="input-premium"
+                                style="width:100%; height:60px; resize:none;"
+                                placeholder="Escribe un mensaje oficial en el muro..."></textarea>
+                            <button class="btn-primary" onclick="sendMessageAdmin()"
+                                style="padding:0 30px; border-radius:12px;">Enviar</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
