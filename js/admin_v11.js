@@ -786,6 +786,23 @@ async function deleteCourseData() {
     } catch (err) { alert("Error al vaciar: " + err.message); }
 }
 
+async function resetDeliveriesOnly() {
+    if (!currentViewedCourse) return alert("Selecciona un curso primero.");
+    if (!confirm(`⚠️ ¿Seguro que quieres borrar TODAS las entregas y notas del curso ${currentViewedCourse.toUpperCase()}?\n\nLos alumnos permanecerán en la lista, pero sus trabajos y calificaciones se eliminarán para que puedan empezar de nuevo.`)) return;
+
+    try {
+        const snap = await db.collection('entregas').where('curso', '==', currentViewedCourse).get();
+        if (snap.empty) return alert("No hay entregas para reiniciar en este curso.");
+
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        alert("✅ Todas las entregas y notas han sido reiniciadas.");
+        showTable(currentViewedCourse);
+    } catch (err) { alert("Error al reiniciar entregas: " + err.message); }
+}
+
 // UI HANDLERS
 document.getElementById('upload-habilidades')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'habilidades'));
 document.getElementById('upload-programacion')?.addEventListener('change', (e) => processExcel(e.target.files[0], 'programacion'));
