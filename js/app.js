@@ -12,16 +12,40 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        // 1. Caso especial: Administrador
-        if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') {
-            try {
-                await authFirebase.signInWithEmailAndPassword(email, rawPass);
-            } catch (err) {
-                // Si el admin no existe en Auth (primera vez), lo creamos
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') {
-                    await authFirebase.createUserWithEmailAndPassword(email, rawPass);
-                } else { throw err; }
+        // 1. Caso especial: Administrador y Gestión de Roles (v9.18.0)
+        let authResult;
+        try {
+            authResult = await authFirebase.signInWithEmailAndPassword(email, rawPass);
+        } catch (err) {
+            // Si el admin hardcodeado no existe en Auth (primera vez o recovery), lo creamos
+            if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026' &&
+                (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials')) {
+                authResult = await authFirebase.createUserWithEmailAndPassword(email, rawPass);
+            } else {
+                // Fallback a lógica de alumnos si no es el admin maestro
+                throw err;
             }
+        }
+
+        // Verificar si el usuario es administrativo (Admin o Profesor)
+        const adminDoc = await db.collection('usuarios_auth').doc(email).get();
+        if (adminDoc.exists) {
+            const adminData = adminDoc.data();
+            localStorage.setItem('admin_session', JSON.stringify({
+                email: email,
+                role: adminData.role, // 'super-admin' o 'profesor'
+                nombre: adminData.nombre || 'Administrador',
+                cursos: adminData.cursos || [] // Cursos permitidos para este profesor
+            }));
+            window.location.href = 'admin.html';
+            return;
+        }
+
+        // Si era el mail del admin maestro pero no está en Firestore aún (Primer arranque v9.18)
+        if (email === 'sanchezjuanmanuel@abc.gob.ar') {
+            const mainAdmin = { role: 'super-admin', nombre: 'Admin Maestro', cursos: 'all' };
+            await db.collection('usuarios_auth').doc(email).set(mainAdmin);
+            localStorage.setItem('admin_session', JSON.stringify(mainAdmin));
             window.location.href = 'admin.html';
             return;
         }

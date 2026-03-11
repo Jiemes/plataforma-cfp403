@@ -128,14 +128,26 @@
             <nav class="nav-menu">
                 <a href="#" class="nav-link active" data-section="dashboard">📊 <span class="nav-link-text"
                         style="margin-left:10px;">Estadísticas</span></a>
-                <a href="#" class="nav-link" data-section="habilidades">💻 <span class="nav-link-text"
-                        style="margin-left:10px;">Habilidades Digitales</span></a>
-                <a href="#" class="nav-link" data-section="programacion">🎮 <span class="nav-link-text"
-                        style="margin-left:10px;">Software & Videojuegos</span></a>
+
+                <div id="dynamic-courses-nav">
+                    <!-- Los cursos se cargan aquí dinámicamente -->
+                </div>
                 <a href="#" class="nav-link" data-section="clases">📚 <span class="nav-link-text"
                         style="margin-left:10px;">Gestión de Contenidos</span></a>
                 <a href="#" class="nav-link" data-section="foro">💬 <span class="nav-link-text"
                         style="margin-left:10px;">Muro de Consultas</span></a>
+
+                <!-- SECCIÓN SUPER ADMIN (v9.18.0) -->
+                <div id="superadmin-nav" class="hidden"
+                    style="margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.1);">
+                    <p
+                        style="font-size:0.65rem; color:var(--primary-color); font-weight:900; margin-left:10px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
+                        Administración General</p>
+                    <a href="#" class="nav-link" data-section="gestion-cursos">🏫 <span class="nav-link-text"
+                            style="margin-left:10px;">Gestión de Cursos</span></a>
+                    <a href="#" class="nav-link" data-section="gestion-usuarios">👥 <span class="nav-link-text"
+                            style="margin-left:10px;">Usuarios y Permisos</span></a>
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <button id="btn-logout" class="btn-secondary">Cerrar Sesión</button>
@@ -351,6 +363,55 @@
                     </div>
                 </div>
             </section>
+
+            <!-- GESTIÓN DE CURSOS (Super Admin) (v9.18.0) -->
+            <section id="gestion-cursos-section" class="section hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-weight:900; font-size:1.6rem;">🏫 Gestión de Cursos</h3>
+                        <button class="btn-primary" onclick="openCreateCourseModal()">+ Crear Nuevo Curso</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="courses-manager-table">
+                            <thead>
+                                <tr>
+                                    <th>Slug / ID</th>
+                                    <th>Nombre del Curso</th>
+                                    <th>Docente Asignado</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courses-manager-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GESTIÓN DE USUARIOS (Super Admin) -->
+            <section id="gestion-usuarios-section" class="section hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
+                        <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario
+                            Administrativo</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="users-manager-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email (Login)</th>
+                                    <th>Rol</th>
+                                    <th>Cursos Permisos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-manager-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -393,6 +454,58 @@
             <div style="display:flex; gap:10px; margin-top:30px;">
                 <button class="btn-secondary" onclick="closeStudentModal()" style="flex:1;">CANCELAR</button>
                 <button class="btn-primary" onclick="saveStudent()" style="flex:1;">GUARDAR ALUMNO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES DE GESTIÓN (v9.18.0) -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:450px;">
+            <h3 id="user-modal-title">Gestión de Usuario Administrativo</h3>
+            <div class="form-grid" style="text-align:left; margin-top:20px;">
+                <label style="font-size:0.8rem; font-weight:700;">Nombre Completo</label>
+                <input type="text" id="adm-name" class="input-premium" style="margin-bottom:15px;">
+
+                <label style="font-size:0.8rem; font-weight:700;">Email de Acceso</label>
+                <input type="email" id="adm-email" class="input-premium" style="margin-bottom:15px;">
+
+                <label style="font-size:0.8rem; font-weight:700;">Rol</label>
+                <select id="adm-role" class="input-premium" style="margin-bottom:15px;">
+                    <option value="profesor">Profesor (Acceso Limitado)</option>
+                    <option value="super-admin">Super Admin (Acceso Total)</option>
+                </select>
+
+                <label style="font-size:0.8rem; font-weight:700;">Cursos Permitidos (IDs separados por coma)</label>
+                <input type="text" id="adm-cursos" class="input-premium" placeholder="ej: habilidades, programacion">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button class="btn-secondary" onclick="closeUserModal()" style="flex:1;">CANCELAR</button>
+                <button class="btn-primary" onclick="saveAdminUser()" style="flex:1;">GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="course-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:450px;">
+            <h3 id="course-modal-title">Crear Nuevo Curso</h3>
+            <div class="form-grid" style="text-align:left; margin-top:20px;">
+                <label style="font-size:0.8rem; font-weight:700;">ID del Curso (Slug sin espacios)</label>
+                <input type="text" id="crs-id" class="input-premium" placeholder="ej: hab-digitales-2"
+                    style="margin-bottom:15px;">
+
+                <label style="font-size:0.8rem; font-weight:700;">Nombre Público</label>
+                <input type="text" id="crs-name" class="input-premium" placeholder="ej: Habilidades Digitales II"
+                    style="margin-bottom:15px;">
+
+                <label style="font-size:0.8rem; font-weight:700;">Materia Base</label>
+                <select id="crs-base" class="input-premium">
+                    <option value="habilidades">Habilidades Digitales</option>
+                    <option value="programacion">Software & Videojuegos</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button class="btn-secondary" onclick="closeCourseModal()" style="flex:1;">CANCELAR</button>
+                <button class="btn-primary" onclick="saveNewCourse()" style="flex:1;">CREAR CURSO</button>
             </div>
         </div>
     </div>
