@@ -1,4 +1,4 @@
-// Mi Aula Virtual - Lógica del Alumno v9.18.3
+// Mi Aula Virtual - Lógica del Alumno v9.18.12
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
 let currentViewState = 'home';
@@ -12,7 +12,8 @@ function cfpAlert(title, message) {
 }
 
 function closeCfpAlert() {
-    document.getElementById('cfp-alert').classList.remove('active');
+    const modal = document.getElementById('cfp-alert');
+    if (modal) modal.classList.remove('active');
 }
 
 if (!studentSession) { window.location.href = 'index.html'; }

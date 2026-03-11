@@ -62,12 +62,20 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const code = authError.code;
             if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'permission-denied') {
                 let info_alumno = null;
-                const coursesSnap = await db.collection('cursos').get();
-                const currentCourses = coursesSnap.docs.map(d => d.id);
+                let currentCourses = ['habilidades', 'programacion'];
+
+                try {
+                    const coursesSnap = await db.collection('cursos').get();
+                    currentCourses = coursesSnap.docs.map(d => d.id);
+                } catch (e) {
+                    console.warn("Aviso: Reglas de Firebase bloquean lectura de cursos no autenticada. Usando fallback estático.");
+                }
 
                 for (let cid of currentCourses) {
-                    const snapCheck = await db.collection(`alumnos_${cid}`).doc(cleanDni).get();
-                    if (snapCheck.exists) { info_alumno = snapCheck.data(); break; }
+                    try {
+                        const snapCheck = await db.collection(`alumnos_${cid}`).doc(cleanDni).get();
+                        if (snapCheck.exists) { info_alumno = snapCheck.data(); break; }
+                    } catch (e) { console.warn("Aviso de read unauth en", cid, e); }
                 }
 
                 if (info_alumno && info_alumno.email.toLowerCase() === email) {
@@ -84,17 +92,30 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
         let cursos_inscrito = [];
         let info_final = null;
+        let coursesDocs = [];
 
-        const coursesList = await db.collection('cursos').get();
-        for (let doc of coursesList.docs) {
+        try {
+            const coursesList = await db.collection('cursos').get();
+            coursesList.docs.forEach(doc => coursesDocs.push({ id: doc.id, nombre: doc.data().nombre }));
+        } catch (e) {
+            console.warn("Aviso: Lectura bloqueada en cursos post-auth. Fallback activo.");
+            coursesDocs = [
+                { id: 'habilidades', nombre: 'Habilidades Digitales e IA' },
+                { id: 'programacion', nombre: 'Software y Videojuegos' }
+            ];
+        }
+
+        for (let doc of coursesDocs) {
             const cid = doc.id;
-            const cName = doc.data().nombre;
+            const cName = doc.nombre;
 
-            const q = await db.collection(`alumnos_${cid}`).where('email', '==', email).get();
-            if (!q.empty) {
-                if (!info_final) info_final = q.docs[0].data();
-                cursos_inscrito.push({ id: cid, nombre: cName });
-            }
+            try {
+                const q = await db.collection(`alumnos_${cid}`).where('email', '==', email).get();
+                if (!q.empty) {
+                    if (!info_final) info_final = q.docs[0].data();
+                    cursos_inscrito.push({ id: cid, nombre: cName });
+                }
+            } catch (e) { console.warn("Permiso denegado en", cid); }
         }
 
         if (info_final) {
