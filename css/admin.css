@@ -25,9 +25,9 @@ body {
 
 .dashboard {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     width: 100vw;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Sidebar - AUTO-HIDE (v7.6.0) */
@@ -42,7 +42,8 @@ body {
     position: sticky;
     top: 0;
     height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     flex-shrink: 0;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
@@ -167,8 +168,10 @@ body {
 .content {
     flex-grow: 1;
     padding: 40px;
-    overflow-x: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--content-bg);
+    height: 100vh;
 }
 
 .content-header {

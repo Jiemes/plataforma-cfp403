@@ -551,7 +551,7 @@ async function deleteStudent(course, dni) {
 // CRONOGRAMA v6.9.0 (DISEÑO PULIDO + ORDEN INVERSO)
 // GESTIÓN DE CLASES
 function loadClasesAdmin() {
-    const tabsContainer = document.getElementById('clase-tabs');
+    const tabsContainer = document.getElementById('clase-tabs-dynamic');
     if (!tabsContainer) return;
     tabsContainer.innerHTML = '';
 
@@ -561,7 +561,8 @@ function loadClasesAdmin() {
         btn.innerText = c.nombre;
         btn.onclick = () => {
             currentClaseTab = c.id;
-            loadClasesAdmin(); // Recargar tabs para actualizar 'active' y luego cargar config
+            renderClaseTabs(); // Usar la nueva función de renderizado
+            loadClaseConfig(c.id);
         };
         tabsContainer.appendChild(btn);
     });
@@ -1062,14 +1063,13 @@ function switchClaseType(type) {
 function loadForoAdmin() {
     if (foroUnsubscribe) foroUnsubscribe();
 
-    const tabsContainer = document.querySelector('.foro-tabs');
+    const tabsContainer = document.getElementById('foro-tabs-dynamic');
     if (tabsContainer) {
         tabsContainer.innerHTML = '';
         activeCourses.forEach(c => {
             const btn = document.createElement('button');
             btn.className = `tab-btn-foro ${currentForoId === c.id ? 'active' : ''}`;
             btn.innerText = c.nombre;
-            btn.dataset.courseId = c.id;
             btn.onclick = () => switchForoType(c.id);
             tabsContainer.appendChild(btn);
         });
@@ -1078,6 +1078,7 @@ function loadForoAdmin() {
     if (!currentForoId && activeCourses.length > 0) currentForoId = activeCourses[0].id;
 
     const container = document.getElementById('foro-admin-container');
+    if (!container) return;
     container.innerHTML = '<p style="text-align:center; padding:20px;">Sincronizando muro...</p>';
 
     foroUnsubscribe = db.collection('foro_mensajes')

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrativo | CFP 403</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=7.8.0">
-    <link rel="stylesheet" href="css/admin.css?v=7.8.0">
+    <link rel="stylesheet" href="css/style.css?v=9.18.0">
+    <link rel="stylesheet" href="css/admin.css?v=9.18.0">
     <style>
         .correction-container {
             display: grid;
@@ -106,6 +106,20 @@
         .success-glow {
             animation: successPulse 1.5s;
         }
+
+        /* Fix for scrollable content but sticky sidebar */
+        .dashboard {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .content {
+            flex-grow: 1;
+            overflow-y: auto;
+            height: 100vh;
+            padding: 30px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -117,6 +131,7 @@
 
 <body>
     <div class="dashboard">
+        <!-- BARRA LATERAL -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <img src="assets/CFP 403.png" alt="Logo" class="sidebar-logo">
@@ -125,24 +140,24 @@
                     <p>Mercedes</p>
                 </div>
             </div>
+
             <nav class="nav-menu">
                 <a href="#" class="nav-link active" data-section="dashboard">📊 <span class="nav-link-text"
                         style="margin-left:10px;">Estadísticas</span></a>
 
-                <div id="dynamic-courses-nav">
-                    <!-- Nav links per course -->
+                <!-- Cursos Dinámicos -->
+                <div id="dynamic-courses-nav" style="margin: 10px 0;">
+                    <!-- Los cursos se cargan aquí -->
                 </div>
 
                 <a href="#" class="nav-link" data-section="entregas">📝 <span class="nav-link-text"
-                        style="margin-left:10px;">Correcciones / Entregas</span></a>
-
+                        style="margin-left:10px;">Correcciones Pendientes</span></a>
                 <a href="#" class="nav-link" data-section="clases">📚 <span class="nav-link-text"
                         style="margin-left:10px;">Gestión de Contenidos</span></a>
-
                 <a href="#" class="nav-link" data-section="foro">💬 <span class="nav-link-text"
                         style="margin-left:10px;">Muro de Consultas</span></a>
 
-                <!-- SECCIÓN SUPER ADMIN (v9.18.0) -->
+                <!-- SECCIÓN SUPER ADMIN -->
                 <div id="superadmin-nav" class="hidden"
                     style="margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.1);">
                     <p
@@ -154,11 +169,13 @@
                             style="margin-left:10px;">Usuarios y Permisos</span></a>
                 </div>
             </nav>
+
             <div class="sidebar-footer">
                 <button id="btn-logout" class="btn-secondary">Cerrar Sesión</button>
             </div>
         </aside>
 
+        <!-- CONTENIDO PRINCIPAL -->
         <main class="content">
             <header class="content-header">
                 <h2>Administración CFP 403</h2>
@@ -172,9 +189,11 @@
                     </div>
                 </div>
             </header>
+
+            <!-- SECCIÓN: ESTADÍSTICAS -->
             <section id="dashboard-section" class="section active">
                 <div class="stats-grid" id="main-stats-grid">
-                    <!-- Cards dinámicas se cargan aquí -->
+                    <!-- Cards dinámicas -->
                 </div>
 
                 <div class="dashboard-charts card" style="margin-top:25px;">
@@ -194,268 +213,259 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="import-section card" style="margin-top:25px;">
+                    <h3>Importar Alumnos desde Excel</h3>
+                    <div id="import-selectors" class="upload-controls">
+                        <!-- Selectores dinámicos -->
+                    </div>
+                </div>
             </section>
-    </div>
 
-    <div class="import-section card">
-        <h3>Importar Alumnos desde Excel</h3>
-        <div id="import-selectors" class="upload-controls">
-            <!-- Dynamic course selectors for import -->
-        </div>
-    </div>
-    </section>
-
-    <section id="clases-section" class="section hidden">
-        <div class="card" style="padding: 15px; margin-bottom: 20px;">
-            <div id="clase-tabs-dynamic" class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
-                <!-- Dynamic course tabs for content -->
-            </div>
-        </div>
-        <div id="clases-list-container">
-            <!-- Dynamic load -->
-        </div>
-    </section>
-
-    <section id="foro-section" class="section hidden">
-        <div class="card" style="padding: 15px; margin-bottom: 20px;">
-            <div id="foro-tabs-dynamic" class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
-                <!-- Dynamic course tabs for forum -->
-            </div>
-        </div>
-        <div class="card" style="padding: 25px; height: calc(100vh - 250px); display:flex; flex-direction:column;">
-            <h3 id="foro-title-admin" style="font-weight: 800; margin-bottom: 20px; color: var(--primary-color);">FORO:
-                Habilidades
-                Digitales</h3>
-            <div id="foro-admin-container" class="foro-wrapper"
-                style="flex-grow:1; overflow-y:auto; padding-right:10px;">
-                <!-- Mensajes cargados dinámicamente -->
-            </div>
-            <div class="foro-input-area" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
-                <div id="reply-preview-admin" class="reply-preview-box hidden"
-                    style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:#64748b;">🔄 Respondiendo a: <strong id="reply-to-name-admin"></strong></small>
-                    <button onclick="cancelReplyAdmin()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <textarea id="foro-input-admin" class="input-premium" style="width:100%; height:60px; resize:none;"
-                        placeholder="Escribe un mensaje oficial en el muro..."></textarea>
-                    <button class="btn-primary" onclick="sendMessageAdmin()"
-                        style="padding:0 30px; border-radius:12px;">Enviar</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="table-section" class="section hidden">
-        <div class="card">
-            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="current-course-title">Listado de Alumnos</h3>
-                <div class="table-actions-top" style="display:flex; gap:10px;">
-                    <button class="btn-primary-sm" onclick="downloadCourseExcel()"
-                        style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
-                        Listado</button>
-                    <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
-                    <button class="btn-secondary" onclick="resetDeliveriesOnly()" style="border:1px solid #cbd5e1;">🔄
-                        Reiniciar Entregas</button>
-                    <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
-                </div>
-            </div>
-            <div class="table-container">
-                <table id="students-table">
-                    <thead>
-                        <tr>
-                            <th>Apellido y Nombre</th>
-                            <th>DNI</th>
-                            <th>Teléfono</th>
-                            <th>Email</th>
-                            <th style="text-align:center">Edad</th>
-                            <th style="text-align:center">Tareas</th>
-                            <th style="text-align:center">Promedio</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <section id="correction-section" class="section hidden">
-        <div class="correction-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <h3 id="correction-student-name" style="font-size:1.8rem; font-weight:900; letter-spacing:-0.02em;">
-                    Nombre del Alumno</h3>
-                <p id="correction-course-name" style="color:#64748b; font-size:1rem; font-weight:600;">Curso
-                    Actual</p>
-            </div>
-            <button class="btn-primary-sm" onclick="backToTable()"
-                style="padding:12px 30px; font-weight:800; border-radius:12px;">← VOLVER AL LISTADO</button>
-        </div>
-
-        <div class="correction-container">
-            <!-- PANEL IZQUIERDO: Actividades y Calificación -->
-            <div class="correction-sidebar">
-                <div style="flex-grow:1;">
-                    <h4
-                        style="font-weight:800; color:#1e293b; margin-bottom:15px; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
-                        Entregas del Alumno</h4>
-                    <div id="correction-activities-list" class="activities-list">
-                        <!-- Botones de actividades -->
+            <!-- SECCIÓN: LISTADO DE ALUMNOS (Por Curso) -->
+            <section id="table-section" class="section hidden">
+                <div class="card">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="current-course-title">Listado de Alumnos</h3>
+                        <div class="table-actions-top" style="display:flex; gap:10px;">
+                            <button class="btn-primary-sm" onclick="downloadCourseExcel()"
+                                style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
+                                Listado</button>
+                            <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
+                            <button class="btn-secondary" onclick="resetDeliveriesOnly()"
+                                style="border:1px solid #cbd5e1;">🔄 Reiniciar Entregas</button>
+                            <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="students-table">
+                            <thead>
+                                <tr>
+                                    <th>Apellido y Nombre</th>
+                                    <th>DNI</th>
+                                    <th>Teléfono</th>
+                                    <th>Email</th>
+                                    <th style="text-align:center">Edad</th>
+                                    <th style="text-align:center">Tareas</th>
+                                    <th style="text-align:center">Promedio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
+            </section>
 
-                <div id="grading-panel-root" class="grading-panel hidden">
-                    <label
-                        style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:12px; text-align:center;">Calificación
-                        Final (0-100)</label>
-                    <input type="number" id="input-grade-val" class="input-grade-premium" min="0" max="100"
-                        placeholder="0">
-
-                    <label
-                        style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px; margin-top:15px;">Devolución
-                        / Comentarios</label>
-                    <textarea id="input-feedback-val" class="input-premium"
-                        style="width:100%; height:100px; resize:none; margin-bottom:15px; padding:12px; font-size:0.85rem;"
-                        placeholder="Escribe aquí tu devolución para el alumno..."></textarea>
-
-                    <button class="btn-primary" onclick="saveCorrectionGrade()"
-                        style="width:100%; border-radius:15px; padding:18px; font-size:1.1rem; letter-spacing:0.02em;">GUARDAR
-                        NOTA Y DEVOLUCIÓN</button>
-                    <div style="text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:12px; line-height:1.4;">
-                        🎯 <strong>Aprobación: 70</strong><br>
-                        El alumno podrá ver tu comentario al instante.
+            <!-- SECCIÓN: CORRECCIONES / ENTREGAS PENDIENTES -->
+            <section id="entregas-section" class="section hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-weight:900; font-size:1.6rem;">📝 Correcciones Pendientes</h3>
+                        <div id="entregas-tabs-dynamic" class="tabs-clases" style="display: flex; gap: 10px;">
+                            <!-- Tabs dinámicos -->
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="pending-deliveries-table">
+                            <thead>
+                                <tr>
+                                    <th>Alumno</th>
+                                    <th>Semana</th>
+                                    <th>Fecha Envío</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pending-deliveries-body">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:20px;">Selecciona un curso para
+                                        ver entregas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- PANEL DERECHO: Visor de PDF Gigante -->
-            <div class="correction-viewer">
-                <iframe id="correction-pdf-viewer" src="about:blank"></iframe>
-                <div id="correction-viewer-placeholder"
-                    style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; opacity:0.6;">
-                    <span style="font-size:5rem;">📂</span>
-                    <p style="color:#64748b; margin-top:20px; font-weight:700; font-size:1.1rem;">Selecciona una
-                        actividad para visualizar el PDF</p>
+            <!-- SECCIÓN: GESTIÓN DE CONTENIDOS -->
+            <section id="clases-section" class="section hidden">
+                <div class="card" style="padding: 15px; margin-bottom: 20px;">
+                    <div id="clase-tabs-dynamic" class="tabs-clases"
+                        style="display: flex; justify-content: center; gap: 15px;">
+                        <!-- Tabs dinámicos -->
+                    </div>
                 </div>
-            </div>
-        </div>
-    </section>
+                <div id="clases-list-container">
+                    <!-- Carga dinámica -->
+                </div>
+            </section>
 
-    <!-- GESTIÓN DE CURSOS (Super Admin) (v9.18.0) -->
-    <section id="gestion-cursos-section" class="section hidden">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="font-weight:900; font-size:1.6rem;">🏫 Gestión de Cursos</h3>
-                <button class="btn-primary" onclick="openCreateCourseModal()">+ Crear Nuevo Curso</button>
-            </div>
-            <div class="table-container">
-                <table id="courses-manager-table">
-                    <thead>
-                        <tr>
-                            <th>Slug / ID</th>
-                            <th>Nombre del Curso</th>
-                            <th>Docente Asignado</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="courses-manager-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+            <!-- SECCIÓN: MURO DE CONSULTAS -->
+            <section id="foro-section" class="section hidden">
+                <div class="card" style="padding: 15px; margin-bottom: 20px;">
+                    <div id="foro-tabs-dynamic" class="tabs-clases"
+                        style="display: flex; justify-content: center; gap: 15px;">
+                        <!-- Tabs dinámicos -->
+                    </div>
+                </div>
+                <div class="card"
+                    style="padding: 25px; height: calc(100vh - 350px); display:flex; flex-direction:column;">
+                    <h3 id="foro-title-admin"
+                        style="font-weight: 800; margin-bottom: 20px; color: var(--primary-color);">FORO</h3>
+                    <div id="foro-admin-container" class="foro-wrapper"
+                        style="flex-grow:1; overflow-y:auto; padding-right:10px;">
+                        <!-- Mensajes -->
+                    </div>
+                    <div class="foro-input-area"
+                        style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                        <div id="reply-preview-admin" class="reply-preview-box hidden"
+                            style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                            <small style="color:#64748b;">🔄 Respondiendo a: <strong
+                                    id="reply-to-name-admin"></strong></small>
+                            <button onclick="cancelReplyAdmin()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <textarea id="foro-input-admin" class="input-premium"
+                                style="width:100%; height:60px; resize:none;"
+                                placeholder="Escribe un mensaje oficial en el muro..."></textarea>
+                            <button class="btn-primary" onclick="sendMessageAdmin()"
+                                style="padding:0 30px; border-radius:12px;">Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-    <!-- GESTIÓN DE USUARIOS (Super Admin) -->
-    <section id="gestion-usuarios-section" class="section hidden">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
-                <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario
-                    Administrativo</button>
-            </div>
-            <div class="table-container">
-                <table id="users-manager-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Email (Login)</th>
-                            <th>Rol</th>
-                            <th>Cursos Permisos</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-manager-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-    </main>
+            <!-- SECCIÓN: VISOR DE CORRECCIÓN INDIVIDUAL -->
+            <section id="correction-section" class="section hidden">
+                <div class="correction-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 id="correction-student-name"
+                            style="font-size:1.8rem; font-weight:900; letter-spacing:-0.02em;">Nombre del Alumno</h3>
+                        <p id="correction-course-name" style="color:#64748b; font-size:1rem; font-weight:600;">Curso
+                            Actual</p>
+                    </div>
+                    <button class="btn-primary-sm" onclick="showSection('entregas')"
+                        style="padding:12px 30px; font-weight:800; border-radius:12px;">← VOLVER A ENTREGAS</button>
+                </div>
+
+                <div class="correction-container">
+                    <div class="correction-sidebar">
+                        <div style="flex-grow:1;">
+                            <h4
+                                style="font-weight:800; color:#1e293b; margin-bottom:15px; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
+                                Entregas del Alumno</h4>
+                            <div id="correction-activities-list" class="activities-list"></div>
+                        </div>
+                        <div id="grading-panel-root" class="grading-panel hidden">
+                            <label
+                                style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:12px; text-align:center;">Calificación
+                                Final (0-100)</label>
+                            <input type="number" id="input-grade-val" class="input-grade-premium" min="0" max="100"
+                                placeholder="0">
+                            <label
+                                style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px; margin-top:15px;">Devolución</label>
+                            <textarea id="input-feedback-val" class="input-premium"
+                                style="width:100%; height:100px; resize:none; margin-bottom:15px;"
+                                placeholder="Escribe aquí tu devolución..."></textarea>
+                            <button class="btn-primary" onclick="saveCorrectionGrade()"
+                                style="width:100%; border-radius:15px; padding:18px;">GUARDAR NOTA</button>
+                        </div>
+                    </div>
+                    <div class="correction-viewer">
+                        <iframe id="correction-pdf-viewer" src="about:blank"></iframe>
+                        <div id="correction-viewer-placeholder"
+                            style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; opacity:0.6;">
+                            <span style="font-size:5rem;">📂</span>
+                            <p style="color:#64748b; margin-top:20px; font-weight:700;">Selecciona una actividad</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: GESTIÓN DE CURSOS (Super Admin) -->
+            <section id="gestion-cursos-section" class="section hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-weight:900; font-size:1.6rem;">🏫 Gestión de Cursos</h3>
+                        <button class="btn-primary" onclick="openCreateCourseModal()">+ Crear Nuevo Curso</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="courses-manager-table">
+                            <thead>
+                                <tr>
+                                    <th>Slug / ID</th>
+                                    <th>Nombre del Curso</th>
+                                    <th>Docente</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courses-manager-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: GESTIÓN DE USUARIOS (Super Admin) -->
+            <section id="gestion-usuarios-section" class="section hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
+                        <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="users-manager-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Cursos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-manager-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <div id="grade-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="grade-modal-title">Calificar Trabajo</h3>
-            <div id="student-works-list"></div>
-            <button class="btn-secondary" onclick="closeGradeModal()" style="margin-top: 20px;">Cerrar</button>
-        </div>
-    </div>
-
-    <!-- Modal para Agregar/Editar Alumno -->
+    <!-- MODALES -->
     <div id="student-modal" class="modal hidden">
         <div class="modal-content" style="max-width:500px;">
-            <h3 id="student-modal-title" style="margin-bottom:20px;">Agregar Alumno</h3>
-            <div class="form-grid" style="display:grid; grid-template-columns:1fr; gap:15px; text-align:left;">
-                <div class="field-item">
-                    <label style="font-size:0.8rem; font-weight:700;">Apellido y Nombre</label>
-                    <input type="text" id="stu-name" placeholder="Ej: PEREZ, JUAN" class="input-premium">
-                </div>
-                <div class="field-item">
-                    <label style="font-size:0.8rem; font-weight:700;">DNI (Sin puntos)</label>
-                    <input type="number" id="stu-dni" placeholder="12345678" class="input-premium">
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                    <div class="field-item">
-                        <label style="font-size:0.8rem; font-weight:700;">Teléfono</label>
-                        <input type="text" id="stu-tel" placeholder="2324..." class="input-premium">
-                    </div>
-                    <div class="field-item">
-                        <label style="font-size:0.8rem; font-weight:700;">Edad</label>
-                        <input type="number" id="stu-age" placeholder="20" class="input-premium">
-                    </div>
-                </div>
-                <div class="field-item">
-                    <label style="font-size:0.8rem; font-weight:700;">Email</label>
-                    <input type="email" id="stu-email" placeholder="correo@ejemplo.com" class="input-premium">
-                </div>
+            <h3 id="student-modal-title">Alumno</h3>
+            <div class="form-grid" style="text-align:left; gap:15px; display:grid;">
+                <input type="text" id="stu-name" placeholder="Nombre" class="input-premium">
+                <input type="number" id="stu-dni" placeholder="DNI" class="input-premium">
+                <input type="text" id="stu-tel" placeholder="Teléfono" class="input-premium">
+                <input type="number" id="stu-age" placeholder="Edad" class="input-premium">
+                <input type="email" id="stu-email" placeholder="Email" class="input-premium">
             </div>
-            <div style="display:flex; gap:10px; margin-top:30px;">
+            <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-secondary" onclick="closeStudentModal()" style="flex:1;">CANCELAR</button>
-                <button class="btn-primary" onclick="saveStudent()" style="flex:1;">GUARDAR ALUMNO</button>
+                <button class="btn-primary" onclick="saveStudent()" style="flex:1;">GUARDAR</button>
             </div>
         </div>
     </div>
 
-    <!-- MODALES DE GESTIÓN (v9.18.0) -->
     <div id="user-modal" class="modal hidden">
         <div class="modal-content" style="max-width:450px;">
-            <h3 id="user-modal-title">Gestión de Usuario Administrativo</h3>
-            <div class="form-grid" style="text-align:left; margin-top:20px;">
-                <label style="font-size:0.8rem; font-weight:700;">Nombre Completo</label>
-                <input type="text" id="adm-name" class="input-premium" style="margin-bottom:15px;">
-
-                <label style="font-size:0.8rem; font-weight:700;">Email de Acceso</label>
-                <input type="email" id="adm-email" class="input-premium" style="margin-bottom:15px;">
-
-                <label style="font-size:0.8rem; font-weight:700;">Rol</label>
-                <select id="adm-role" class="input-premium" style="margin-bottom:15px;">
-                    <option value="profesor">Profesor (Acceso Limitado)</option>
-                    <option value="super-admin">Super Admin (Acceso Total)</option>
+            <h3 id="user-modal-title">Usuario Administrativo</h3>
+            <div class="form-grid" style="text-align:left; margin-top:15px; display:grid; gap:10px;">
+                <label>Nombre</label><input type="text" id="adm-name" class="input-premium">
+                <label>Email</label><input type="email" id="adm-email" class="input-premium">
+                <label>Rol</label>
+                <select id="adm-role" class="input-premium">
+                    <option value="profesor">Profesor</option>
+                    <option value="super-admin">Super Admin</option>
                 </select>
-
-                <label style="font-size:0.8rem; font-weight:700;">Cursos Permitidos (IDs separados por coma)</label>
-                <input type="text" id="adm-cursos" class="input-premium" placeholder="ej: habilidades, programacion">
+                <label>Cursos (Sep. por coma)</label><input type="text" id="adm-cursos" class="input-premium"
+                    placeholder="habilidades, programacion">
             </div>
-            <div style="display:flex; gap:10px; margin-top:30px;">
+            <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-secondary" onclick="closeUserModal()" style="flex:1;">CANCELAR</button>
                 <button class="btn-primary" onclick="saveAdminUser()" style="flex:1;">GUARDAR</button>
             </div>
@@ -464,25 +474,19 @@
 
     <div id="course-modal" class="modal hidden">
         <div class="modal-content" style="max-width:450px;">
-            <h3 id="course-modal-title">Crear Nuevo Curso</h3>
-            <div class="form-grid" style="text-align:left; margin-top:20px;">
-                <label style="font-size:0.8rem; font-weight:700;">ID del Curso (Slug sin espacios)</label>
-                <input type="text" id="crs-id" class="input-premium" placeholder="ej: hab-digitales-2"
-                    style="margin-bottom:15px;">
-
-                <label style="font-size:0.8rem; font-weight:700;">Nombre Público</label>
-                <input type="text" id="crs-name" class="input-premium" placeholder="ej: Habilidades Digitales II"
-                    style="margin-bottom:15px;">
-
-                <label style="font-size:0.8rem; font-weight:700;">Materia Base</label>
+            <h3>Nuevo Curso</h3>
+            <div class="form-grid" style="text-align:left; margin-top:15px; display:grid; gap:10px;">
+                <label>ID (sin espacios)</label><input type="text" id="crs-id" class="input-premium">
+                <label>Nombre Público</label><input type="text" id="crs-name" class="input-premium">
+                <label>Materia Base</label>
                 <select id="crs-base" class="input-premium">
                     <option value="habilidades">Habilidades Digitales</option>
                     <option value="programacion">Software & Videojuegos</option>
                 </select>
             </div>
-            <div style="display:flex; gap:10px; margin-top:30px;">
+            <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-secondary" onclick="closeCourseModal()" style="flex:1;">CANCELAR</button>
-                <button class="btn-primary" onclick="saveNewCourse()" style="flex:1;">CREAR CURSO</button>
+                <button class="btn-primary" onclick="saveNewCourse()" style="flex:1;">CREAR</button>
             </div>
         </div>
     </div>
