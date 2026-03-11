@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.5.0">
+    <link rel="stylesheet" href="css/style.css?v=9.18.5">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -38,18 +38,25 @@
                 <button type="submit" class="btn-login">Ingresar</button>
             </form>
 
-            <div id="login-error" class="error-message hidden">
-                Credenciales incorrectas. Por favor, intente de nuevo.
-            </div>
-
             <div class="login-footer">
                 <img src="assets/Logo GBA.png" alt="Gobierno de la Provincia de Buenos Aires" class="gba-logo">
                 <p>Fundado el 24 de enero de 2023</p>
             </div>
         </div>
     </div>
+
+    <!-- ALERT MODAL PERSONALIZADO -->
+    <div id="cfp-alert" class="alert-modal-overlay">
+        <div class="alert-modal-content">
+            <img src="assets/CFP 403.png" alt="CFP Logo" class="alert-logo">
+            <div id="alert-title" class="alert-title">ATENCIÓN</div>
+            <div id="alert-message" class="alert-message">Mensaje del sistema</div>
+            <button class="btn-alert-confirm" onclick="closeCfpAlert()">ENTENDIDO</button>
+        </div>
+    </div>
+
     <script src="js/firebase-config.js"></script>
-    <script src="js/app.js?v=9.16.6"></script>
+    <script src="js/app.js?v=9.18.5"></script>
 </body>
 
 </html>

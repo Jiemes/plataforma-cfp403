@@ -40,6 +40,7 @@ body {
     box-shadow: var(--shadow);
     text-align: center;
     border: 1px solid rgba(0, 185, 232, 0.1);
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .main-logo {
@@ -127,12 +128,6 @@ body {
     height: 65px;
     width: auto;
     margin-bottom: 16px;
-    opacity: 1;
-}
-
-.gba-logo:hover {
-    filter: grayscale(0);
-    opacity: 1;
 }
 
 .login-footer p {
@@ -153,6 +148,77 @@ body {
     }
 }
 
-.login-card {
-    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+/* ALERT MODAL CFP */
+.alert-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.alert-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.alert-modal-content {
+    background: white;
+    width: 90%;
+    max-width: 400px;
+    padding: 30px;
+    border-radius: 25px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform: scale(0.8);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.alert-modal-overlay.active .alert-modal-content {
+    transform: scale(1);
+}
+
+.alert-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 15px;
+}
+
+.alert-title {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #1e293b;
+    margin-bottom: 10px;
+}
+
+.alert-message {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.btn-alert-confirm {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-alert-confirm:hover {
+    background: var(--primary-hover);
 }

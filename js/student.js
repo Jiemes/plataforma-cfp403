@@ -1,7 +1,19 @@
-// Mi Aula Virtual - Lógica del Alumno v9.15.1 (UI Refined & Logic Clean)
+// Mi Aula Virtual - Lógica del Alumno v9.18.3
 let studentSession = JSON.parse(localStorage.getItem('user_session'));
 let currentCourseId = '';
-let currentViewState = 'home'; // 'home', 'course', 'viewer'
+let currentViewState = 'home';
+
+function cfpAlert(title, message) {
+    const modal = document.getElementById('cfp-alert');
+    if (!modal) return alert(message);
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-message').innerText = message;
+    modal.classList.add('active');
+}
+
+function closeCfpAlert() {
+    document.getElementById('cfp-alert').classList.remove('active');
+}
 
 if (!studentSession) { window.location.href = 'index.html'; }
 
@@ -22,19 +34,17 @@ async function initStudentDashboard() {
 
     let todasLasEntregas = [];
     try {
-        // Obtenemos todas las entregas para calcular promedios globales
         const entregasSnap = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
             .where('estado', '==', 'Calificado')
             .get();
         todasLasEntregas = entregasSnap.docs.map(doc => doc.data());
     } catch (e) {
-        console.warn("No se pudieron cargar los promedios (permisos o red):", e);
+        console.warn("No se pudieron cargar los promedios:", e);
     }
 
     grid.innerHTML = '';
     studentSession.cursos.forEach(curso => {
-        // Calcular promedio para este curso específico
         const entregasCurso = todasLasEntregas.filter(e => e.curso === curso.id);
         const total = entregasCurso.reduce((sum, e) => sum + parseFloat(e.nota || 0), 0);
         const prom = entregasCurso.length > 0 ? (total / entregasCurso.length).toFixed(1) : '---';
@@ -63,7 +73,6 @@ function updateHeaderButton() {
     const btn = document.getElementById('btn-header-action');
     if (!btn) return;
 
-    // Remover listeners viejos para evitar duplicados
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
@@ -90,7 +99,6 @@ function selectCourse(courseId, courseName) {
     document.getElementById('course-view').classList.remove('hidden');
     document.getElementById('course-title').innerText = courseName;
 
-    // Ocultar botón config en los cursos
     const btnConfig = document.querySelector('.btn-config-main');
     if (btnConfig) btnConfig.classList.add('hidden');
 
@@ -106,7 +114,6 @@ function backToHome() {
     document.getElementById('course-view').classList.add('hidden');
     document.getElementById('home-view').classList.remove('hidden');
 
-    // Mostrar botón config en el inicio
     const btnConfig = document.querySelector('.btn-config-main');
     if (btnConfig) btnConfig.classList.remove('hidden');
 
@@ -117,6 +124,7 @@ function backToHome() {
 function closeAllModals() {
     closeConfigModal();
     closeForo();
+    closeCfpAlert();
 }
 
 async function loadContent() {
@@ -142,7 +150,6 @@ async function loadContent() {
 
         const materialsKeys = Object.keys(materiales).filter(k => k.startsWith('sem_'));
 
-        // 0. CALCULAR ESTADÍSTICAS DEL CURSO
         const calificados = entregas.filter(e => e.estado === 'Calificado');
         const totalPuntos = calificados.reduce((sum, e) => sum + parseFloat(e.nota || 0), 0);
         const promedioCurso = calificados.length > 0 ? (totalPuntos / calificados.length).toFixed(1) : '---';
@@ -157,7 +164,6 @@ async function loadContent() {
             `;
         }
 
-        // 1. SEMANAS (Orden Inverso: 5, 4, 3...) - AHORA PRIMERO
         let weeksKeys = Object.keys(materiales)
             .filter(k => k.startsWith('sem_'))
             .map(k => parseInt(k.replace('sem_', '')))
@@ -192,7 +198,6 @@ async function loadContent() {
                         </div>
                     ` : ''}
                     
-                    <!-- NUEVO SISTEMA DE ENTREGA POR LINK -->
                     <div class="assignment-container">
                         <div class="status-label ${entrega ? 'status-sent' : 'status-pending'}">
                             ${entrega ? (entrega.estado === 'Calificado' ? '✅ Calificada' : '✅ Actividad Enviada') : '⌛ Entrega Pendiente'}
@@ -211,7 +216,7 @@ async function loadContent() {
                         </div>
 
                         <div class="help-text-task">
-                            <p>💡 <strong>Ayuda:</strong> Sube tu archivo a Google Drive, asegúrate de que el acceso sea público (Cualquier persona con el enlace) y pega el link aquí. Si te equivocaste, pega el nuevo link y dale a ENVIAR nuevamente.</p>
+                            <p>💡 <strong>Ayuda:</strong> Sube tu archivo a Google Drive, asegúrate de que el acceso sea público y pega el link aquí.</p>
                         </div>
 
                         <button class="btn-submit-task" onclick="submitTask(${i})">
@@ -223,14 +228,13 @@ async function loadContent() {
             weeksContainer.appendChild(card);
         });
 
-        // 2. BIENVENIDA Y PROGRAMA - AHORA AL FINAL
         const matInicio = materiales['inicio'] || {};
         const welcomeUrl = matInicio.welcome || config.welcome_url;
         const syllabusUrl = matInicio.syllabus || config.syllabus_url;
 
         if (welcomeUrl || syllabusUrl) {
             const introCard = document.createElement('div');
-            introCard.className = 'week-card'; // Cerrado por defecto
+            introCard.className = 'week-card';
             introCard.innerHTML = `
                 <div class="week-header" onclick="this.parentElement.classList.toggle('opened')">
                     <h3>📚 Bienvenida y Programa</h3>
@@ -254,12 +258,11 @@ async function loadContent() {
             weeksContainer.appendChild(introCard);
         }
 
-
     } catch (e) { console.error(e); }
 }
 
 function visualizePdf(url, title, element) {
-    if (!url) return alert("Material no disponible.");
+    if (!url) return cfpAlert("AVISO", "Material no disponible.");
 
     currentViewState = 'viewer';
     updateHeaderButton();
@@ -280,7 +283,6 @@ function visualizePdf(url, title, element) {
     let finalUrl = url;
     if (url.includes('drive.google.com')) {
         const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-        // Agregamos ?view=fitH para que el visor de Google ajuste el ancho automáticamente
         if (idMatch) finalUrl = `https://drive.google.com/file/d/${idMatch[1]}/preview?view=fitH`;
     }
 
@@ -302,11 +304,10 @@ async function submitTask(semana) {
     const linkInput = document.getElementById(`link-${semana}`);
     const rawUrl = linkInput.value.trim();
 
-    if (!rawUrl) return alert("Por favor, pega el link de tu actividad en Drive.");
-    if (!rawUrl.includes('drive.google.com')) return alert("El link no parece ser de Google Drive. Por favor, verifica.");
+    if (!rawUrl) return cfpAlert("ATENCIÓN", "Por favor, pega el link de tu actividad en Drive.");
+    if (!rawUrl.includes('drive.google.com')) return cfpAlert("ERROR", "El link no parece ser de Google Drive. Por favor, verifica.");
 
     try {
-        // Buscamos si ya existe una entrega para actualizarla
         const snapshot = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
             .where('curso', '==', currentCourseId)
@@ -314,15 +315,13 @@ async function submitTask(semana) {
             .get();
 
         if (!snapshot.empty) {
-            // Actualizar existente
             const docId = snapshot.docs[0].id;
             await db.collection('entregas').doc(docId).update({
                 archivo_url: rawUrl,
                 fecha_entrega: new Date().toISOString(),
-                estado: 'Pendiente' // Se vuelve a poner en pendiente para que el admin lo vea
+                estado: 'Pendiente'
             });
         } else {
-            // Crear nueva
             await db.collection('entregas').add({
                 alumno_dni: studentSession.dni,
                 alumno_nombre: studentSession.nombre,
@@ -334,14 +333,13 @@ async function submitTask(semana) {
             });
         }
 
-        alert("🚀 ¡Actividad Enviada con éxito!");
+        cfpAlert("ÉXITO", "🚀 ¡Actividad Enviada con éxito!");
         loadContent();
     } catch (error) {
-        alert("Error al enviar: " + error.message);
+        cfpAlert("ERROR", "Error al enviar: " + error.message);
     }
 }
 
-// FORO / MURO DE CONSULTAS - LÓGICA ALUMNO
 let foroUnsubscribe = null;
 let replyToStudent = null;
 let editingMsgId = null;
@@ -370,7 +368,6 @@ function loadForoStudent() {
                 return;
             }
 
-            // Ordenar en JS para evitar problemas de índices de Firebase
             let msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             msgs.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
@@ -413,7 +410,7 @@ function replyToMessageStudent(id, name, text) {
     nameSpan.innerText = name;
     preview.classList.remove('hidden');
     document.getElementById('foro-input-student').focus();
-    editingMsgId = null; // Cancelar edicion si se responde
+    editingMsgId = null;
     document.getElementById('btn-send-foro').innerText = 'ENVIAR';
 }
 
@@ -428,7 +425,7 @@ function prepareEditStudent(id, text) {
     input.value = text;
     input.focus();
     document.getElementById('btn-send-foro').innerText = 'GUARDAR';
-    cancelReplyStudent(); // Cancelar respuesta si se edita
+    cancelReplyStudent();
 }
 
 async function sendMessageStudent() {
@@ -438,7 +435,6 @@ async function sendMessageStudent() {
 
     try {
         if (editingMsgId) {
-            // EDITAR
             await db.collection('foro_mensajes').doc(editingMsgId).update({
                 mensaje: msg,
                 fecha_edicion: new Date().toISOString()
@@ -446,7 +442,6 @@ async function sendMessageStudent() {
             editingMsgId = null;
             document.getElementById('btn-send-foro').innerText = 'ENVIAR';
         } else {
-            // ENVIAR NUEVO
             await db.collection('foro_mensajes').add({
                 curso_id: currentCourseId,
                 alumno_dni: studentSession.dni,
@@ -459,7 +454,7 @@ async function sendMessageStudent() {
         }
         input.value = '';
         cancelReplyStudent();
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { cfpAlert("ERROR", "Error: " + e.message); }
 }
 
 async function deleteMessageStudent(id) {
@@ -468,7 +463,6 @@ async function deleteMessageStudent(id) {
     }
 }
 
-// CONFIGURACIÓN Y SEGURIDAD
 function openConfigModal() {
     document.getElementById('config-modal').classList.remove('hidden');
 }
@@ -484,26 +478,26 @@ async function saveNewPassword() {
     const repeatPass = document.getElementById('repeat-password').value.trim();
 
     if (newPass.length < 6) {
-        return alert("La contraseña debe tener al menos 6 caracteres por seguridad.");
+        return cfpAlert("ERROR", "La contraseña debe tener al menos 6 caracteres por seguridad.");
     }
 
     if (newPass !== repeatPass) {
-        return alert("Las contraseñas no coinciden. Por favor, verifica.");
+        return cfpAlert("ERROR", "Las contraseñas no coinciden. Por favor, verifica.");
     }
 
     try {
         const user = authFirebase.currentUser;
-        if (!user) return alert("Error de sesión. Por favor, vuelve a ingresar.");
+        if (!user) return cfpAlert("ERROR", "Error de sesión. Por favor, vuelve a ingresar.");
 
         await user.updatePassword(newPass);
 
-        alert("✅ Contraseña actualizada con éxito. Úsala en tu próximo ingreso.");
+        cfpAlert("ÉXITO", "✅ Contraseña actualizada con éxito. Úsala en tu próximo ingreso.");
         closeConfigModal();
     } catch (error) {
         if (error.code === 'auth/requires-recent-login') {
-            alert("⚠️ Por seguridad, esta acción requiere haber iniciado sesión recientemente. Por favor, sal y vuelve a entrar para cambiar tu contraseña.");
+            cfpAlert("SEGURIDAD", "⚠️ Por seguridad, esta acción requiere haber iniciado sesión recientemente. Por favor, sal y vuelve a entrar para cambiar tu contraseña.");
         } else {
-            alert("Error al actualizar: " + error.message);
+            cfpAlert("ERROR", "Error al actualizar: " + error.message);
         }
     }
 }
