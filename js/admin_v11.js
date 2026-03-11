@@ -1,4 +1,4 @@
-// Administración CFP 403 - Lógica Pulida v9.18.0 (RBAC & Dynamic Courses)
+// Administración CFP 403// Core Admin Logic v9.18.0 (RBAC & Multi-Course Logistics)
 let adminSession = JSON.parse(localStorage.getItem('admin_session'));
 if (!adminSession) { window.location.href = 'index.html'; }
 
@@ -19,22 +19,27 @@ async function loadStudentsFromFirebase() {
 
         // Cargar Lista de Cursos Disponibles
         const coursesSnap = await db.collection('cursos').get();
+        if (coursesSnap.empty && adminSession.role === 'super-admin') {
+            // Auto-inicialización de cursos base si está vacío (Primer arranque v9.18)
+            await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
+            await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
+            return loadStudentsFromFirebase(); // Re-ejecutar con datos
+        }
+
         activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Si es profesor, filtrar solo sus cursos
+        // Si es profesor, filtrar solo sus cursos asignados
         if (adminSession.role === 'profesor') {
-            activeCourses = activeCourses.filter(c => adminSession.cursos.includes(c.id));
+            activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
         }
 
-        // Renderizar cursos en la barra lateral
+        // Renderizar elementos dinámicos
         renderSidebarCourses();
         renderDashboardStats();
-
-        // Si no hay cursos asignados y no es super-admin, alertar y salir
-        if (activeCourses.length === 0 && adminSession.role !== 'super-admin') {
-            alert("No tienes cursos asignados.");
-            return;
-        }
+        renderClaseTabs();
+        renderForoTabs();
+        renderEntregasTabs();
+        renderImportSelectors();
 
         // Cargar datos de cada curso activo
         studentData = {};
@@ -45,11 +50,9 @@ async function loadStudentsFromFirebase() {
         }
 
         refreshCounters();
-        // Seleccionar el primer curso por defecto si no hay uno
-        if (!currentViewedCourse && activeCourses.length > 0) {
-            currentViewedCourse = activeCourses[0].id;
-        }
-        updateDashboardView('global'); // Siempre iniciar con vista global
+        if (!currentViewedCourse && activeCourses.length > 0) currentViewedCourse = activeCourses[0].id;
+
+        updateDashboardView('global');
         if (currentViewedCourse) showTable(currentViewedCourse);
         initNotifications();
     } catch (err) {
@@ -60,7 +63,7 @@ async function loadStudentsFromFirebase() {
 function renderSidebarCourses() {
     const container = document.getElementById('dynamic-courses-nav');
     if (!container) return;
-    container.innerHTML = ''; // Limpiar cursos existentes
+    container.innerHTML = '';
     activeCourses.forEach(c => {
         const a = document.createElement('a');
         a.href = "#";
@@ -69,12 +72,47 @@ function renderSidebarCourses() {
         a.innerHTML = `📓 <span class="nav-link-text" style="margin-left:10px;">${c.nombre}</span> <span id="count-${c.id}" class="badge">0</span>`;
         a.onclick = (e) => {
             e.preventDefault();
-            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-            a.classList.add('active');
-            showTable(c.id);
+            switchCurrentCourse(c.id);
         };
         container.appendChild(a);
     });
+}
+
+function switchCurrentCourse(id) {
+    currentViewedCourse = id;
+    currentClaseTab = id;
+    currentForoId = id;
+
+    // Si estamos en una sección que depende del curso, refrescarla
+    const activeNav = document.querySelector('.nav-link.active');
+    const sec = activeNav ? activeNav.dataset.section : 'dashboard';
+
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    const cursoLink = document.querySelector(`.nav-link[data-section="${id}"]`);
+    if (cursoLink) cursoLink.classList.add('active');
+
+    if (['dashboard', 'clases', 'foro', 'entregas'].includes(sec)) {
+        // Mantener la sección pero para el nuevo curso
+        showSection(sec);
+    } else {
+        showTable(id);
+    }
+}
+
+function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.toggle('active', n.dataset.section === name));
+
+    const sectionId = `${name}-section`;
+    const el = document.getElementById(sectionId);
+    if (el) el.classList.remove('hidden');
+
+    if (name === 'clases') loadClasesAdmin();
+    if (name === 'dashboard') updateDashboardView('global');
+    if (name === 'foro') loadForoAdmin();
+    if (name === 'entregas') loadPendingDeliveries(currentViewedCourse);
+    if (name === 'gestion-cursos') loadCoursesManager();
+    if (name === 'gestion-usuarios') loadUsersManager();
 }
 
 function renderDashboardStats() {
@@ -275,8 +313,7 @@ async function showTable(course) {
 
 // GESTIÓN MANUAL DE ALUMNOS
 let editingDni = null;
-
-function openStudentModal(dni = null) {
+async function openStudentModal(dni = null) {
     editingDni = dni;
     const modal = document.getElementById('student-modal');
     const title = document.getElementById('student-modal-title');
@@ -287,6 +324,7 @@ function openStudentModal(dni = null) {
     document.getElementById('stu-email').value = '';
     document.getElementById('stu-tel').value = '';
     document.getElementById('stu-age').value = '';
+    document.getElementById('stu-dni').disabled = false; // Enable DNI input by default
 
     if (dni) {
         title.innerText = "Editar Alumno";
@@ -301,7 +339,6 @@ function openStudentModal(dni = null) {
         }
     } else {
         title.innerText = "Agregar Alumno";
-        document.getElementById('stu-dni').disabled = false;
     }
 
     modal.classList.remove('hidden');
@@ -762,7 +799,7 @@ async function viewWorks(dni) {
             const data = doc.data();
             const div = document.createElement('div');
             div.className = 'work-item card';
-            div.style = "background:#f8fafc; padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #e2e8f0; border-left: 5px solid ${data.estado === 'Calificado' ? '#10b981' : '#f59e0b'};";
+            div.style = `background:#f8fafc; padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #e2e8f0; border-left: 5px solid ${data.estado === 'Calificado' ? '#10b981' : '#f59e0b'};`;
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div>
@@ -865,8 +902,7 @@ async function deleteCourseData() {
     if (!confirm(`⚠️ ALERTA EXTREMA: ¿Estás SEGURO de vaciar TODA la lista de ${currentViewedCourse.toUpperCase()}?\n\nEsto borrará:\n1. Todos los alumnos de este curso.\n2. Todas las entregas, notas y devoluciones subidas.\n\nEsta acción NO se puede deshacer.`)) return;
 
     try {
-        const coll = currentViewedCourse === 'habilidades' ? 'alumnos_habilidades' : 'alumnos_programacion';
-
+        const coll = `alumnos_${currentViewedCourse}`;
         // 1. Borrar Alumnos
         const snapAlumnos = await db.collection(coll).get();
         const batch = db.batch();
@@ -912,29 +948,7 @@ document.querySelectorAll('.nav-link').forEach(l => {
     l.addEventListener('click', (e) => {
         e.preventDefault();
         const sec = l.dataset.section;
-        document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
-        l.classList.add('active');
-        document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-
-        if (sec === 'clases') {
-            document.getElementById('clases-section').classList.remove('hidden');
-            loadClasesAdmin();
-        } else if (sec === 'dashboard') {
-            document.getElementById('dashboard-section').classList.remove('hidden');
-            updateDashboardView('global');
-        } else if (sec === 'foro') {
-            document.getElementById('foro-section').classList.remove('hidden');
-            loadForoAdmin();
-        } else if (sec === 'gestion-cursos') {
-            document.getElementById('gestion-cursos-section').classList.remove('hidden');
-            loadCoursesManager();
-        } else if (sec === 'gestion-usuarios') {
-            document.getElementById('gestion-usuarios-section').classList.remove('hidden');
-            loadUsersManager();
-        } else {
-            // Asumir que es un ID de curso dinámico
-            showTable(sec);
-        }
+        if (sec) showSection(sec);
     });
 });
 
@@ -943,14 +957,106 @@ let currentForoId = '';
 let foroUnsubscribe = null;
 let replyToAdmin = null;
 
+// TABS DINÁMICOS
+function renderClaseTabs() {
+    const cont = document.getElementById('clase-tabs-dynamic');
+    if (!cont) return;
+    cont.innerHTML = '';
+    activeCourses.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${currentClaseTab === c.id ? 'active' : ''}`;
+        btn.innerText = c.nombre;
+        btn.onclick = () => switchClaseType(c.id);
+        cont.appendChild(btn);
+    });
+}
+
+function renderForoTabs() {
+    const cont = document.getElementById('foro-tabs-dynamic');
+    if (!cont) return;
+    cont.innerHTML = '';
+    activeCourses.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn-foro ${currentForoId === c.id ? 'active' : ''}`;
+        btn.innerText = c.nombre;
+        btn.onclick = () => switchForoType(c.id);
+        cont.appendChild(btn);
+    });
+}
+
+function renderEntregasTabs() {
+    const cont = document.getElementById('entregas-tabs-dynamic');
+    if (!cont) return;
+    cont.innerHTML = '';
+    activeCourses.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${currentViewedCourse === c.id ? 'active' : ''}`;
+        btn.innerText = c.nombre;
+        btn.onclick = () => {
+            currentViewedCourse = c.id;
+            renderEntregasTabs();
+            loadPendingDeliveries(c.id);
+        };
+        cont.appendChild(btn);
+    });
+}
+
+function renderImportSelectors() {
+    const cont = document.getElementById('import-selectors');
+    if (!cont) return;
+    cont.innerHTML = '';
+    activeCourses.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'upload-item';
+        item.innerHTML = `
+            <label>💾 ${c.nombre}</label>
+            <input type="file" onchange="processExcel(this.files[0], '${c.id}')" accept=".xlsx, .xls" style="font-size: 0.8rem;">
+        `;
+        cont.appendChild(item);
+    });
+}
+
+async function loadPendingDeliveries(courseId) {
+    const body = document.getElementById('pending-deliveries-body');
+    body.innerHTML = '<tr><td colspan="5">Cargando entregas...</td></tr>';
+
+    try {
+        const snap = await db.collection('entregas')
+            .where('curso', '==', courseId)
+            .where('estado', '==', 'Pendiente')
+            .get();
+
+        body.innerHTML = snap.empty ? '<tr><td colspan="5" style="text-align:center;">No hay entregas pendientes para este curso.</td></tr>' : '';
+
+        snap.forEach(doc => {
+            const d = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${d.alumno_nombre || 'Alumno'}</strong><br><small>${d.alumno_dni}</small></td>
+                <td>Semana ${d.semana}</td>
+                <td>${new Date(d.fecha).toLocaleDateString()}</td>
+                <td><span class="badge warning">PENDIENTE</span></td>
+                <td><button class="btn-primary-sm" onclick="openCorrectionView('${d.alumno_dni}', '${d.alumno_nombre}')">Corregir</button></td>
+            `;
+            body.appendChild(tr);
+        });
+    } catch (e) { body.innerHTML = 'Error al cargar.'; }
+}
+
 function switchForoType(type) {
     currentForoId = type;
-    document.querySelectorAll('.tab-btn-foro').forEach(b => {
-        b.classList.toggle('active', b.dataset.courseId === type);
-    });
     const curso = activeCourses.find(c => c.id === type);
-    document.getElementById('foro-title-admin').innerText = `FORO: ${curso ? curso.nombre : type}`;
+    if (document.getElementById('foro-title-admin')) {
+        document.getElementById('foro-title-admin').innerText = `FORO: ${curso ? curso.nombre : type}`;
+    }
+    renderForoTabs();
     loadForoAdmin();
+}
+
+function switchClaseType(type) {
+    currentClaseTab = type;
+    renderClaseTabs();
+    loadClasesAdmin();
 }
 
 function loadForoAdmin() {
@@ -1055,9 +1161,18 @@ async function deleteMessageAdmin(id) {
 
 
 // GESTIÓN DE USUARIOS Y CURSOS (v9.18.0)
-function openCreateUserModal() { document.getElementById('user-modal').classList.remove('hidden'); }
+function openCreateUserModal() {
+    document.getElementById('adm-email').value = '';
+    document.getElementById('adm-name').value = '';
+    document.getElementById('adm-cursos').value = '';
+    document.getElementById('user-modal').classList.remove('hidden');
+}
 function closeUserModal() { document.getElementById('user-modal').classList.add('hidden'); }
-function openCreateCourseModal() { document.getElementById('course-modal').classList.remove('hidden'); }
+function openCreateCourseModal() {
+    document.getElementById('crs-id').value = '';
+    document.getElementById('crs-name').value = '';
+    document.getElementById('course-modal').classList.remove('hidden');
+}
 function closeCourseModal() { document.getElementById('course-modal').classList.add('hidden'); }
 
 async function saveAdminUser() {
@@ -1114,6 +1229,7 @@ async function loadUsersManager() {
 
 async function loadCoursesManager() {
     const body = document.getElementById('courses-manager-body');
+    if (!body) return;
     body.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
     const snap = await db.collection('cursos').get();
     body.innerHTML = '';
@@ -1123,7 +1239,7 @@ async function loadCoursesManager() {
         tr.innerHTML = `
             <td><code>${doc.id}</code></td>
             <td>${c.nombre}</td>
-            <td>${c.profesor_id || 'Sin asignar'}</td>
+            <td>Admin Global</td>
             <td>${c.activo ? '✅ Activo' : '❌ Inactivo'}</td>
             <td><button class="btn-danger-outline" onclick="deleteCourseEntry('${doc.id}')">Eliminar</button></td>
         `;

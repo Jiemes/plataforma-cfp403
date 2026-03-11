@@ -130,10 +130,15 @@
                         style="margin-left:10px;">Estadísticas</span></a>
 
                 <div id="dynamic-courses-nav">
-                    <!-- Los cursos se cargan aquí dinámicamente -->
+                    <!-- Nav links per course -->
                 </div>
+
+                <a href="#" class="nav-link" data-section="entregas">📝 <span class="nav-link-text"
+                        style="margin-left:10px;">Correcciones / Entregas</span></a>
+
                 <a href="#" class="nav-link" data-section="clases">📚 <span class="nav-link-text"
                         style="margin-left:10px;">Gestión de Contenidos</span></a>
+
                 <a href="#" class="nav-link" data-section="foro">💬 <span class="nav-link-text"
                         style="margin-left:10px;">Muro de Consultas</span></a>
 
@@ -167,24 +172,12 @@
                     </div>
                 </div>
             </header>
-
             <section id="dashboard-section" class="section active">
                 <div class="stats-grid" id="main-stats-grid">
-                    <div class="stat-card" onclick="updateDashboardView('global')">
-                        <span class="stat-value" id="stat-total-global">0</span>
-                        <span class="stat-label">Total Alumnos</span>
-                    </div>
-                    <div class="stat-card" onclick="updateDashboardView('habilidades')">
-                        <span class="stat-value" id="count-habilidades">0</span>
-                        <span class="stat-label">Habilidades Digitales</span>
-                    </div>
-                    <div class="stat-card" onclick="updateDashboardView('programacion')">
-                        <span class="stat-value" id="count-programacion">0</span>
-                        <span class="stat-label">Prog. & Videojuegos</span>
-                    </div>
+                    <!-- Cards dinámicas se cargan aquí -->
                 </div>
 
-                <div class="dashboard-charts card">
+                <div class="dashboard-charts card" style="margin-top:25px;">
                     <h3 id="dashboard-view-title">Análisis Global de Matrícula</h3>
                     <div class="charts-grid">
                         <div class="chart-container">
@@ -201,218 +194,202 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="import-section card">
-                    <h3>Importar Alumnos desde Excel</h3>
-                    <div class="upload-controls">
-                        <div class="upload-item"><label>💾 Habilidades Digitales</label><input type="file"
-                                id="upload-habilidades" accept=".xlsx, .xls" style="font-size: 0.8rem;"></div>
-                        <div class="upload-item"><label>💾 Software & Videojuegos</label><input type="file"
-                                id="upload-programacion" accept=".xlsx, .xls" style="font-size: 0.8rem;"></div>
-                    </div>
-                </div>
             </section>
+    </div>
 
-            <section id="clases-section" class="section hidden">
-                <div class="card" style="padding: 15px; margin-bottom: 20px;">
-                    <div class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
-                        <button class="tab-btn active" onclick="switchClaseType('habilidades')"
-                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Habilidades
-                            Digitales</button>
-                        <button class="tab-btn" onclick="switchClaseType('programacion')"
-                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Software &
-                            Videojuegos</button>
+    <div class="import-section card">
+        <h3>Importar Alumnos desde Excel</h3>
+        <div id="import-selectors" class="upload-controls">
+            <!-- Dynamic course selectors for import -->
+        </div>
+    </div>
+    </section>
+
+    <section id="clases-section" class="section hidden">
+        <div class="card" style="padding: 15px; margin-bottom: 20px;">
+            <div id="clase-tabs-dynamic" class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
+                <!-- Dynamic course tabs for content -->
+            </div>
+        </div>
+        <div id="clases-list-container">
+            <!-- Dynamic load -->
+        </div>
+    </section>
+
+    <section id="foro-section" class="section hidden">
+        <div class="card" style="padding: 15px; margin-bottom: 20px;">
+            <div id="foro-tabs-dynamic" class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
+                <!-- Dynamic course tabs for forum -->
+            </div>
+        </div>
+        <div class="card" style="padding: 25px; height: calc(100vh - 250px); display:flex; flex-direction:column;">
+            <h3 id="foro-title-admin" style="font-weight: 800; margin-bottom: 20px; color: var(--primary-color);">FORO:
+                Habilidades
+                Digitales</h3>
+            <div id="foro-admin-container" class="foro-wrapper"
+                style="flex-grow:1; overflow-y:auto; padding-right:10px;">
+                <!-- Mensajes cargados dinámicamente -->
+            </div>
+            <div class="foro-input-area" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                <div id="reply-preview-admin" class="reply-preview-box hidden"
+                    style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <small style="color:#64748b;">🔄 Respondiendo a: <strong id="reply-to-name-admin"></strong></small>
+                    <button onclick="cancelReplyAdmin()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <textarea id="foro-input-admin" class="input-premium" style="width:100%; height:60px; resize:none;"
+                        placeholder="Escribe un mensaje oficial en el muro..."></textarea>
+                    <button class="btn-primary" onclick="sendMessageAdmin()"
+                        style="padding:0 30px; border-radius:12px;">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="table-section" class="section hidden">
+        <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="current-course-title">Listado de Alumnos</h3>
+                <div class="table-actions-top" style="display:flex; gap:10px;">
+                    <button class="btn-primary-sm" onclick="downloadCourseExcel()"
+                        style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
+                        Listado</button>
+                    <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
+                    <button class="btn-secondary" onclick="resetDeliveriesOnly()" style="border:1px solid #cbd5e1;">🔄
+                        Reiniciar Entregas</button>
+                    <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="students-table">
+                    <thead>
+                        <tr>
+                            <th>Apellido y Nombre</th>
+                            <th>DNI</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th style="text-align:center">Edad</th>
+                            <th style="text-align:center">Tareas</th>
+                            <th style="text-align:center">Promedio</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="correction-section" class="section hidden">
+        <div class="correction-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h3 id="correction-student-name" style="font-size:1.8rem; font-weight:900; letter-spacing:-0.02em;">
+                    Nombre del Alumno</h3>
+                <p id="correction-course-name" style="color:#64748b; font-size:1rem; font-weight:600;">Curso
+                    Actual</p>
+            </div>
+            <button class="btn-primary-sm" onclick="backToTable()"
+                style="padding:12px 30px; font-weight:800; border-radius:12px;">← VOLVER AL LISTADO</button>
+        </div>
+
+        <div class="correction-container">
+            <!-- PANEL IZQUIERDO: Actividades y Calificación -->
+            <div class="correction-sidebar">
+                <div style="flex-grow:1;">
+                    <h4
+                        style="font-weight:800; color:#1e293b; margin-bottom:15px; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
+                        Entregas del Alumno</h4>
+                    <div id="correction-activities-list" class="activities-list">
+                        <!-- Botones de actividades -->
                     </div>
                 </div>
-                <div id="clases-list-container">
-                    <!-- Dynamic load -->
-                </div>
-            </section>
 
-            <section id="foro-section" class="section hidden">
-                <div class="card" style="padding: 15px; margin-bottom: 20px;">
-                    <div class="tabs-clases" style="display: flex; justify-content: center; gap: 15px;">
-                        <button class="tab-btn-foro active" onclick="switchForoType('habilidades')"
-                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Habilidades
-                            Digitales</button>
-                        <button class="tab-btn-foro" onclick="switchForoType('programacion')"
-                            style="padding:12px 25px; border-radius:12px; font-weight:700;">Software &
-                            Videojuegos</button>
-                    </div>
-                </div>
-                <div class="card"
-                    style="padding: 25px; height: calc(100vh - 250px); display:flex; flex-direction:column;">
-                    <h3 id="foro-title-admin"
-                        style="font-weight: 800; margin-bottom: 20px; color: var(--primary-color);">FORO: Habilidades
-                        Digitales</h3>
-                    <div id="foro-admin-container" class="foro-wrapper"
-                        style="flex-grow:1; overflow-y:auto; padding-right:10px;">
-                        <!-- Mensajes cargados dinámicamente -->
-                    </div>
-                    <div class="foro-input-area"
-                        style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
-                        <div id="reply-preview-admin" class="reply-preview-box hidden"
-                            style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                            <small style="color:#64748b;">🔄 Respondiendo a: <strong
-                                    id="reply-to-name-admin"></strong></small>
-                            <button onclick="cancelReplyAdmin()" class="btn-icon" style="font-size:0.8rem;">✖️</button>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <textarea id="foro-input-admin" class="input-premium"
-                                style="width:100%; height:60px; resize:none;"
-                                placeholder="Escribe un mensaje oficial en el muro..."></textarea>
-                            <button class="btn-primary" onclick="sendMessageAdmin()"
-                                style="padding:0 30px; border-radius:12px;">Enviar</button>
-                        </div>
+                <div id="grading-panel-root" class="grading-panel hidden">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:12px; text-align:center;">Calificación
+                        Final (0-100)</label>
+                    <input type="number" id="input-grade-val" class="input-grade-premium" min="0" max="100"
+                        placeholder="0">
+
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px; margin-top:15px;">Devolución
+                        / Comentarios</label>
+                    <textarea id="input-feedback-val" class="input-premium"
+                        style="width:100%; height:100px; resize:none; margin-bottom:15px; padding:12px; font-size:0.85rem;"
+                        placeholder="Escribe aquí tu devolución para el alumno..."></textarea>
+
+                    <button class="btn-primary" onclick="saveCorrectionGrade()"
+                        style="width:100%; border-radius:15px; padding:18px; font-size:1.1rem; letter-spacing:0.02em;">GUARDAR
+                        NOTA Y DEVOLUCIÓN</button>
+                    <div style="text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:12px; line-height:1.4;">
+                        🎯 <strong>Aprobación: 70</strong><br>
+                        El alumno podrá ver tu comentario al instante.
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section id="table-section" class="section hidden">
-                <div class="card">
-                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 id="current-course-title">Listado de Alumnos</h3>
-                        <div class="table-actions-top" style="display:flex; gap:10px;">
-                            <button class="btn-primary-sm" onclick="downloadCourseExcel()"
-                                style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
-                                Listado</button>
-                            <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
-                            <button class="btn-secondary" onclick="resetDeliveriesOnly()"
-                                style="border:1px solid #cbd5e1;">🔄 Reiniciar Entregas</button>
-                            <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table id="students-table">
-                            <thead>
-                                <tr>
-                                    <th>Apellido y Nombre</th>
-                                    <th>DNI</th>
-                                    <th>Teléfono</th>
-                                    <th>Email</th>
-                                    <th style="text-align:center">Edad</th>
-                                    <th style="text-align:center">Tareas</th>
-                                    <th style="text-align:center">Promedio</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+            <!-- PANEL DERECHO: Visor de PDF Gigante -->
+            <div class="correction-viewer">
+                <iframe id="correction-pdf-viewer" src="about:blank"></iframe>
+                <div id="correction-viewer-placeholder"
+                    style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; opacity:0.6;">
+                    <span style="font-size:5rem;">📂</span>
+                    <p style="color:#64748b; margin-top:20px; font-weight:700; font-size:1.1rem;">Selecciona una
+                        actividad para visualizar el PDF</p>
                 </div>
-            </section>
+            </div>
+        </div>
+    </section>
 
-            <section id="correction-section" class="section hidden">
-                <div class="correction-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h3 id="correction-student-name"
-                            style="font-size:1.8rem; font-weight:900; letter-spacing:-0.02em;">Nombre del Alumno</h3>
-                        <p id="correction-course-name" style="color:#64748b; font-size:1rem; font-weight:600;">Curso
-                            Actual</p>
-                    </div>
-                    <button class="btn-primary-sm" onclick="backToTable()"
-                        style="padding:12px 30px; font-weight:800; border-radius:12px;">← VOLVER AL LISTADO</button>
-                </div>
+    <!-- GESTIÓN DE CURSOS (Super Admin) (v9.18.0) -->
+    <section id="gestion-cursos-section" class="section hidden">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="font-weight:900; font-size:1.6rem;">🏫 Gestión de Cursos</h3>
+                <button class="btn-primary" onclick="openCreateCourseModal()">+ Crear Nuevo Curso</button>
+            </div>
+            <div class="table-container">
+                <table id="courses-manager-table">
+                    <thead>
+                        <tr>
+                            <th>Slug / ID</th>
+                            <th>Nombre del Curso</th>
+                            <th>Docente Asignado</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courses-manager-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
-                <div class="correction-container">
-                    <!-- PANEL IZQUIERDO: Actividades y Calificación -->
-                    <div class="correction-sidebar">
-                        <div style="flex-grow:1;">
-                            <h4
-                                style="font-weight:800; color:#1e293b; margin-bottom:15px; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
-                                Entregas del Alumno</h4>
-                            <div id="correction-activities-list" class="activities-list">
-                                <!-- Botones de actividades -->
-                            </div>
-                        </div>
-
-                        <div id="grading-panel-root" class="grading-panel hidden">
-                            <label
-                                style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:12px; text-align:center;">Calificación
-                                Final (0-100)</label>
-                            <input type="number" id="input-grade-val" class="input-grade-premium" min="0" max="100"
-                                placeholder="0">
-
-                            <label
-                                style="display:block; font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:8px; margin-top:15px;">Devolución
-                                / Comentarios</label>
-                            <textarea id="input-feedback-val" class="input-premium"
-                                style="width:100%; height:100px; resize:none; margin-bottom:15px; padding:12px; font-size:0.85rem;"
-                                placeholder="Escribe aquí tu devolución para el alumno..."></textarea>
-
-                            <button class="btn-primary" onclick="saveCorrectionGrade()"
-                                style="width:100%; border-radius:15px; padding:18px; font-size:1.1rem; letter-spacing:0.02em;">GUARDAR
-                                NOTA Y DEVOLUCIÓN</button>
-                            <div
-                                style="text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:12px; line-height:1.4;">
-                                🎯 <strong>Aprobación: 70</strong><br>
-                                El alumno podrá ver tu comentario al instante.
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PANEL DERECHO: Visor de PDF Gigante -->
-                    <div class="correction-viewer">
-                        <iframe id="correction-pdf-viewer" src="about:blank"></iframe>
-                        <div id="correction-viewer-placeholder"
-                            style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; opacity:0.6;">
-                            <span style="font-size:5rem;">📂</span>
-                            <p style="color:#64748b; margin-top:20px; font-weight:700; font-size:1.1rem;">Selecciona una
-                                actividad para visualizar el PDF</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- GESTIÓN DE CURSOS (Super Admin) (v9.18.0) -->
-            <section id="gestion-cursos-section" class="section hidden">
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 style="font-weight:900; font-size:1.6rem;">🏫 Gestión de Cursos</h3>
-                        <button class="btn-primary" onclick="openCreateCourseModal()">+ Crear Nuevo Curso</button>
-                    </div>
-                    <div class="table-container">
-                        <table id="courses-manager-table">
-                            <thead>
-                                <tr>
-                                    <th>Slug / ID</th>
-                                    <th>Nombre del Curso</th>
-                                    <th>Docente Asignado</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="courses-manager-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- GESTIÓN DE USUARIOS (Super Admin) -->
-            <section id="gestion-usuarios-section" class="section hidden">
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
-                        <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario
-                            Administrativo</button>
-                    </div>
-                    <div class="table-container">
-                        <table id="users-manager-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Email (Login)</th>
-                                    <th>Rol</th>
-                                    <th>Cursos Permisos</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-manager-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
+    <!-- GESTIÓN DE USUARIOS (Super Admin) -->
+    <section id="gestion-usuarios-section" class="section hidden">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
+                <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario
+                    Administrativo</button>
+            </div>
+            <div class="table-container">
+                <table id="users-manager-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email (Login)</th>
+                            <th>Rol</th>
+                            <th>Cursos Permisos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-manager-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    </main>
     </div>
 
     <div id="grade-modal" class="modal hidden">
@@ -511,7 +488,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.17.1"></script>
+    <script src="js/admin_v11.js?v=9.18.0"></script>
 </body>
 
 </html>
