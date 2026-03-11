@@ -79,18 +79,14 @@ function switchCurrentCourse(id) {
     currentClaseTab = id;
     currentForoId = id;
 
-    const activeNav = document.querySelector('.nav-link.active');
-    const sec = activeNav ? activeNav.dataset.section : 'dashboard';
-
+    // Actualiza los badges/links visuales activos
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     const cursoLink = document.querySelector(`.nav-link[data-section="${id}"]`);
     if (cursoLink) cursoLink.classList.add('active');
 
-    if (['dashboard', 'clases', 'foro', 'entregas'].includes(sec)) {
-        showSection(sec);
-    } else {
-        showTable(id);
-    }
+    // Siempre al hacer click en un curso del sidebar, queremos ver la tabla de alumnos de ese curso
+    // Cerramos el dashboard si estaba abierto y mostramos la tabla.
+    showTable(id);
 }
 
 function showSection(name) {
