@@ -62,11 +62,12 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const code = authError.code;
             if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'permission-denied') {
                 let info_alumno = null;
-                const snapHab = await db.collection('alumnos_habilidades').doc(cleanDni).get();
-                if (snapHab.exists) info_alumno = snapHab.data();
-                if (!info_alumno) {
-                    const snapProg = await db.collection('alumnos_programacion').doc(cleanDni).get();
-                    if (snapProg.exists) info_alumno = snapProg.data();
+                const coursesSnap = await db.collection('cursos').get();
+                const currentCourses = coursesSnap.docs.map(d => d.id);
+
+                for (let cid of currentCourses) {
+                    const snapCheck = await db.collection(`alumnos_${cid}`).doc(cleanDni).get();
+                    if (snapCheck.exists) { info_alumno = snapCheck.data(); break; }
                 }
 
                 if (info_alumno && info_alumno.email.toLowerCase() === email) {
@@ -83,15 +84,17 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
         let cursos_inscrito = [];
         let info_final = null;
-        const habQuery = await db.collection('alumnos_habilidades').where('email', '==', email).get();
-        if (!habQuery.empty) {
-            info_final = habQuery.docs[0].data();
-            cursos_inscrito.push({ id: 'habilidades', nombre: 'Habilidades Digitales e IA' });
-        }
-        const progQuery = await db.collection('alumnos_programacion').where('email', '==', email).get();
-        if (!progQuery.empty) {
-            if (!info_final) info_final = progQuery.docs[0].data();
-            cursos_inscrito.push({ id: 'programacion', nombre: 'Software y Videojuegos' });
+
+        const coursesList = await db.collection('cursos').get();
+        for (let doc of coursesList.docs) {
+            const cid = doc.id;
+            const cName = doc.data().nombre;
+
+            const q = await db.collection(`alumnos_${cid}`).where('email', '==', email).get();
+            if (!q.empty) {
+                if (!info_final) info_final = q.docs[0].data();
+                cursos_inscrito.push({ id: cid, nombre: cName });
+            }
         }
 
         if (info_final) {
@@ -103,7 +106,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }));
             window.location.href = 'student.html';
         } else {
-            cfpAlert("ERROR", "Alumno autenticado pero NO encontrado en las planillas. Por favor comuníquese con el docente.");
+            cfpAlert("ERROR", "Alumno autenticado pero NO encontrado en ninguna de las planillas. Por favor comuníquese con el docente.");
             btn.innerText = originalText;
             btn.disabled = false;
         }
