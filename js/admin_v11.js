@@ -974,7 +974,7 @@ async function loadUsersManager() {
                 <td><strong>${u.nombre}</strong></td>
                 <td>${doc.id}</td>
                 <td style="text-align:center;"><span style="background:${u.role === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
-                <td><small>${(u.cursos || []).join(', ')}</small></td>
+                <td><small>${Array.isArray(u.cursos) ? u.cursos.join(', ') : (u.cursos || '')}</small></td>
                 <td style="text-align:center;">
                     <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>
                 </td>
