@@ -814,4 +814,12 @@ document.getElementById('btn-logout')?.addEventListener('click', () => {
     authFirebase.signOut().then(() => window.location.href = 'index.html');
 });
 
+// UI EVENT LISTENERS
+document.querySelectorAll('.nav-menu > .nav-link, #superadmin-nav .nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection(link.dataset.section);
+    });
+});
+
 loadStudentsFromFirebase();
