@@ -8,8 +8,8 @@
     <link rel="icon" type="image/png" href="assets/CFP 403.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9.18.12">
-    <link rel="stylesheet" href="css/student.css?v=9.18.12">
+    <link rel="stylesheet" href="css/style.css?v=9.18.13">
+    <link rel="stylesheet" href="css/student.css?v=9.18.13">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -158,22 +158,18 @@
         </div>
     </div>
 
-    <!-- Alerta Global -->
-    <div id="cfp-alert" class="cfp-modal-overlay">
-        <div class="cfp-modal-card">
-            <div class="cfp-modal-header">
-                <img src="assets/logo.png" alt="CFP Logo">
-            </div>
-            <div class="cfp-modal-body">
-                <h2 id="alert-title" class="cfp-modal-title">MENSAJE</h2>
-                <p id="alert-message" class="cfp-modal-desc">Detalle...</p>
-                <button class="cfp-modal-btn" onclick="closeCfpAlert()">ENTENDIDO</button>
-            </div>
+    <!-- ALERT MODAL PERSONALIZADO -->
+    <div id="cfp-alert" class="alert-modal-overlay">
+        <div class="alert-modal-content">
+            <img src="assets/CFP 403.png" alt="CFP Logo" class="alert-logo">
+            <div id="alert-title" class="alert-title">ATENCIÓN</div>
+            <div id="alert-message" class="alert-message">Mensaje del sistema</div>
+            <button class="btn-alert-confirm" onclick="closeCfpAlert()">ENTENDIDO</button>
         </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=9.18.12"></script>
+    <script src="js/student.js?v=9.18.13"></script>
 </body>
 
 </html>
