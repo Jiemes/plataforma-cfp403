@@ -822,4 +822,216 @@ document.querySelectorAll('.nav-menu > .nav-link, #superadmin-nav .nav-link').fo
     });
 });
 
+// ====== IMPL. FUNCIONES FALTANTES v9.18.8 ======
+
+// 1. ENTREGAS PENDIENTES
+async function loadPendingDeliveries(courseId = currentViewedCourse) {
+    if (!courseId) return;
+    const tbody = document.getElementById('pending-deliveries-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
+
+    try {
+        const snap = await db.collection('entregas').where('curso', '==', courseId).where('estado', '==', 'Pendiente').get();
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay entregas pendientes para este curso.</td></tr>';
+            return;
+        }
+
+        const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.semana - a.semana);
+        tbody.innerHTML = '';
+
+        docs.forEach(data => {
+            const student = studentData[courseId]?.find(s => s.dni === data.alumno_dni);
+            const stuName = student ? student.full_name : 'Alumno Desconocido';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${stuName}</td>
+                <td style="text-align:center;">Sem. ${data.semana}</td>
+                <td style="text-align:center;">${new Date(data.fecha_entrega || data.timestamp).toLocaleDateString()}</td>
+                <td style="text-align:center;"><span style="color:#ef4444; font-weight:800;">PENDIENTE</span></td>
+                <td style="text-align:center;">
+                    <button class="btn-correct alert" onclick="openCorrectionView('${data.alumno_dni}', '${stuName}')" style="min-width:120px;">CORREGIR</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Error al cargar: ' + e.message + '</td></tr>';
+    }
+}
+
+// 2. MURO DE CONSULTAS (FORO ADMINISTRATIVO)
+let unreadListenerForo = null;
+function loadForoAdmin() {
+    const container = document.getElementById('foro-admin-container');
+    if (!container) return;
+    if (!currentForoId && activeCourses.length > 0) currentForoId = activeCourses[0].id;
+    if (!currentForoId) return;
+
+    container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando mensajes del muro...</p>';
+    if (unreadListenerForo) unreadListenerForo();
+
+    unreadListenerForo = db.collection(`foro_${currentForoId}`)
+        .orderBy('timestamp', 'asc')
+        .onSnapshot(snap => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = '<p style="text-align:center; padding:20px;">El muro está vacío por ahora.</p>';
+                return;
+            }
+            snap.forEach(doc => {
+                const data = doc.data();
+                const isProf = data.role === 'profesor';
+                const div = document.createElement('div');
+                div.className = 'foro-mensage-card';
+                div.style = 'margin-bottom:15px; padding:15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;';
+                if (isProf) div.style.background = '#e0f2fe';
+
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <strong style="color:${isProf ? '#0ea5e9' : '#1e293b'}">${data.sender_name} ${isProf ? '👨‍🏫' : ''}</strong>
+                        <span style="font-size:0.8rem; color:#64748b;">${new Date(data.timestamp).toLocaleString()}</span>
+                    </div>
+                    ${data.reply_to_name ? `<div style="font-size:0.8rem; color:#64748b; margin-bottom:8px; border-left:3px solid ${isProf ? '#bae6fd' : '#cbd5e1'}; padding-left:10px;">Respondiendo a: <strong>${data.reply_to_name}</strong></div>` : ''}
+                    <p style="margin-bottom:15px; line-height:1.5;">${data.mensaje}</p>
+                    <div style="display:flex; justify-content:flex-end; gap:10px;">
+                        <button class="btn-primary-sm" onclick="prepareReplyAdmin('${data.sender_name}')" style="background:#fff; color:#3b82f6; border-color:#3b82f6;">↩️ Responder</button>
+                        <button class="btn-icon" onclick="deleteMessageAdmin('${doc.id}')" style="background:#fff; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        });
+}
+
+function prepareReplyAdmin(name) {
+    document.getElementById('reply-preview-admin').classList.remove('hidden');
+    document.getElementById('reply-to-name-admin').innerText = name;
+    document.getElementById('foro-input-admin').focus();
+}
+
+function cancelReplyAdmin() {
+    document.getElementById('reply-preview-admin').classList.add('hidden');
+    document.getElementById('reply-to-name-admin').innerText = '';
+}
+
+async function sendMessageAdmin() {
+    const input = document.getElementById('foro-input-admin');
+    const msg = input.value.trim();
+    if (!msg) return cfpAlert("ERROR", "Debes escribir un mensaje para enviar.");
+
+    try {
+        const previewBox = document.getElementById('reply-preview-admin');
+        const isReplying = !previewBox.classList.contains('hidden');
+        const replyTo = isReplying ? document.getElementById('reply-to-name-admin').innerText : null;
+
+        await db.collection(`foro_${currentForoId}`).add({
+            sender_id: "admin",
+            sender_name: adminSession.nombre || "Docente / Institucional",
+            role: "profesor",
+            mensaje: msg,
+            reply_to_name: replyTo,
+            timestamp: new Date().toISOString()
+        });
+        input.value = '';
+        cancelReplyAdmin();
+    } catch (e) {
+        cfpAlert("ERROR", "No se pudo publicar: " + e.message);
+    }
+}
+
+async function deleteMessageAdmin(msgId) {
+    if (!confirm("¿Seguro que deseas ELIMINAR permanentemente este comentario del muro?")) return;
+    try {
+        await db.collection(`foro_${currentForoId}`).doc(msgId).delete();
+    } catch (e) { cfpAlert("ERROR", "No autorizado: " + e.message); }
+}
+
+
+// 3. GESTIÓN DE USUARIOS
+function openCreateUserModal() {
+    document.getElementById('adm-name').value = '';
+    document.getElementById('adm-email').value = '';
+    document.getElementById('adm-role').value = 'profesor';
+    document.getElementById('adm-cursos').value = '';
+    document.getElementById('user-modal').classList.remove('hidden');
+}
+function closeUserModal() { document.getElementById('user-modal').classList.add('hidden'); }
+
+async function loadUsersManager() {
+    const tbody = document.getElementById('users-manager-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando lista de usuarios docentes...</td></tr>';
+    try {
+        const snap = await db.collection('usuarios_auth').get();
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const u = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${u.nombre}</strong></td>
+                <td>${doc.id}</td>
+                <td style="text-align:center;"><span style="background:${u.role === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
+                <td><small>${(u.cursos || []).join(', ')}</small></td>
+                <td style="text-align:center;">
+                    <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${e.message}</td></tr>`; }
+}
+async function deleteUser(email) {
+    if (!confirm(`¿Estás seguro de quitar el acceso al profesor ${email}?`)) return;
+    try {
+        await db.collection('usuarios_auth').doc(email).delete();
+        loadUsersManager();
+        cfpAlert("ÉXITO", "Acceso revocado correctamente.");
+    } catch (e) { cfpAlert("ERROR", e.message); }
+}
+
+
+// 4. GESTIÓN DE CURSOS
+function openCreateCourseModal() {
+    document.getElementById('crs-id').value = '';
+    document.getElementById('crs-name').value = '';
+    document.getElementById('course-modal').classList.remove('hidden');
+}
+function closeCourseModal() { document.getElementById('course-modal').classList.add('hidden'); }
+
+async function loadCoursesManager() {
+    const tbody = document.getElementById('courses-manager-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando estructura académica...</td></tr>';
+    try {
+        const snap = await db.collection('cursos').get();
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const c = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong style="color:var(--primary-color);">#${doc.id}</strong></td>
+                <td><strong>${c.nombre}</strong></td>
+                <td><small>${c.materia || 'Genérica'}</small></td>
+                <td style="text-align:center;"><span style="background:#10b981; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">ACTIVO</span></td>
+                <td style="text-align:center;">
+                    <button class="btn-icon" onclick="deleteCourse('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">💥 Borrar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${e.message}</td></tr>`; }
+}
+
+async function deleteCourse(id) {
+    if (!confirm(`🚨 ¡PELIGRO! ¿Borrar el curso ${id.toUpperCase()} y la capacidad de dictarlo?`)) return;
+    try {
+        await db.collection('cursos').doc(id).delete();
+        loadCoursesManager();
+        location.reload();
+    } catch (e) { cfpAlert("ERROR", e.message); }
+}
+
 loadStudentsFromFirebase();
