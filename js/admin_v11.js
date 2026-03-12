@@ -731,13 +731,28 @@ async function saveAdminUser() {
 
     if (!email || !nombre || !dni_pass) return cfpAlert("ERROR", "Completa todos los campos obligatorios (Nombre, Email y DNI).");
     try {
+        const apiKey = "AIzaSyCf0uv7aAiPed1tvTQUIoiGihcf2r995JY"; // Usamos la API key del config para crear el Auth
+        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: dni_pass, returnSecureToken: false })
+        });
+        
+        if (!res.ok) {
+            const errData = await res.json();
+            if (errData.error && errData.error.message !== 'EMAIL_EXISTS') {
+                throw new Error("No se pudo registrar la clave en Auth: " + errData.error.message);
+            }
+        }
+
         await db.collection('usuarios_auth').doc(email).set({ 
             nombre, 
             role, 
             cursos: cursos_seleccionados,
-            password_init: dni_pass
+            password_init: dni_pass 
         });
-        cfpAlert("ÉXITO", "✅ Usuario/Docente guardado.");
+        
+        cfpAlert("ÉXITO", "✅ Usuario/Docente creado y registrado correctamente.");
         closeUserModal();
         loadUsersManager();
     } catch (e) { cfpAlert("ERROR", e.message); }
