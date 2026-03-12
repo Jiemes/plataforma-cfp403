@@ -97,10 +97,13 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const cid = doc.id;
             const cName = doc.nombre;
             try {
-                const q = await db.collection(`alumnos_${cid}`).where('email', '==', email).get();
-                if (!q.empty) {
-                    if (!info_final) info_final = q.docs[0].data();
-                    cursos_inscrito.push({ id: cid, nombre: cName });
+                const snap = await db.collection(`alumnos_${cid}`).doc(cleanDni).get();
+                if (snap.exists) {
+                    const data = snap.data();
+                    if (data.email.toLowerCase() === email) {
+                        if (!info_final) info_final = data;
+                        cursos_inscrito.push({ id: cid, nombre: cName });
+                    }
                 }
             } catch (e) { }
         }
