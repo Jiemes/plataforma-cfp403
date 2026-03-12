@@ -718,13 +718,26 @@ async function processExcel(file, type) {
 async function saveAdminUser() {
     const email = document.getElementById('adm-email').value.trim().toLowerCase();
     const nombre = document.getElementById('adm-name').value.trim();
+    const dni_pass = document.getElementById('adm-dni').value.trim();
     const role = document.getElementById('adm-role').value;
-    const cursos = document.getElementById('adm-cursos').value.split(',').map(c => c.trim());
+    
+    let cursos_seleccionados = [];
+    if (role === 'super-admin') {
+        cursos_seleccionados = 'all';
+    } else {
+        const checkboxes = document.querySelectorAll('.adm-curso-chk:checked');
+        checkboxes.forEach(chk => cursos_seleccionados.push(chk.value));
+    }
 
-    if (!email || !nombre) return cfpAlert("ERROR", "Completa los campos.");
+    if (!email || !nombre || !dni_pass) return cfpAlert("ERROR", "Completa todos los campos obligatorios (Nombre, Email y DNI).");
     try {
-        await db.collection('usuarios_auth').doc(email).set({ nombre, role, cursos });
-        cfpAlert("ÉXITO", "✅ Usuario guardado.");
+        await db.collection('usuarios_auth').doc(email).set({ 
+            nombre, 
+            role, 
+            cursos: cursos_seleccionados,
+            password_init: dni_pass
+        });
+        cfpAlert("ÉXITO", "✅ Usuario/Docente guardado.");
         closeUserModal();
         loadUsersManager();
     } catch (e) { cfpAlert("ERROR", e.message); }
@@ -954,9 +967,32 @@ async function deleteMessageAdmin(msgId) {
 function openCreateUserModal() {
     document.getElementById('adm-name').value = '';
     document.getElementById('adm-email').value = '';
+    document.getElementById('adm-dni').value = '';
     document.getElementById('adm-role').value = 'profesor';
-    document.getElementById('adm-cursos').value = '';
+    
+    const chkBoxDiv = document.getElementById('adm-cursos-checkboxes');
+    chkBoxDiv.innerHTML = '';
+    db.collection('cursos').get().then(snap => {
+        snap.forEach(doc => {
+            const course = doc.data();
+            const div = document.createElement('div');
+            div.innerHTML = `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${doc.id}" class="adm-curso-chk"> <span style="font-weight:600; font-size:0.9rem;">${course.nombre}</span> <small style="color:#64748b;">(${doc.id})</small></label>`;
+            chkBoxDiv.appendChild(div);
+        });
+    });
+
+    toggleCursosAdmin();
     document.getElementById('user-modal').classList.remove('hidden');
+}
+
+function toggleCursosAdmin() {
+    const role = document.getElementById('adm-role').value;
+    const coursesDiv = document.getElementById('adm-cursos-container');
+    if (role === 'super-admin') {
+        coursesDiv.style.display = 'none';
+    } else {
+        coursesDiv.style.display = 'block';
+    }
 }
 function closeUserModal() { document.getElementById('user-modal').classList.add('hidden'); }
 

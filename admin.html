@@ -457,13 +457,17 @@
             <div class="form-grid" style="text-align:left; margin-top:15px; display:grid; gap:10px;">
                 <label>Nombre</label><input type="text" id="adm-name" class="input-premium">
                 <label>Email</label><input type="email" id="adm-email" class="input-premium">
+                <label>DNI (Contraseña Provisoria)</label><input type="number" id="adm-dni" class="input-premium" placeholder="Ej: 30123456">
                 <label>Rol</label>
-                <select id="adm-role" class="input-premium">
+                <select id="adm-role" class="input-premium" onchange="toggleCursosAdmin()">
                     <option value="profesor">Profesor</option>
                     <option value="super-admin">Super Admin</option>
                 </select>
-                <label>Cursos (Sep. por coma)</label><input type="text" id="adm-cursos" class="input-premium"
-                    placeholder="habilidades, programacion">
+                <div id="adm-cursos-container">
+                    <label>Asignar Cursos Permitidos</label>
+                    <div id="adm-cursos-checkboxes" style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    </div>
+                </div>
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-secondary" onclick="closeUserModal()" style="flex:1;">CANCELAR</button>
@@ -502,7 +506,7 @@
     </div>
 
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin_v11.js?v=9.18.9"></script>
+    <script src="js/admin_v11.js?v=9.18.17"></script>
 </body>
 
 </html>

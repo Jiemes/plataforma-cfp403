@@ -58,6 +58,23 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         }
 
         if (!isLoggedIn) {
+            try {
+                const adminDoc = await db.collection('usuarios_auth').doc(email).get();
+                if (adminDoc.exists) {
+                    const adminData = adminDoc.data();
+                    if (adminData.password_init && (adminData.password_init === cleanDni || adminData.password_init === rawPass)) {
+                        try { await authFirebase.createUserWithEmailAndPassword(email, rawPass); } catch(ee) { console.error(ee); }
+                        await db.collection('usuarios_auth').doc(email).update({ password_init: firebase.firestore.FieldValue.delete() });
+                        
+                        localStorage.setItem('admin_session', JSON.stringify({
+                            email: email, role: adminData.role, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
+                        }));
+                        window.location.href = 'admin.html';
+                        return;
+                    }
+                }
+            } catch (e) { }
+
             let info_alumno = null;
             let currentCourses = ['habilidades', 'programacion'];
 
