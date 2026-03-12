@@ -305,8 +305,8 @@ async function submitTask(semana) {
     const linkInput = document.getElementById(`link-${semana}`);
     const rawUrl = linkInput.value.trim();
 
-    if (!rawUrl) return cfpAlert("ATENCIÓN", "Por favor, pega el link de tu actividad en Drive.");
-    if (!rawUrl.includes('drive.google.com')) return cfpAlert("ERROR", "El link no parece ser de Google Drive. Por favor, verifica.");
+    if (!rawUrl) return cfpAlert("ATENCIÓN", "Por favor, pega el link de tu actividad.");
+    if (!rawUrl.toLowerCase().includes('google.com')) return cfpAlert("ERROR", "El link debe pertenecer a Google. Por favor, verifica el enlace.");
 
     try {
         const snapshot = await db.collection('entregas')
