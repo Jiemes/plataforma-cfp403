@@ -713,9 +713,13 @@ async function saveLinksManual(sem) {
     const fecha = document.getElementById(`date-sem-${sem}`).value;
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
-        const updateObj = {};
-        updateObj[`materiales.sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
-        await ref.set(updateObj, { merge: true });
+        
+        // Creamos la estructura anidada correctamente para que .set(..., {merge:true}) 
+        // entienda que debe fusionar dentro del mapa 'materiales'
+        const data = { materiales: {} };
+        data.materiales[`sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
+        
+        await ref.set(data, { merge: true });
         cfpAlert("ÉXITO", `✅ Semana ${sem} guardada.`);
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
