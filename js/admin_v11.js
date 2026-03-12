@@ -637,7 +637,7 @@ async function loadClaseConfig(courseId) {
             const ref = db.collection('config_cursos').doc(currentClaseTab);
             let updated = { ...materiales };
             updated[`sem_${next}`] = { clase: '', actividad: '', fecha: '' };
-            await ref.update({ materiales: updated });
+            await ref.set({ materiales: updated }, { merge: true });
             loadClaseConfig(currentClaseTab);
         };
         cont.appendChild(addBtn);
@@ -697,7 +697,11 @@ async function saveInicioManual() {
     const syllabus = document.getElementById('link-syllabus').value.trim();
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
-        await ref.update({ "materiales.inicio.welcome": welcome, "materiales.inicio.syllabus": syllabus });
+        await ref.set({ 
+            materiales: { 
+                inicio: { welcome: welcome, syllabus: syllabus } 
+            } 
+        }, { merge: true });
         cfpAlert("ÉXITO", "✅ Datos de inicio guardados.");
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
@@ -709,9 +713,9 @@ async function saveLinksManual(sem) {
     const fecha = document.getElementById(`date-sem-${sem}`).value;
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
-        const update = {};
-        update[`materiales.sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
-        await ref.update(update);
+        const updateObj = {};
+        updateObj[`materiales.sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
+        await ref.set(updateObj, { merge: true });
         cfpAlert("ÉXITO", `✅ Semana ${sem} guardada.`);
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
@@ -722,9 +726,10 @@ async function deleteWeek(num) {
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
         const doc = await ref.get();
-        let mats = doc.data().materiales;
+        if (!doc.exists) return;
+        let mats = doc.data().materiales || {};
         delete mats[`sem_${num}`];
-        await ref.update({ materiales: mats });
+        await ref.set({ materiales: mats }, { merge: true });
         loadClaseConfig(currentClaseTab);
     } catch (e) { }
 }
@@ -847,8 +852,13 @@ async function saveNewCourse() {
 
     if (!id || !nombre) return cfpAlert("ERROR", "Completa los campos.");
     try {
+        // 1. Crear el curso en la lista maestra
         await db.collection('cursos').doc(id).set({ nombre, materia: base, activo: true });
-        cfpAlert("ÉXITO", "✅ Curso creado.");
+        
+        // 2. Inicializar el cronograma de contenidos para este curso
+        await db.collection('config_cursos').doc(id).set({ materiales: {} }, { merge: true });
+
+        cfpAlert("ÉXITO", "✅ Curso creado e inicializado.");
         closeCourseModal();
         loadStudentsFromFirebase();
     } catch (e) { cfpAlert("ERROR", e.message); }
