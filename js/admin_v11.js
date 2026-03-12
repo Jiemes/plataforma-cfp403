@@ -754,12 +754,31 @@ async function processExcel(file, type) {
                     const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
                     return key ? r[key] : '';
                 };
-                const dni = String(getVal(['DOCUMENTO', 'DNI']) || '').replace(/\D/g, '');
+                
+                const dniRaw = String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim();
+                const dni = dniRaw.replace(/\D/g, '');
+                
+                let rawApellido = String(getVal(['APELLIDO']) || '').trim();
+                let rawNombre = String(getVal(['NOMBRE']) || '').trim();
+                let full_name = '';
+
+                if (rawApellido || rawNombre) {
+                    full_name = `${rawApellido}, ${rawNombre}`.toUpperCase().replace(/^, |, $/g, '').trim();
+                } else {
+                    full_name = String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO', 'ESTUDIANTE']) || '').toUpperCase().trim();
+                }
+
                 return {
-                    dni,
+                    dni: dni,
                     email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
-                    full_name: String(getVal(['ALUMNO', 'NOMBRE']) || '').toUpperCase().trim(),
-                    edad: String(getVal(['EDAD']) || '').trim(),
+                    full_name: full_name,
+                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                    nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
+                    busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
+                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
+                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                    nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
                     password: dni.slice(-4)
                 };
             }).filter(s => s.dni.length > 5);
