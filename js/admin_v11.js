@@ -379,6 +379,69 @@ async function saveStudent() {
     }
 }
 
+async function deleteStudent(course, dni) {
+    if (!confirm(`¿Estás seguro de eliminar permanentemente al alumno con DNI ${dni}?`)) return;
+    try {
+        await db.collection(`alumnos_${course}`).doc(dni).delete();
+        cfpAlert("ÉXITO", "Alumno eliminado correctamente.");
+        loadStudentsFromFirebase();
+    } catch (err) {
+        cfpAlert("ERROR", "Error al eliminar alumno: " + err.message);
+    }
+}
+
+async function deleteCourseData() {
+    if (!confirm(`🚨 ¿ESTÁS ABSOLUTAMENTE SEGURO de vaciar TODA la lista de alumnos inscriptos en este curso?\n\n¡Esta acción no se puede deshacer!`)) return;
+    try {
+        const coll = `alumnos_${currentViewedCourse}`;
+        const snap = await db.collection(coll).get();
+        const batch = db.batch();
+        
+        let batchCount = 0;
+        snap.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+            batchCount++;
+        });
+
+        if (batchCount === 0) return cfpAlert("AVISO", "La lista ya se encuentra vacía.");
+
+        await batch.commit();
+        cfpAlert("SISTEMA", "Lista de alumnos vaciada de manera definitiva.");
+        loadStudentsFromFirebase();
+    } catch (err) { cfpAlert("ERROR", "Error al vaciar: " + err.message); }
+}
+
+async function resetDeliveriesOnly() {
+    if (!confirm(`🚨 ¿Estás seguro de ELIMINAR TODAS LAS ENTREGAS y comentarios de los alumnos de este curso?`)) return;
+    try {
+        const snap = await db.collection("entregas").where("curso", "==", currentViewedCourse).get();
+        if (snap.empty) return cfpAlert("AVISO", "No hay entregas para reiniciar en este curso.");
+
+        // Chunked batch deletions as Firebase batch only allows 500 ops
+        const chunks = [];
+        let curBatch = db.batch();
+        let curCount = 0;
+
+        snap.docs.forEach((doc) => {
+            curBatch.delete(doc.ref);
+            curCount++;
+            if (curCount === 500) {
+                chunks.push(curBatch);
+                curBatch = db.batch();
+                curCount = 0;
+            }
+        });
+        if (curCount > 0) chunks.push(curBatch);
+
+        for (let b of chunks) await b.commit();
+
+        cfpAlert("ÉXITO", `Se reiniciaron las entregas con éxito.`);
+        loadStudentsFromFirebase();
+    } catch (e) {
+        cfpAlert("ERROR", "Hubo un fallo al tratar de limpiar las tareas: " + e.message);
+    }
+}
+
 // EXPORTAR A EXCEL
 async function downloadCourseExcel() {
     if (!currentViewedCourse) return;
