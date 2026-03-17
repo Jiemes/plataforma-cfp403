@@ -289,6 +289,29 @@ function visualizePdf(url, title, element) {
 
     viewer.onload = () => { if (loader) loader.style.display = "none"; viewer.style.visibility = "visible"; };
     viewer.src = finalUrl;
+
+    const titleEl = document.getElementById('viewer-title-premium');
+    if (titleEl) titleEl.innerText = title || "Vista de Documento";
+}
+
+function printPdf() {
+    const viewer = document.getElementById('pdf-viewer');
+    const url = viewer.src;
+
+    if (!url || url === "about:blank") return;
+
+    // Intentamos imprimir el iframe (puede fallar por cross-origin)
+    try {
+        viewer.contentWindow.print();
+    } catch (e) {
+        // Fallback: Abrir en pestaña nueva para imprimir (el navegador lo maneja nativamente)
+        let printUrl = url;
+        if (url.includes('drive.google.com')) {
+            // Convertimos /preview en /view para asegurar opciones completas
+            printUrl = url.replace('/preview', '/view');
+        }
+        window.open(printUrl, '_blank');
+    }
 }
 
 function closeViewer() {

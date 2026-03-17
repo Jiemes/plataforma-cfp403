@@ -82,6 +82,13 @@
                 <!-- Visor de PDF -->
                 <main class="main-viewer" id="main-viewer">
                     <div id="viewer-container" class="viewer-container hidden">
+                        <!-- Barra de herramientas del visor -->
+                        <div class="viewer-toolbar-premium">
+                            <span id="viewer-title-premium" style="flex-grow:1; font-weight:800; color:white; font-size:0.9rem; margin-left:15px;">Vista de Documento</span>
+                            <button class="btn-viewer-action" onclick="printPdf()" title="Imprimir o Descargar">🖨️ IMPRIMIR / DESCARGAR</button>
+                            <button class="btn-viewer-action btn-viewer-close" onclick="closeViewer()">✖️</button>
+                        </div>
+                        
                         <div class="viewer-wrapper">
                             <div id="pdf-loader" class="viewer-loader">
                                 <div class="loader-card">
@@ -168,8 +175,8 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js"></script>
-    <script src="js/student.js?v=9.18.16"></script>
+    <script src="js/firebase-config.js?v=9.18.29"></script>
+    <script src="js/student.js?v=9.18.29"></script>
 </body>
 
 </html>
