@@ -45,11 +45,11 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             await authFirebase.signInWithEmailAndPassword(email, rawPass);
             isLoggedIn = true;
         } catch(err) {
-            // Si la clave es errónea, cortamos acá para facilitar recuperación
-            if (err.code === 'auth/wrong-password' || (err.code === 'auth/invalid-login-credentials' && !err.message.includes('user-not-found'))) {
-                throw new Error("🔑 Contraseña incorrecta. Si es tu primera vez, usa tu DNI. Si la cambiaste y no la recuerdas, usa 'Recuperar Contraseña' abajo.");
+            // Permitimos que 'invalid-login-credentials' pase al chequeo de Firestore, 
+            // ya que Firebase ahora lo usa de forma genérica para usuario no encontrado o clave mal.
+            if (err.code === 'auth/wrong-password') {
+                throw new Error("🔑 Contraseña incorrecta. Si ya ingresaste antes y la cambiaste, usa 'Recuperar Contraseña'.");
             }
-            // Si el error no es "usuario no encontrado", algo más pasó
             if (err.code !== 'auth/user-not-found' && err.code !== 'auth/invalid-login-credentials' && err.code !== 'permission-denied') throw err;
         }
 
