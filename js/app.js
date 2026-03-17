@@ -133,14 +133,34 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             coursesDocs = [ { id: 'habilidades', nombre: 'Habilidades Digitales' }, { id: 'programacion', nombre: 'Software & Videojuegos' } ];
         }
 
+        // Buscamos al alumno por EMAIL en lugar de usar la clave (cleanDni) como ID
+        // Ya que si cambió la clave, el 'cleanDni' ya no es su DNI real.
         for (let doc of coursesDocs) {
             try {
-                const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
-                if (aluDoc.exists && aluDoc.data().email.toLowerCase() === email) {
-                    if (!info_final) info_final = aluDoc.data();
+                const querySnap = await db.collection(`alumnos_${doc.id}`).where('email', '==', email).get();
+                if (!querySnap.empty) {
+                    const aluData = querySnap.docs[0].data();
+                    if (!info_final) info_final = aluData;
                     cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
+                } else if (cleanDni.length >= 7 && cleanDni.length <= 10) {
+                    // Fallback por si no tiene índice el mail o el mail está mal: buscamos por DNI (si la clave parece un DNI)
+                    const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
+                    if (aluDoc.exists && aluDoc.data().email.toLowerCase() === email) {
+                        if (!info_final) info_final = aluDoc.data();
+                        cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
+                    }
                 }
-            } catch (e) { }
+            } catch (e) { 
+                console.warn("Error buscando en curso " + doc.id, e);
+                // Si falla el query (por falta de índice), intentamos búsqueda directa por DNI como último recurso
+                if (cleanDni.length >= 7 && cleanDni.length <= 10) {
+                    const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
+                    if (aluDoc.exists) {
+                        if (!info_final) info_final = aluDoc.data();
+                        cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
+                    }
+                }
+            }
         }
 
         if (info_final) {
@@ -152,7 +172,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }));
             window.location.href = 'student.html';
         } else {
-            throw new Error("Autenticado pero no encontrado en planillas. Contacte al docente.");
+            throw new Error("⚠️ Autenticado pero no encontrado en las planillas de curso. Contacte al docente para verificar su correo: " + email);
         }
 
     } catch (error) {
