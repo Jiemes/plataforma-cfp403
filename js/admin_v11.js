@@ -985,7 +985,7 @@ async function loadPendingDeliveries(courseId = currentViewedCourse) {
     }
 }
 
-// 2. MURO DE CONSULTAS (FORO ADMINISTRATIVO)
+// 2. MURO DE CONSULTAS (FORO ADMINISTRATIVO) UNIFICADO v9.18.24
 let unreadListenerForo = null;
 function loadForoAdmin() {
     const container = document.getElementById('foro-admin-container');
@@ -996,17 +996,25 @@ function loadForoAdmin() {
     container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando mensajes del muro...</p>';
     if (unreadListenerForo) unreadListenerForo();
 
-    unreadListenerForo = db.collection(`foro_${currentForoId}`)
-        .orderBy('timestamp', 'asc')
+    // Sincronizado con student.js: Usamos 'foro_mensajes' filtrando por 'curso_id'
+    unreadListenerForo = db.collection('foro_mensajes')
+        .where('curso_id', '==', currentForoId)
         .onSnapshot(snap => {
             container.innerHTML = '';
             if (snap.empty) {
                 container.innerHTML = '<p style="text-align:center; padding:20px;">El muro está vacío por ahora.</p>';
                 return;
             }
-            snap.forEach(doc => {
-                const data = doc.data();
-                const isProf = data.role === 'profesor';
+            
+            let msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Ordenamos por fecha ya que en Firestore 'where' + 'orderBy' suele requerir índices compuestos
+            msgs.sort((a, b) => new Date(a.fecha || a.timestamp) - new Date(b.fecha || b.timestamp));
+
+            msgs.forEach(data => {
+                const isProf = data.is_admin === true || data.rol === 'profesor' || data.role === 'profesor';
+                const senderName = data.alumno_nombre || data.sender_name || "Usuario";
+                const msgDate = data.fecha || data.timestamp;
+
                 const div = document.createElement('div');
                 div.className = 'foro-mensage-card';
                 div.style = 'margin-bottom:15px; padding:15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;';
@@ -1014,19 +1022,22 @@ function loadForoAdmin() {
 
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <strong style="color:${isProf ? '#0ea5e9' : '#1e293b'}">${data.sender_name} ${isProf ? '👨‍🏫' : ''}</strong>
-                        <span style="font-size:0.8rem; color:#64748b;">${new Date(data.timestamp).toLocaleString()}</span>
+                        <strong style="color:${isProf ? '#0ea5e9' : '#1e293b'}">${senderName} ${isProf ? '👨‍🏫' : ''}</strong>
+                        <span style="font-size:0.8rem; color:#64748b;">${new Date(msgDate).toLocaleString()}</span>
                     </div>
-                    ${data.reply_to_name ? `<div style="font-size:0.8rem; color:#64748b; margin-bottom:8px; border-left:3px solid ${isProf ? '#bae6fd' : '#cbd5e1'}; padding-left:10px;">Respondiendo a: <strong>${data.reply_to_name}</strong></div>` : ''}
+                    ${data.respuesta_a ? `<div style="font-size:0.8rem; color:#64748b; margin-bottom:8px; border-left:3px solid #bae6fd; padding-left:10px;">Respondiendo a: <strong>${data.respuesta_a.name || data.respuesta_a.nombre}</strong></div>` : ''}
                     <p style="margin-bottom:15px; line-height:1.5;">${data.mensaje}</p>
                     <div style="display:flex; justify-content:flex-end; gap:10px;">
-                        <button class="btn-primary-sm" onclick="prepareReplyAdmin('${data.sender_name}')" style="background:#fff; color:#3b82f6; border-color:#3b82f6;">↩️ Responder</button>
-                        <button class="btn-icon" onclick="deleteMessageAdmin('${doc.id}')" style="background:#fff; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">🗑️</button>
+                        <button class="btn-primary-sm" onclick="prepareReplyAdmin('${senderName}')" style="background:#fff; color:#3b82f6; border-color:#3b82f6;">↩️ Responder</button>
+                        <button class="btn-icon" onclick="deleteMessageAdmin('${data.id}')" style="background:#fff; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">🗑️</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        }, err => {
+            console.error("Foro Admin fail:", err);
+            container.innerHTML = '<p style="text-align:center; color:red;">Error de permisos al leer el foro.</p>';
         });
 }
 
@@ -1049,15 +1060,18 @@ async function sendMessageAdmin() {
     try {
         const previewBox = document.getElementById('reply-preview-admin');
         const isReplying = !previewBox.classList.contains('hidden');
-        const replyTo = isReplying ? document.getElementById('reply-to-name-admin').innerText : null;
+        const replyToName = isReplying ? document.getElementById('reply-to-name-admin').innerText : null;
 
-        await db.collection(`foro_${currentForoId}`).add({
-            sender_id: "admin",
-            sender_name: adminSession.nombre || "Docente / Institucional",
-            role: "profesor",
+        await db.collection('foro_mensajes').add({
+            curso_id: currentForoId,
+            is_admin: true,
+            rol: 'profesor',
+            sender_name: adminSession.nombre || "Docente",
+            alumno_nombre: adminSession.nombre || "Docente",
             mensaje: msg,
-            reply_to_name: replyTo,
-            timestamp: new Date().toISOString()
+            fecha: new Date().toISOString(),
+            timestamp: new Date().toISOString(), // redundancia por soporte antiguo
+            respuesta_a: isReplying ? { name: replyToName, mensaje: "Respuesta desde Admin" } : null
         });
         input.value = '';
         cancelReplyAdmin();
@@ -1069,7 +1083,7 @@ async function sendMessageAdmin() {
 async function deleteMessageAdmin(msgId) {
     if (!confirm("¿Seguro que deseas ELIMINAR permanentemente este comentario del muro?")) return;
     try {
-        await db.collection(`foro_${currentForoId}`).doc(msgId).delete();
+        await db.collection('foro_mensajes').doc(msgId).delete();
     } catch (e) { cfpAlert("ERROR", "No autorizado: " + e.message); }
 }
 

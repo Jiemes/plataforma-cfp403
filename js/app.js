@@ -23,11 +23,14 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
+        // 0. ADMIN MAESTRO (Sanity check)
         if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') {
-            try { await authFirebase.signInWithEmailAndPassword(email, rawPass); }
-            catch(err) { 
-                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') await authFirebase.createUserWithEmailAndPassword(email, rawPass); 
-                else throw err; 
+            try { 
+                await authFirebase.signInWithEmailAndPassword(email, rawPass); 
+            } catch(err) { 
+                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') {
+                    await authFirebase.createUserWithEmailAndPassword(email, rawPass); 
+                } else throw err; 
             }
             const mainAdmin = { role: 'super-admin', nombre: 'Admin Maestro', cursos: 'all' };
             await db.collection('usuarios_auth').doc(email).set(mainAdmin);
@@ -36,15 +39,21 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             return;
         }
 
+        // 1. INTENTAR LOGIN DIRECTO (Cubre Alumnos ya registrados y Admins/Docs pre-existentes)
         let isLoggedIn = false;
         try {
             await authFirebase.signInWithEmailAndPassword(email, rawPass);
             isLoggedIn = true;
         } catch(err) {
-            if (err.code === 'auth/wrong-password') throw new Error("🔑 Contraseña incorrecta.");
+            // Si la clave es errónea, cortamos acá para facilitar recuperación
+            if (err.code === 'auth/wrong-password' || (err.code === 'auth/invalid-login-credentials' && !err.message.includes('user-not-found'))) {
+                throw new Error("🔑 Contraseña incorrecta. Si es tu primera vez, usa tu DNI. Si la cambiaste y no la recuerdas, usa 'Recuperar Contraseña' abajo.");
+            }
+            // Si el error no es "usuario no encontrado", algo más pasó
             if (err.code !== 'auth/user-not-found' && err.code !== 'auth/invalid-login-credentials' && err.code !== 'permission-denied') throw err;
         }
 
+        // 2. SI LOGUEÓ: VERIFICAR SI ES ADMIN O ALUMNO
         if (isLoggedIn) {
             const adminDoc = await db.collection('usuarios_auth').doc(email).get();
             if (adminDoc.exists) {
@@ -57,17 +66,24 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }
         }
 
+        // 3. SI NO LOGUEÓ: PROCESAR REGISTRO INICIAL (DNI COMO CLAVE)
         if (!isLoggedIn) {
+            // CASO A: Es un Admin/Docente con clave temporal
             try {
-                const adminDoc = await db.collection('usuarios_auth').doc(email).get();
-                if (adminDoc.exists) {
-                    const adminData = adminDoc.data();
-                    if (adminData.password_init && (adminData.password_init === cleanDni || adminData.password_init === rawPass)) {
-                        try { await authFirebase.createUserWithEmailAndPassword(email, rawPass); } catch(ee) { console.error(ee); }
+                const adminCheck = await db.collection('usuarios_auth').doc(email).get();
+                if (adminCheck.exists) {
+                    const aData = adminCheck.data();
+                    if (aData.password_init && (aData.password_init === cleanDni || aData.password_init === rawPass)) {
+                        try {
+                            await authFirebase.createUserWithEmailAndPassword(email, rawPass);
+                        } catch(ee) {
+                            if (ee.code !== 'auth/email-already-in-use') throw ee;
+                            // Si ya existe pero el pass era init, intentamos login (por si se interrumpió la creación antes)
+                            await authFirebase.signInWithEmailAndPassword(email, rawPass);
+                        }
                         await db.collection('usuarios_auth').doc(email).update({ password_init: firebase.firestore.FieldValue.delete() });
-                        
                         localStorage.setItem('admin_session', JSON.stringify({
-                            email: email, role: adminData.role, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
+                            email: email, role: aData.role, nombre: aData.nombre || 'Administrador', cursos: aData.cursos || []
                         }));
                         window.location.href = 'admin.html';
                         return;
@@ -75,15 +91,13 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                 }
             } catch (e) { }
 
+            // CASO B: Es un Alumno nuevo
             let info_alumno = null;
             let currentCourses = ['habilidades', 'programacion'];
-
             try {
                 const coursesSnap = await db.collection('cursos').get();
                 currentCourses = coursesSnap.docs.map(d => d.id);
-            } catch (e) {
-                console.warn("Aviso: Reglas bloquean lectura de cursos no autenticada.");
-            }
+            } catch (e) { }
 
             for (let cid of currentCourses) {
                 try {
@@ -93,35 +107,36 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }
 
             if (info_alumno && info_alumno.email.toLowerCase() === email) {
-                await authFirebase.createUserWithEmailAndPassword(email, rawPass);
+                try {
+                    await authFirebase.createUserWithEmailAndPassword(email, rawPass);
+                } catch(ee) {
+                    if (ee.code === 'auth/email-already-in-use') {
+                        throw new Error("⚠️ Ya tienes una cuenta registrada. Prueba usar tu contraseña o usa 'Recuperar Contraseña' si la olvidaste.");
+                    }
+                    throw ee;
+                }
             } else {
-                throw new Error("❌ No se encontró ningún alumno con ese Email y DNI (" + cleanDni + "). Por favor verifique sus datos.");
+                throw new Error("❌ No se encontró registro con ese Email y DNI (" + cleanDni + "). Verifique sus datos.");
             }
         }
 
+        // 4. PREPARAR SESIÓN DE ALUMNO 
         let cursos_inscrito = [];
         let info_final = null;
         let coursesDocs = [];
-
         try {
             const coursesList = await db.collection('cursos').get();
-            coursesList.docs.forEach(doc => coursesDocs.push({ id: doc.id, nombre: doc.data().nombre }));
+            coursesDocs = coursesList.docs.map(d => ({ id: d.id, nombre: d.data().nombre }));
         } catch (e) {
-            coursesDocs = [ { id: 'habilidades', nombre: 'Habilidades Digitales e IA' }, { id: 'programacion', nombre: 'Software y Videojuegos' } ];
+            coursesDocs = [ { id: 'habilidades', nombre: 'Habilidades Digitales' }, { id: 'programacion', nombre: 'Software & Videojuegos' } ];
         }
 
         for (let doc of coursesDocs) {
-            const cid = doc.id;
-            const cName = doc.nombre;
             try {
-                const querySnap = await db.collection(`alumnos_${cid}`).get();
-                for (let cDoc of querySnap.docs) {
-                    const data = cDoc.data();
-                    if (data.email && data.email.toLowerCase() === email) {
-                        if (!info_final) info_final = data;
-                        cursos_inscrito.push({ id: cid, nombre: cName });
-                        break;
-                    }
+                const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
+                if (aluDoc.exists && aluDoc.data().email.toLowerCase() === email) {
+                    if (!info_final) info_final = aluDoc.data();
+                    cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
                 }
             } catch (e) { }
         }
@@ -135,14 +150,27 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }));
             window.location.href = 'student.html';
         } else {
-            throw new Error("Alumno autenticado pero NO encontrado en ninguna de las planillas.");
+            throw new Error("Autenticado pero no encontrado en planillas. Contacte al docente.");
         }
 
     } catch (error) {
-        let msg = error.message || 'Error al ingresar. Verifique sus datos.';
-        if (msg.includes('permission')) msg = "⚠️ ERROR DE ACCESO: Se está realizando una actualización o faltan permisos.";
+        let msg = error.message || 'Error al ingresar.';
+        if (msg.includes('permission')) msg = "⚠️ ERROR: Se está actualizando el sistema o faltan permisos.";
         cfpAlert("ATENCIÓN", msg);
         btn.innerText = originalText;
         btn.disabled = false;
     }
 });
+
+async function recuperarClave() {
+    const email = document.getElementById('email').value.trim();
+    if (!email) return cfpAlert("AVISO", "Escribe tu correo arriba para enviarte el enlace de recuperación.");
+    try {
+        await authFirebase.sendPasswordResetEmail(email);
+        cfpAlert("ÉXITO", "📬 Enlace enviado a " + email + ". Revisa tu correo (y Spam).");
+    } catch(e) {
+        let msg = "No se pudo enviar.";
+        if (e.code === 'auth/user-not-found') msg = "El correo no está registrado.";
+        cfpAlert("ERROR", msg);
+    }
+}
