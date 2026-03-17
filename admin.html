@@ -414,19 +414,18 @@
                         <h3 style="font-weight:900; font-size:1.6rem;">👥 Usuarios y Permisos</h3>
                         <button class="btn-primary" onclick="openCreateUserModal()">+ Nuevo Usuario</button>
                     </div>
-                    <div class="table-container">
-                        <table id="users-manager-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Email</th>
-                                    <th>Rol</th>
-                                    <th>Cursos</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
+                    <div id="users-manager-container" style="margin-top:20px; max-height:400px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:12px;">
+                        <table class="premium-table">
+                            <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Cursos</th><th style="text-align:center;">Acción</th></tr></thead>
                             <tbody id="users-manager-body"></tbody>
                         </table>
+                    </div>
+
+                    <!-- HERRAMIENTAS DE LIMPIEZA -->
+                    <div id="mantenimiento-panel" style="margin-top:40px; border-top:2px solid #f1f5f9; padding-top:20px;">
+                        <h4 style="margin-bottom:10px; color:#64748b;">🛠️ Herramientas de Mantenimiento</h4>
+                        <button class="btn-correct" onclick="cleanupDisenoStudents()" style="background:#6366f1; border-color:#6366f1;">REORGANIZAR ALUMNOS DISEÑO/MARKETING</button>
+                        <p style="font-size:0.75rem; color:#94a3b8; margin-top:5px;">Esta acción remueve a los alumnos de Diseño del curso de Habilidades genérico y los asegura en el curso específico de Diseño.</p>
                     </div>
                 </div>
             </section>
@@ -505,8 +504,8 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js?v=9.18.25"></script>
-    <script src="js/admin_v11.js?v=9.18.25"></script>
+    <script src="js/firebase-config.js?v=9.18.26"></script>
+    <script src="js/admin_v11.js?v=9.18.26"></script>
 </body>
 
 </html>

@@ -1195,4 +1195,63 @@ async function deleteCourse(id) {
     } catch (e) { cfpAlert("ERROR", e.message); }
 }
 
+// 5. HERRAMIENTAS DE MANTENIMIENTO ACADÉMICO v9.18.26
+async function cleanupDisenoStudents() {
+    if (!confirm("⚠️ ATENCIÓN: Esta acción removerá a los alumnos de 'Diseño y Marketing' que estén en el curso de 'Habilidades Digitales' genérico para dejarlos únicamente en el específico de Diseño. ¿Deseas continuar?")) return;
+    
+    const originalText = "REORGANIZAR ALUMNOS DISEÑO/MARKETING";
+    const btn = event.target;
+    btn.innerText = "⌛ Limpiando padrón...";
+    btn.disabled = true;
+
+    try {
+        const cursosSnap = await db.collection('cursos').get();
+        const crs = cursosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Identificamos los cursos por nombre (basado en lo reportado por el usuario)
+        const cursoMarketing = crs.find(c => c.nombre.toUpperCase().includes("DISEÑO Y MARKETING"));
+        const cursoHabilidadesGeneric = crs.find(c => c.nombre === "Habilidades Digitales & IA" || c.id === 'habilidades'); 
+        const cursoHabilidadesDiseno = crs.find(c => c.nombre.toUpperCase().includes("HABILIDADES DIGITALES") && c.nombre.toUpperCase().includes("DISEÑO"));
+
+        if (!cursoMarketing || !cursoHabilidadesGeneric || !cursoHabilidadesDiseno) {
+            console.log("Cursos identificados:", { marketing: cursoMarketing?.id, hbGeneric: cursoHabilidadesGeneric?.id, hbDiseno: cursoHabilidadesDiseno?.id });
+            throw new Error("No se encontraron los cursos necesarios para la limpieza. Verifique sus nombres exactos.");
+        }
+
+        const alumnosMarketingSnap = await db.collection(`alumnos_${cursoMarketing.id}`).get();
+        let removidos = 0;
+        let asegurados = 0;
+
+        for (const aluDoc of alumnosMarketingSnap.docs) {
+            const alu = aluDoc.data();
+            const dni = alu.dni;
+
+            // 1. Quitar del genérico si existe
+            const genericAluRef = db.collection(`alumnos_${cursoHabilidadesGeneric.id}`).doc(dni);
+            const existsInGeneric = (await genericAluRef.get()).exists;
+            if (existsInGeneric) {
+                await genericAluRef.delete();
+                removidos++;
+            }
+
+            // 2. Asegurar que estén en el de Diseño (B)
+            const disenoAluRef = db.collection(`alumnos_${cursoHabilidadesDiseno.id}`).doc(dni);
+            const existsInDisenoHab = (await disenoAluRef.get()).exists;
+            if (!existsInDisenoHab) {
+                await disenoAluRef.set(alu);
+                asegurados++;
+            }
+        }
+
+        cfpAlert("MANTENIMIENTO FINALIZADO", `✅ Se removieron ${removidos} alumnos del curso genérico y se aseguraron ${asegurados} ingresos al curso de Habilidades-Diseño.`);
+        loadStudentsFromFirebase();
+    } catch (e) {
+        cfpAlert("ERROR DE LIMPIEZA", "Ocurrió un problema: " + e.message);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
 loadStudentsFromFirebase();
+
