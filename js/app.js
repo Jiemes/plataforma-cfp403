@@ -111,7 +111,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                     await authFirebase.createUserWithEmailAndPassword(email, rawPass);
                 } catch(ee) {
                     if (ee.code === 'auth/email-already-in-use') {
-                        throw new Error("⚠️ Ya tienes una cuenta registrada. Prueba usar tu contraseña o usa 'Recuperar Contraseña' si la olvidaste.");
+                        // Si llegamos acá es porque el signIn falló (paso 1) Y el usuario existe (email-already-in-use)
+                        // Conclusión: La contraseña que ingresó es incorrectA.
+                        throw new Error("🔑 Contraseña incorrecta. Ya tienes una cuenta activa en el sistema. Si no recuerdas tu clave, usa el botón '¿Olvidaste tu contraseña?' abajo.");
                     }
                     throw ee;
                 }
