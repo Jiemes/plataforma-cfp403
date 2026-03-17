@@ -344,7 +344,8 @@ function closeStudentModal() {
 async function saveStudent() {
     const name = document.getElementById('stu-name').value.trim();
     const dni = document.getElementById('stu-dni').value.trim();
-    const email = document.getElementById('stu-email').value.trim();
+    // Normalizamos email a minúsculas para evitar errores en login
+    const email = document.getElementById('stu-email').value.trim().toLowerCase();
     const tel = document.getElementById('stu-tel').value.trim();
     const age = document.getElementById('stu-age').value.trim();
 
@@ -779,7 +780,7 @@ async function processExcel(file, type) {
 
                 return {
                     dni: dni,
-                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim(),
+                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim().toLowerCase(),
                     full_name: full_name,
                     telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
                     nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
