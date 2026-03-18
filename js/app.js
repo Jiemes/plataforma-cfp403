@@ -13,9 +13,11 @@ function closeCfpAlert() {
 
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value.trim().toLowerCase();
+    const rawEmailTyped = document.getElementById('email').value.trim();
+    const email = rawEmailTyped.toLowerCase();
     const rawPass = document.getElementById('password').value.trim();
-    const cleanDni = rawPass.replace(/\./g, '').replace(/-/g, '');
+    // Limpiamos DNI de forma agresiva: solo números y letras (elimina espacios, puntos, guiones)
+    const cleanDni = rawPass.replace(/[^a-zA-Z0-9]/g, '');
 
     const btn = e.target.querySelector('button');
     const originalText = btn.innerText;
@@ -23,7 +25,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        // 0. ADMIN MAESTRO (Sanity check)
+        // 0. ADMIN MAESTRO
         if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') {
             try { 
                 await authFirebase.signInWithEmailAndPassword(email, rawPass); 
@@ -39,14 +41,12 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             return;
         }
 
-        // 1. INTENTAR LOGIN DIRECTO (Cubre Alumnos ya registrados y Admins/Docs pre-existentes)
+        // 1. LOGIN DIRECTO
         let isLoggedIn = false;
         try {
             await authFirebase.signInWithEmailAndPassword(email, rawPass);
             isLoggedIn = true;
         } catch(err) {
-            // Permitimos que 'invalid-login-credentials' pase al chequeo de Firestore, 
-            // ya que Firebase ahora lo usa de forma genérica para usuario no encontrado o clave mal.
             if (err.code === 'auth/wrong-password') {
                 throw new Error("🔑 Contraseña incorrecta. Si ya ingresaste antes y la cambiaste, usa 'Recuperar Contraseña'.");
             }
@@ -68,7 +68,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
         // 3. SI NO LOGUEÓ: PROCESAR REGISTRO INICIAL (DNI COMO CLAVE)
         if (!isLoggedIn) {
-            // CASO A: Es un Admin/Docente con clave temporal
+            // CASO A: Admin/Docente nuevo
             try {
                 const adminCheck = await db.collection('usuarios_auth').doc(email).get();
                 if (adminCheck.exists) {
@@ -78,7 +78,6 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                             await authFirebase.createUserWithEmailAndPassword(email, rawPass);
                         } catch(ee) {
                             if (ee.code !== 'auth/email-already-in-use') throw ee;
-                            // Si ya existe pero el pass era init, intentamos login (por si se interrumpió la creación antes)
                             await authFirebase.signInWithEmailAndPassword(email, rawPass);
                         }
                         await db.collection('usuarios_auth').doc(email).update({ password_init: firebase.firestore.FieldValue.delete() });
@@ -91,29 +90,33 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                 }
             } catch (e) { }
 
-            // CASO B: Es un Alumno nuevo
+            // CASO B: Alumno nuevo
             let info_alumno = null;
             let currentCourses = ['habilidades', 'programacion'];
             try {
                 const coursesSnap = await db.collection('cursos').get();
-                currentCourses = coursesSnap.docs.map(d => d.id);
+                if (!coursesSnap.empty) currentCourses = coursesSnap.docs.map(d => d.id);
             } catch (e) { }
 
             for (let cid of currentCourses) {
                 try {
                     const snapCheck = await db.collection(`alumnos_${cid}`).doc(cleanDni).get();
-                    if (snapCheck.exists) { info_alumno = snapCheck.data(); break; }
+                    if (snapCheck.exists) { 
+                        const dataRead = snapCheck.data();
+                        // Comparamos mail permitiendo variaciones de mayúsculas en DB
+                        if (String(dataRead.email || "").toLowerCase() === email) {
+                             info_alumno = dataRead; break; 
+                        }
+                    }
                 } catch (e) { }
             }
 
-            if (info_alumno && info_alumno.email.toLowerCase() === email) {
+            if (info_alumno) {
                 try {
                     await authFirebase.createUserWithEmailAndPassword(email, rawPass);
                 } catch(ee) {
                     if (ee.code === 'auth/email-already-in-use') {
-                        // Si llegamos acá es porque el signIn falló (paso 1) Y el usuario existe (email-already-in-use)
-                        // Conclusión: La contraseña que ingresó es incorrectA.
-                        throw new Error("🔑 Contraseña incorrecta. Ya tienes una cuenta activa en el sistema. Si no recuerdas tu clave, usa el botón '¿Olvidaste tu contraseña?' abajo.");
+                        throw new Error("🔑 Contraseña incorrecta o cuenta activa. Si no la recuerdas, usa el botón '¿Olvidaste tu contraseña?' abajo.");
                     }
                     throw ee;
                 }
@@ -133,34 +136,25 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             coursesDocs = [ { id: 'habilidades', nombre: 'Habilidades Digitales' }, { id: 'programacion', nombre: 'Software & Videojuegos' } ];
         }
 
-        // Buscamos al alumno por EMAIL en lugar de usar la clave (cleanDni) como ID
-        // Ya que si cambió la clave, el 'cleanDni' ya no es su DNI real.
         for (let doc of coursesDocs) {
             try {
-                const querySnap = await db.collection(`alumnos_${doc.id}`).where('email', '==', email).get();
-                if (!querySnap.empty) {
-                    const aluData = querySnap.docs[0].data();
+                // Probamos variaciones de casing en el email para mayor robustez
+                const qSnapLower = await db.collection(`alumnos_${doc.id}`).where('email', '==', email).get();
+                const qSnapRaw = qSnapLower.empty ? await db.collection(`alumnos_${doc.id}`).where('email', '==', rawEmailTyped).get() : qSnapLower;
+                
+                if (!qSnapRaw.empty) {
+                    const aluData = qSnapRaw.docs[0].data();
                     if (!info_final) info_final = aluData;
                     cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
-                } else if (cleanDni.length >= 7 && cleanDni.length <= 10) {
-                    // Fallback por si no tiene índice el mail o el mail está mal: buscamos por DNI (si la clave parece un DNI)
+                } else if (cleanDni.length >= 7 && cleanDni.length <= 11) {
+                    // Fallback por DNI si la clave parece un documento
                     const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
-                    if (aluDoc.exists && aluDoc.data().email.toLowerCase() === email) {
+                    if (aluDoc.exists && String(aluDoc.data().email || "").toLowerCase() === email) {
                         if (!info_final) info_final = aluDoc.data();
                         cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
                     }
                 }
-            } catch (e) { 
-                console.warn("Error buscando en curso " + doc.id, e);
-                // Si falla el query (por falta de índice), intentamos búsqueda directa por DNI como último recurso
-                if (cleanDni.length >= 7 && cleanDni.length <= 10) {
-                    const aluDoc = await db.collection(`alumnos_${doc.id}`).doc(cleanDni).get();
-                    if (aluDoc.exists) {
-                        if (!info_final) info_final = aluDoc.data();
-                        cursos_inscrito.push({ id: doc.id, nombre: doc.nombre });
-                    }
-                }
-            }
+            } catch (e) { }
         }
 
         if (info_final) {
@@ -172,7 +166,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             }));
             window.location.href = 'student.html';
         } else {
-            throw new Error("⚠️ Autenticado pero no encontrado en las planillas de curso. Contacte al docente para verificar su correo: " + email);
+            throw new Error("⚠️ Autenticado pero no encontrado en las planillas. Verifique su correo: " + email);
         }
 
     } catch (error) {

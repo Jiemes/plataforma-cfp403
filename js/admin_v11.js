@@ -150,9 +150,12 @@ function processAndClean(key) {
     if (!studentData[key]) return;
     const map = new Map();
     studentData[key].forEach(s => {
+        // Aseguramos que el DNI sea string y sin espacios para comparaciones
+        const dniClean = String(s.dni || s.id).trim();
+        s.dni = dniClean;
         s.edad = cleanAge(s.edad, s.nacimiento);
         if (!s.sexo || s.sexo.length < 1) s.sexo = guessGender(s.full_name);
-        map.set(s.dni, s);
+        map.set(dniClean, s);
     });
     studentData[key] = Array.from(map.values()).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 }
@@ -967,7 +970,17 @@ async function loadPendingDeliveries(courseId = currentViewedCourse) {
         tbody.innerHTML = '';
 
         docs.forEach(data => {
-            const student = studentData[courseId]?.find(s => s.dni === data.alumno_dni);
+            const aluDniSearch = String(data.alumno_dni || "").trim();
+            let student = studentData[courseId]?.find(s => String(s.dni).trim() === aluDniSearch || String(s.id).trim() === aluDniSearch);
+            
+            // Si no aparece en el curso actual, lo buscamos en TODOS los cursos (por si fue movido)
+            if (!student) {
+                for (let cid in studentData) {
+                    student = studentData[cid]?.find(s => String(s.dni).trim() === aluDniSearch || String(s.id).trim() === aluDniSearch);
+                    if (student) break;
+                }
+            }
+
             const stuName = student ? student.full_name : 'Alumno Desconocido';
             const tr = document.createElement('tr');
             tr.innerHTML = `
