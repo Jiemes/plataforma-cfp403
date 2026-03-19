@@ -966,14 +966,27 @@ async function loadPendingDeliveries(courseId = currentViewedCourse) {
             return;
         }
 
-        const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.semana - a.semana);
+        let allDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // FILTRADO DE DUPLICADOS: Si un alumno envió varias veces la misma semana, nos quedamos con la ÚLTIMA (timestamp más reciente)
+        const filteredDocsMap = new Map();
+        allDocs.forEach(d => {
+            const key = `${d.alumno_dni}_${d.semana}`;
+            const existing = filteredDocsMap.get(key);
+            if (!existing || new Date(d.timestamp || 0) > new Date(existing.timestamp || 0)) {
+                filteredDocsMap.set(key, d);
+            }
+        });
+
+        const docs = Array.from(filteredDocsMap.values()).sort((a, b) => b.semana - a.semana);
         tbody.innerHTML = '';
 
         docs.forEach(data => {
             const aluDniSearch = String(data.alumno_dni || "").trim();
+            // Buscamos en el curso actual
             let student = studentData[courseId]?.find(s => String(s.dni).trim() === aluDniSearch || String(s.id).trim() === aluDniSearch);
             
-            // Si no aparece en el curso actual, lo buscamos en TODOS los cursos (por si fue movido)
+            // Si no aparece en el curso actual, lo buscamos en TODOS los cursos (por si fue movido recientemente)
             if (!student) {
                 for (let cid in studentData) {
                     student = studentData[cid]?.find(s => String(s.dni).trim() === aluDniSearch || String(s.id).trim() === aluDniSearch);
@@ -982,6 +995,7 @@ async function loadPendingDeliveries(courseId = currentViewedCourse) {
             }
 
             const stuName = student ? student.full_name : 'Alumno Desconocido';
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${stuName}</td>
@@ -1209,7 +1223,56 @@ async function deleteCourse(id) {
     } catch (e) { cfpAlert("ERROR", e.message); }
 }
 
-// 5. HERRAMIENTAS DE MANTENIMIENTO ACADÉMICO v9.18.26
+// 5. HERRAMIENTAS DE MANTENIMIENTO ACADÉMICO v9.18.32
+async function checkDuplicates() {
+    const originalText = "BUSCAR DUPLICADOS (HABILIDADES)";
+    const btn = event.target;
+    btn.innerText = "⌛ Analizando padrones...";
+    btn.disabled = true;
+
+    try {
+        const report = [];
+        const courses = activeCourses.filter(c => c.nombre.toUpperCase().includes("HABILIDADES"));
+        
+        if (courses.length < 2) {
+            return cfpAlert("SISTEMA", "No se encontraron al menos 2 cursos de Habilidades para comparar.");
+        }
+
+        for (let i = 0; i < courses.length; i++) {
+            for (let j = i + 1; j < courses.length; j++) {
+                const c1 = courses[i];
+                const c2 = courses[j];
+                const s1 = studentData[c1.id] || [];
+                const s2 = studentData[c2.id] || [];
+
+                s1.forEach(alu1 => {
+                    const match = s2.find(alu2 => (String(alu2.dni).trim() === String(alu1.dni).trim()) || (String(alu2.email || "").toLowerCase() === String(alu1.email || "").toLowerCase()));
+                    if (match) {
+                        report.push({
+                            nombre: alu1.full_name,
+                            email: alu1.email,
+                            cursoA: c1.nombre,
+                            cursoB: c2.nombre
+                        });
+                    }
+                });
+            }
+        }
+
+        if (report.length === 0) {
+            cfpAlert("ÉXITO", "✅ No se encontraron alumnos duplicados entre los cursos de Habilidades.");
+        } else {
+            let listHtml = report.map(r => `<li style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;"><strong>${r.nombre}</strong><br><small>${r.email}</small><br><span style="color:#6366f1; font-size:0.75rem;">${r.cursoA}</span> ↔️ <span style="color:#10b981; font-size:0.75rem;">${r.cursoB}</span></li>`).join('');
+            cfpAlert("DUPLICADOS ENCONTRADOS", `<p>Se detectaron <strong>${report.length}</strong> alumnos repetidos:</p><ul style="text-align:left; max-height:300px; overflow-y:auto; font-size:0.9rem; margin-top:15px; padding-left:20px; line-height:1.4;">${listHtml}</ul>`);
+        }
+    } catch (e) {
+        cfpAlert("ERROR", "Error al buscar duplicados: " + e.message);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
 async function cleanupDisenoStudents() {
     if (!confirm("⚠️ ATENCIÓN: Esta acción removerá a los alumnos de 'Diseño y Marketing' que estén en el curso de 'Habilidades Digitales' genérico para dejarlos únicamente en el específico de Diseño. ¿Deseas continuar?")) return;
     
