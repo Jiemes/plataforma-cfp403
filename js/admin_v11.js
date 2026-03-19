@@ -877,7 +877,7 @@ function cfpAlert(title, message) {
     const modal = document.getElementById('cfp-alert');
     if (!modal) return alert(message);
     document.getElementById('alert-title').innerText = title;
-    document.getElementById('alert-message').innerText = message;
+    document.getElementById('alert-message').innerHTML = message;
     modal.classList.add('active');
 }
 
