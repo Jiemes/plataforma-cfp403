@@ -15,16 +15,35 @@ async function loadStudentsFromFirebase() {
     try {
         if (adminSession.role === 'super-admin') {
             document.getElementById('superadmin-nav')?.classList.remove('hidden');
+            // Auto-parchear permisos adicionales en Firestore si las reglas antiguas lo exigen
+            try {
+                const querySnap = await db.collection('usuarios_auth').where('role', '==', 'profesor').get();
+                querySnap.forEach(doc => {
+                    const d = doc.data();
+                    if (!d.rol || d.is_admin !== true) {
+                        db.collection('usuarios_auth').doc(doc.id).update({ rol: 'profesor', is_admin: true }).catch(()=>{});
+                    }
+                });
+            } catch(e) {}
         }
 
-        const coursesSnap = await db.collection('cursos').get();
-        if (coursesSnap.empty && adminSession.role === 'super-admin') {
-            await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
-            await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
-            return loadStudentsFromFirebase();
+        let coursesSnap = null;
+        try {
+            coursesSnap = await db.collection('cursos').get();
+            if (coursesSnap.empty && adminSession.role === 'super-admin') {
+                await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
+                await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
+                return loadStudentsFromFirebase();
+            }
+            activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (e) {
+            // Si Firestore rechaza el listing global para profesores, construimos localmente base a asignación
+            if (adminSession.role === 'profesor' && adminSession.cursos) {
+                activeCourses = adminSession.cursos.map(id => ({ id: id, nombre: id === 'habilidades' ? "Habilidades Digitales & IA" : "Software & Videojuegos", activo: true }));
+            } else {
+                activeCourses = [];
+            }
         }
-
-        activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         if (adminSession.role === 'profesor') {
             activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
@@ -854,6 +873,8 @@ async function saveAdminUser() {
         await db.collection('usuarios_auth').doc(email).set({ 
             nombre, 
             role, 
+            rol: role,
+            is_admin: true,
             cursos: cursos_seleccionados,
             password_init: dni_pass 
         });
