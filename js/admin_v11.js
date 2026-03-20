@@ -45,7 +45,11 @@ async function loadStudentsFromFirebase() {
         }
 
         refreshCounters();
-        if (!currentViewedCourse && activeCourses.length > 0) currentViewedCourse = activeCourses[0].id;
+        if (!currentViewedCourse && activeCourses.length > 0) {
+            currentViewedCourse = activeCourses[0].id;
+            currentClaseTab = activeCourses[0].id; 
+            currentForoId = activeCourses[0].id;
+        }
 
         updateDashboardView('global');
         if (currentViewedCourse) showTable(currentViewedCourse);
@@ -684,10 +688,17 @@ async function loadClaseConfig(courseId) {
         divInicio.className = 'clase-item-row card';
         divInicio.style = "margin-top:30px; border:2px solid #10b981;";
         divInicio.innerHTML = `
-            <strong>📚 Materiales de Inicio</strong>
+            <strong style="color:#059669; font-size:1rem;">📚 Materiales de Inicio (Bienvenidos)</strong>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:5px;">Configura aquí los links principales que los alumnos verán al entrar al curso.</p>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:15px;">
-                <input type="text" id="link-welcome" value="${matInicio.welcome || ''}" placeholder="Bienvenida" class="input-premium">
-                <input type="text" id="link-syllabus" value="${matInicio.syllabus || ''}" placeholder="Programa" class="input-premium">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">👋 Mensaje de Bienvenida (Video/Doc)</label>
+                    <input type="text" id="link-welcome" value="${matInicio.welcome || ''}" placeholder="URL Bienvenida" class="input-premium" style="width:100%;">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">📋 Programa del Curso (Contenidos)</label>
+                    <input type="text" id="link-syllabus" value="${matInicio.syllabus || ''}" placeholder="URL Programa" class="input-premium" style="width:100%;">
+                </div>
             </div>
             <button class="btn-primary" onclick="saveInicioManual()" style="margin-top:15px; width:100%; background:#10b981;">💾 GUARDAR INICIO</button>
         `;
