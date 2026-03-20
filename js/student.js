@@ -353,39 +353,37 @@ async function submitTask(semana) {
     const idMatch = rawUrl.match(/\/d\/(.+?)(\/|$)/) || rawUrl.match(/id=(.+?)(&|$)/);
     if (idMatch) fileId = idMatch[1];
 
-    if (fileId && typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
+    if (fileId) {
         try {
             if (btnSubmit) {
-                btnSubmit.innerText = "⏳ Validando link...";
+                btnSubmit.innerText = "⏳ Validando permisos...";
                 btnSubmit.disabled = true;
             }
 
-            const checkUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?key=${firebaseConfig.apiKey}&fields=id`;
+            // Usamos un proxy CORS gratuito y estable para simular cómo un visitante externo (el profesor) vería el archivo
+            const checkUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
             const checkRes = await fetch(checkUrl);
-            const checkData = await checkRes.json();
+            const proxyData = await checkRes.json();
             
             if (btnSubmit) {
                 btnSubmit.innerText = originalText;
                 btnSubmit.disabled = false;
             }
 
-            if (!checkRes.ok && checkData.error && checkData.error.errors && checkData.error.errors[0]) {
-                const reason = checkData.error.errors[0].reason;
-                // Si el archivo NO ENCONTRADO significa que es privado, lo rechazamos
-                if (reason === 'notFound' || reason === 'forbidden' || reason === 'fileNotFound') {
-                    return cfpAlert(
-                        "🔒 ERROR: EL ARCHIVO ES PRIVADO", 
-                        "El profesor no tiene permisos para abrir ni corregir tu archivo.\n\n👉 COMO SOLUCIONARLO:\n1. Ve a Google Drive y haz clic derecho en tu archivo.\n2. Pulsa en 'Compartir'.\n3. En 'Acceso general', cambia la opción 'Restringido' a 'Cualquier usuario que tenga el vínculo'.\n4. Verifica que diga 'Lector'.\n5. Vuelve a copiar el vínculo y pégalo aquí."
-                    );
-                }
+            // Si el código HTTP del contenido es error (ej: 404/401) o redirige al inicio de sesión de Google (ServiceLogin)
+            if (proxyData.status.http_code >= 400 || (proxyData.contents && (proxyData.contents.includes('ServiceLogin') || proxyData.contents.includes('Sign in')))) {
+                return cfpAlert(
+                    "🔒 ERROR: EL ARCHIVO ES PRIVADO", 
+                    "El profesor NO PUEDE VER tu archivo porque está configurado como Restringido.\n\n👉 COMO SOLUCIONARLO:\n1. Ve a tu Google Drive y haz clic derecho en el archivo.\n2. Presiona 'Compartir'.\n3. En 'Acceso general', presiona 'Restringido' y cámbialo a 'Cualquier usuario que tenga el vínculo'.\n4. Verifica que diga 'Lector'.\n5. Copia el nuevo vínculo, pégalo aquí y vuelve a enviar."
+                );
             }
         } catch (e) {
-            // Ignorar errores de red para no bloquear (ej. adblockers o sin internet)
+            // Ignorar errores locales de red (ej. CORS estricto del navegador, adblockers, o sin internet temporario)
             if (btnSubmit) {
                 btnSubmit.innerText = originalText;
                 btnSubmit.disabled = false;
             }
-            console.warn("Aviso: No se pudo verificar el permiso del archivo: ", e);
+            console.warn("Aviso: No se pudo verificar el permiso del archivo por bloqueo local: ", e);
         }
     }
 

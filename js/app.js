@@ -25,17 +25,27 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        // 0. ADMIN MAESTRO
-        if (email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') {
+        // 0. ADMIN MAESTRO Y EXCEPCIONES DIRECTAS
+        if ((email === 'sanchezjuanmanuel@abc.gob.ar' && rawPass === 'Perroloco2026') || email === 'germanmassa@abc.gob.ar') {
             try { 
                 await authFirebase.signInWithEmailAndPassword(email, rawPass); 
             } catch(err) { 
-                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials') {
+                if(err.code === 'auth/user-not-found') {
                     await authFirebase.createUserWithEmailAndPassword(email, rawPass); 
                 } else throw err; 
             }
-            const mainAdmin = { role: 'super-admin', nombre: 'Admin Maestro', cursos: 'all' };
-            await db.collection('usuarios_auth').doc(email).set(mainAdmin);
+            
+            let adminName = email === 'germanmassa@abc.gob.ar' ? 'Germán Massa (Maestro)' : 'Admin Maestro';
+            try {
+                const existing = await db.collection('usuarios_auth').doc(email).get();
+                if(existing.exists && existing.data().nombre) adminName = existing.data().nombre;
+            } catch(e){}
+
+            const mainAdmin = { role: 'super-admin', nombre: adminName, cursos: 'all' };
+            try {
+                await db.collection('usuarios_auth').doc(email).set(mainAdmin, { merge: true });
+            } catch(e){}
+            
             localStorage.setItem('admin_session', JSON.stringify(mainAdmin));
             window.location.href = 'admin.html';
             return;
