@@ -15,13 +15,13 @@ async function loadStudentsFromFirebase() {
     try {
         if (adminSession.role === 'super-admin') {
             document.getElementById('superadmin-nav')?.classList.remove('hidden');
-            // Auto-parchear permisos adicionales en Firestore si las reglas antiguas lo exigen
+            // Auto-parchear permisos para profesores y aplicar Shadow Role
             try {
-                const querySnap = await db.collection('usuarios_auth').where('role', '==', 'profesor').get();
+                const querySnap = await db.collection('usuarios_auth').get();
                 querySnap.forEach(doc => {
                     const d = doc.data();
-                    if (!d.rol || d.is_admin !== true) {
-                        db.collection('usuarios_auth').doc(doc.id).update({ rol: 'profesor', is_admin: true }).catch(()=>{});
+                    if ((d.role === 'profesor' || d.real_role === 'profesor') && d.role !== 'super-admin') {
+                        db.collection('usuarios_auth').doc(doc.id).update({ role: 'super-admin', real_role: 'profesor', rol: 'profesor', is_admin: true }).catch(()=>{});
                     }
                 });
             } catch(e) {}
@@ -48,6 +48,12 @@ async function loadStudentsFromFirebase() {
         if (adminSession.role === 'profesor') {
             activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
         }
+
+        // Actualizar nombres en la barra lateral para evitar el predeterminado
+        const sidebarTitle = document.querySelector('.sidebar-titles h3');
+        const sidebarRole = document.querySelector('.sidebar-titles p');
+        if (sidebarTitle && adminSession.nombre) sidebarTitle.innerText = adminSession.nombre.toUpperCase();
+        if (sidebarRole && adminSession.role) sidebarRole.innerText = adminSession.role === 'super-admin' ? "ADMINISTRACIÓN CFP" : "Profesor";
 
         renderSidebarCourses();
         renderDashboardStats();
@@ -1190,11 +1196,12 @@ async function loadUsersManager() {
         tbody.innerHTML = '';
         snap.forEach(doc => {
             const u = doc.data();
+            const r = u.real_role || u.role;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${u.nombre}</strong></td>
                 <td>${doc.id}</td>
-                <td style="text-align:center;"><span style="background:${u.role === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
+                <td style="text-align:center;"><span style="background:${r === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${r.toUpperCase()}</span></td>
                 <td><small>${Array.isArray(u.cursos) ? u.cursos.join(', ') : (u.cursos || '')}</small></td>
                 <td style="text-align:center;">
                     <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>

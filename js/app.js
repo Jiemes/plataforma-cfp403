@@ -58,8 +58,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const adminDoc = await db.collection('usuarios_auth').doc(email).get();
             if (adminDoc.exists) {
                 const adminData = adminDoc.data();
+                const userRole = adminData.real_role || adminData.role; // Respetar rol real visual
                 localStorage.setItem('admin_session', JSON.stringify({
-                    email: email, role: adminData.role, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
+                    email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
                 }));
                 window.location.href = 'admin.html';
                 return;
@@ -81,8 +82,12 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                             await authFirebase.signInWithEmailAndPassword(email, rawPass);
                         }
                         await db.collection('usuarios_auth').doc(email).update({ password_init: firebase.firestore.FieldValue.delete() });
+                        const aDataCurrent = await db.collection('usuarios_auth').doc(email).get();
+                        const finalAData = aDataCurrent.exists ? aDataCurrent.data() : aData;
+                        
+                        const userRole = finalAData.real_role || finalAData.role;
                         localStorage.setItem('admin_session', JSON.stringify({
-                            email: email, role: aData.role, nombre: aData.nombre || 'Administrador', cursos: aData.cursos || []
+                            email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.cursos || []
                         }));
                         window.location.href = 'admin.html';
                         return;
