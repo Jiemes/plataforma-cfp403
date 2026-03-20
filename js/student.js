@@ -224,7 +224,11 @@ async function loadContent() {
                             <p>💡 <strong>Ayuda:</strong> Sube tu archivo a Google Drive, asegúrate de que el acceso sea público y pega el link aquí.</p>
                         </div>
 
-                        <button id="btn-submit-${i}" class="btn-submit-task" onclick="submitTask(${i})">
+                        <button id="btn-submit-${i}" 
+                                class="btn-submit-task" 
+                                onclick="submitTask(${i})"
+                                ${entrega && entrega.archivo_url ? '' : 'disabled'}
+                        >
                             ${entrega ? 'ACTUALIZAR ACTIVIDAD' : 'ENVIAR ACTIVIDAD'}
                         </button>
                     </div>
@@ -539,76 +543,91 @@ async function saveNewPassword() {
     }
 }
 
-// --- SISTEMA DE VALIDACIÓN DE DRIVE (v9.18.49) ---
+// --- SISTEMA DE VALIDACIÓN DE DRIVE (v9.18.50) ---
+let driveValidationTimers = {};
+
 async function validateLinkLive(semana, url) {
     const statusIcon = document.getElementById(`status-icon-${semana}`);
     const banner = document.getElementById(`validation-banner-${semana}`);
     const btn = document.getElementById(`btn-submit-${semana}`);
 
+    // Estado Inmediato: Bloquear botón mientras se escribe o verifica
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+    }
+
     if (!url) {
         statusIcon.innerHTML = '';
         if (banner) banner.classList.add('hidden');
-        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        if (btn) { btn.disabled = true; } 
         return;
     }
 
-    if (!url.toLowerCase().includes('google.com')) {
-        statusIcon.innerHTML = '❌';
-        if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
-        return;
-    }
-
-    // EXTRAER ID
-    const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
-    const fileId = idMatch ? idMatch[1].split(/[?&]/)[0] : null;
-
-    if (!fileId) {
-        statusIcon.innerHTML = '⚠️';
-        if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
-        return;
-    }
-
-    // EL TRUCO DE LA MINIATURA (THE THUMBNAIL TRICK)
-    statusIcon.innerHTML = '⏳';
-    
-    // Usamos una imagen para verificar si Drive nos deja ver la miniatura (solo si es público)
-    const img = new Image();
-    img.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w20`;
-    
-    img.onload = () => {
-        statusIcon.innerHTML = '✅';
-        if (banner) banner.classList.add('hidden');
-        if (btn) {
-            btn.style.opacity = '1';
-            btn.disabled = false;
-        }
-    };
-
-    img.onerror = () => {
-        statusIcon.innerHTML = '🔒';
-        if (btn) {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-        }
+    // Debounce de 500ms para evitar spam de validaciones
+    clearTimeout(driveValidationTimers[semana]);
+    driveValidationTimers[semana] = setTimeout(async () => {
         
-        if (banner) {
-            banner.innerHTML = `
-                <div style="background:#fff7ed; border:1px solid #fed7aa; padding:15px; border-radius:12px; margin-top:10px; font-size:0.85rem; color:#9a3412;">
-                    <strong style="display:block; margin-bottom:10px; font-size:0.9rem;">⚠️ ¡Atención! Tu archivo no es accesible.</strong>
-                    El sistema detectó que tu enlace de Google Drive está en modo Privado. Para que el profesor pueda corregir tu actividad, sigue estos pasos:
-                    <ol style="margin:10px 0; padding-left:20px;">
-                        <li>Abre tu archivo en Google Drive.</li>
-                        <li>Haz clic en el botón azul <b>"Compartir"</b> (arriba a la derecha).</li>
-                        <li>En "Acceso general", cambia "Restringido" por <b>"Cualquier persona con el enlace"</b>.</li>
-                        <li>Asegúrate de que el rol sea <b>"Lector"</b>.</li>
-                        <li>Haz clic en <b>"Copiar enlace"</b> y vuelve a pegarlo aquí.</li>
-                    </ol>
-                    <small><i>Nota: El sistema se actualizará automáticamente cuando pegues el enlace correcto.</i></small>
-                </div>
-            `;
-            banner.classList.remove('hidden');
+        if (!url.toLowerCase().includes('google.com')) {
+            statusIcon.innerHTML = '❌';
+            return;
         }
-    };
+
+        // EXTRAER ID
+        const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
+        const fileId = idMatch ? idMatch[1].split(/[?&]/)[0] : null;
+
+        if (!fileId) {
+            statusIcon.innerHTML = '⚠️';
+            return;
+        }
+
+        // isChecking = true
+        statusIcon.innerHTML = '<span class="spinner-verify">⏳</span> Verificando permisos...';
+        
+        const img = new Image();
+        img.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w20&t=${Date.now()}`;
+        
+        img.onload = () => {
+            // isValidLink = true, isChecking = false
+            statusIcon.innerHTML = '✅ <span style="color:#10b981; font-size:0.8rem;">Link Correcto</span>';
+            if (banner) banner.classList.add('hidden');
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
+                btn.style.background = '#0ea5e9'; // Color activo
+            }
+        };
+
+        img.onerror = () => {
+            // isValidLink = false, isChecking = false
+            statusIcon.innerHTML = '🔒 <span style="color:#ef4444; font-size:0.8rem;">Acceso Restringido</span>';
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+            
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="background:#fff7ed; border:1px solid #fed7aa; padding:15px; border-radius:12px; margin-top:10px; font-size:0.85rem; color:#9a3412; animation: fadeIn 0.3s ease;">
+                        <strong style="display:block; margin-bottom:10px; font-size:0.9rem;">⚠️ ¡Atención! Tu archivo no es accesible.</strong>
+                        El sistema detectó que tu enlace de Google Drive está en modo Privado. Para que el profesor pueda corregir tu actividad, sigue estos pasos:
+                        <ol style="margin:10px 0; padding-left:20px;">
+                            <li>Abre tu archivo en Google Drive.</li>
+                            <li>Haz clic en el botón azul <b>"Compartir"</b> (arriba a la derecha).</li>
+                            <li>En "Acceso general", cambia "Restringido" por <b>"Cualquier persona con el enlace"</b>.</li>
+                            <li>Asegúrate de que el rol sea <b>"Lector"</b>.</li>
+                            <li>Haz clic en <b>"Copiar enlace"</b> y vuelve a pegarlo aquí.</li>
+                        </ol>
+                    </div>
+                `;
+                banner.classList.remove('hidden');
+            }
+        };
+    }, 500);
 }
 
 initStudentDashboard();
