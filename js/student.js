@@ -371,10 +371,19 @@ async function submitTask(semana) {
             }
 
             // Si el código HTTP del contenido es error (ej: 404/401) o redirige al inicio de sesión de Google (ServiceLogin)
-            if (proxyData.status.http_code >= 400 || (proxyData.contents && (proxyData.contents.includes('ServiceLogin') || proxyData.contents.includes('Sign in')))) {
+            const content = (proxyData.contents || '').toLowerCase();
+            const markers = [
+                'servicelogin', 'sign in', 'iniciar sesión', 'solicitar acceso', 
+                'you need access', 'necesitas acceso', 'acceso denegado',
+                'document-root show-error' // Marcador CSS de Drive privado
+            ];
+
+            const isForbidden = proxyData.status.http_code >= 400 || markers.some(m => content.includes(m));
+
+            if (isForbidden) {
                 return cfpAlert(
                     "🔒 ERROR: EL ARCHIVO ES PRIVADO", 
-                    "El profesor NO PUEDE VER tu archivo porque está configurado como Restringido.\n\n👉 COMO SOLUCIONARLO:\n1. Ve a tu Google Drive y haz clic derecho en el archivo.\n2. Presiona 'Compartir'.\n3. En 'Acceso general', presiona 'Restringido' y cámbialo a 'Cualquier usuario que tenga el vínculo'.\n4. Verifica que diga 'Lector'.\n5. Copia el nuevo vínculo, pégalo aquí y vuelve a enviar."
+                    "El profesor NO PUEDE VER tu archivo porque está configurado como Restringido o requiere permisos especiales.<br><br>👉 <b>COMO SOLUCIONARLO (en 30 segundos):</b><br>1. Ve a tu Google Drive y haz clic derecho en el archivo.<br>2. Presiona <b>'Compartir'</b>.<br>3. En 'Acceso general', cámbialo a <b>'Cualquier usuario que tenga el vínculo'</b>.<br>4. Verifica que diga <b>'Lector'</b>.<br>5. Copia el nuevo vínculo, pégalo aquí y vuelve a enviar."
                 );
             }
         } catch (e) {
