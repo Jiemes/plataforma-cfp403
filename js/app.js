@@ -58,7 +58,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const adminDoc = await db.collection('usuarios_auth').doc(email).get();
             if (adminDoc.exists) {
                 const adminData = adminDoc.data();
-                const userRole = adminData.ui_role || (adminData.role === 'super-admin' && adminData.cursos === 'all' ? 'super-admin' : 'profesor');
+                const userRole = adminData.role || 'profesor'; 
                 localStorage.setItem('admin_session', JSON.stringify({
                     email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
                 }));
@@ -85,7 +85,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                         const aDataCurrent = await db.collection('usuarios_auth').doc(email).get();
                         const finalAData = aDataCurrent.exists ? aDataCurrent.data() : aData;
                         
-                        const userRole = finalAData.ui_role || (finalAData.role === 'super-admin' && finalAData.cursos === 'all' ? 'super-admin' : 'profesor');
+                        const userRole = finalAData.role || 'profesor';
                         localStorage.setItem('admin_session', JSON.stringify({
                             email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.cursos || []
                         }));

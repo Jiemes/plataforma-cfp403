@@ -19,24 +19,26 @@ async function loadStudentsFromFirebase() {
 
         let coursesSnap = null;
         try {
-            coursesSnap = await db.collection('cursos').get();
-            if (coursesSnap.empty && adminSession.role === 'super-admin') {
-                await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
-                await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
-                return loadStudentsFromFirebase();
+            if (adminSession.role === 'super-admin') {
+                coursesSnap = await db.collection('cursos').get();
+                if (coursesSnap.empty) {
+                    await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
+                    await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
+                    return loadStudentsFromFirebase();
+                }
+                activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } else if (adminSession.role === 'profesor' && adminSession.cursos) {
+                activeCourses = [];
+                for (let cid of adminSession.cursos) {
+                    const cDoc = await db.collection('cursos').doc(cid).get();
+                    if (cDoc.exists) activeCourses.push({ id: cDoc.id, ...cDoc.data() });
+                }
             }
-            activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (e) {
-            // Si Firestore rechaza el listing global para profesores, construimos localmente base a asignación
+            console.error("Error al cargar cursos:", e);
             if (adminSession.role === 'profesor' && adminSession.cursos) {
                 activeCourses = adminSession.cursos.map(id => ({ id: id, nombre: id === 'habilidades' ? "Habilidades Digitales & IA" : "Software & Videojuegos", activo: true }));
-            } else {
-                activeCourses = [];
             }
-        }
-
-        if (adminSession.role === 'profesor') {
-            activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
         }
 
         // Actualizar nombres en la barra lateral e inicio para evitar el predeterminado
@@ -869,14 +871,12 @@ async function saveAdminUser() {
             }
         }
 
-        const backendRole = 'super-admin';
         await db.collection('usuarios_auth').doc(email).set({ 
             nombre, 
-            role: backendRole, 
+            role: role, 
             is_admin: true,
             cursos: cursos_seleccionados,
-            password_init: dni_pass,
-            ui_role: role 
+            password_init: dni_pass
         });
         
         cfpAlert("ÉXITO", "✅ Usuario/Docente creado y registrado correctamente.");
@@ -1190,7 +1190,7 @@ async function loadUsersManager() {
         tbody.innerHTML = '';
         snap.forEach(doc => {
             const u = doc.data();
-            const r = u.ui_role || 'super-admin';
+            const r = u.role || 'profesor';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${u.nombre}</strong></td>
