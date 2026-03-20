@@ -49,11 +49,14 @@ async function loadStudentsFromFirebase() {
             activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
         }
 
-        // Actualizar nombres en la barra lateral para evitar el predeterminado
+        // Actualizar nombres en la barra lateral e inicio para evitar el predeterminado
+        const contentHeader = document.querySelector('header.content-header h2');
+        if (contentHeader && adminSession.nombre) contentHeader.innerText = `👋 Hola, ${adminSession.nombre.toUpperCase()}`;
+
         const sidebarTitle = document.querySelector('.sidebar-titles h3');
         const sidebarRole = document.querySelector('.sidebar-titles p');
         if (sidebarTitle && adminSession.nombre) sidebarTitle.innerText = adminSession.nombre.toUpperCase();
-        if (sidebarRole && adminSession.role) sidebarRole.innerText = adminSession.role === 'super-admin' ? "ADMINISTRACIÓN CFP" : "Profesor";
+        if (sidebarRole && adminSession.role) sidebarRole.innerText = adminSession.role === 'super-admin' ? "ADMINISTRACIÓN CFP" : "Profesor Designado";
 
         renderSidebarCourses();
         renderDashboardStats();
