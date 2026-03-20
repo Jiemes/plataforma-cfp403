@@ -1,4 +1,4 @@
-// Administración CFP 403 // Core Admin Logic v9.18.3 (RBAC & Multi-Course Logistics)
+﻿// Administraci├│n CFP 403 // Core Admin Logic v9.18.3 (RBAC & Multi-Course Logistics)
 let adminSession = JSON.parse(localStorage.getItem('admin_session'));
 if (!adminSession) { window.location.href = 'index.html'; }
 
@@ -17,36 +17,18 @@ async function loadStudentsFromFirebase() {
             document.getElementById('superadmin-nav')?.classList.remove('hidden');
         }
 
-        let coursesSnap = null;
-        try {
-            coursesSnap = await db.collection('cursos').get();
-            if (coursesSnap.empty && adminSession.role === 'super-admin') {
-                await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
-                await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
-                return loadStudentsFromFirebase();
-            }
-            activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } catch (e) {
-            // Si Firestore rechaza el listing global para profesores, construimos localmente base a asignación
-            if (adminSession.role === 'profesor' && adminSession.cursos) {
-                activeCourses = adminSession.cursos.map(id => ({ id: id, nombre: id === 'habilidades' ? "Habilidades Digitales & IA" : "Software & Videojuegos", activo: true }));
-            } else {
-                activeCourses = [];
-            }
+        const coursesSnap = await db.collection('cursos').get();
+        if (coursesSnap.empty && adminSession.role === 'super-admin') {
+            await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
+            await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
+            return loadStudentsFromFirebase();
         }
+
+        activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         if (adminSession.role === 'profesor') {
             activeCourses = activeCourses.filter(c => (adminSession.cursos || []).includes(c.id));
         }
-
-        // Actualizar nombres en la barra lateral e inicio para evitar el predeterminado
-        const contentHeader = document.querySelector('header.content-header h2');
-        if (contentHeader && adminSession.nombre) contentHeader.innerText = `👋 Hola, ${adminSession.nombre.toUpperCase()}`;
-
-        const sidebarTitle = document.querySelector('.sidebar-titles h3');
-        const sidebarRole = document.querySelector('.sidebar-titles p');
-        if (sidebarTitle && adminSession.nombre) sidebarTitle.innerText = adminSession.nombre.toUpperCase();
-        if (sidebarRole && adminSession.role) sidebarRole.innerText = adminSession.role === 'super-admin' ? "ADMINISTRACIÓN CFP" : "Profesor Designado";
 
         renderSidebarCourses();
         renderDashboardStats();
@@ -73,7 +55,7 @@ async function loadStudentsFromFirebase() {
         if (currentViewedCourse) showTable(currentViewedCourse);
         initNotifications();
     } catch (err) {
-        console.error("Error crítico carga inicial:", err);
+        console.error("Error cr├¡tico carga inicial:", err);
     }
 }
 
@@ -87,7 +69,7 @@ function renderSidebarCourses() {
         a.className = "nav-link";
         a.dataset.section = c.id;
         // Agregamos flex-grow:1 al texto para que el badge se vaya a la derecha
-        a.innerHTML = `📓 <span class="nav-link-text" style="margin-left:10px; flex-grow:1;">${c.nombre}</span> <span id="count-${c.id}" class="badge">0</span>`;
+        a.innerHTML = `­ƒôô <span class="nav-link-text" style="margin-left:10px; flex-grow:1;">${c.nombre}</span> <span id="count-${c.id}" class="badge">0</span>`;
         a.onclick = (e) => {
             e.preventDefault();
             switchCurrentCourse(c.id);
@@ -225,13 +207,13 @@ function updateDashboardView(type) {
     if (!title) return;
     let data = [];
     if (type === 'global') {
-        title.innerText = "Análisis Global de Matrícula";
+        title.innerText = "An├ílisis Global de Matr├¡cula";
         activeCourses.forEach(c => {
             data = [...data, ...(studentData[c.id] || [])];
         });
     } else {
         const curso = activeCourses.find(c => c.id === type);
-        title.innerText = curso ? curso.nombre : "Análisis por Curso";
+        title.innerText = curso ? curso.nombre : "An├ílisis por Curso";
         data = studentData[type] || [];
     }
     renderCharts(data);
@@ -264,10 +246,10 @@ function renderCharts(all) {
         options: opt
     });
 
-    const ages = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0, 'Erróneo': 0 };
+    const ages = { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0, 'Err├│neo': 0 };
     all.forEach(s => {
         let a = parseInt(s.edad);
-        if (isNaN(a)) ages['Erróneo']++;
+        if (isNaN(a)) ages['Err├│neo']++;
         else if (a <= 25) ages['18-25']++;
         else if (a <= 35) ages['26-35']++;
         else if (a <= 45) ages['36-45']++;
@@ -318,10 +300,10 @@ async function showTable(course) {
                 <td>
                     <div style="display:flex; gap:5px;">
                         <button class="btn-correct ${pend.length > 0 ? 'alert' : ''}" style="white-space:nowrap; flex-grow:1;" onclick="openCorrectionView('${s.dni}', '${s.full_name}')">
-                            ${pend.length > 0 ? '🔔 CORREGIR' : '📂 ENTREGAS'}
+                            ${pend.length > 0 ? '­ƒöö CORREGIR' : '­ƒôé ENTREGAS'}
                         </button>
-                        <button class="btn-primary-sm" onclick="openStudentModal('${s.dni}')" style="background:#f1f5f9; border-color:#e2e8f0; color:#1e293b; padding:0 10px;">✏️</button>
-                        <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">🗑️</button>
+                        <button class="btn-primary-sm" onclick="openStudentModal('${s.dni}')" style="background:#f1f5f9; border-color:#e2e8f0; color:#1e293b; padding:0 10px;">Ô£Å´©Å</button>
+                        <button class="btn-icon" onclick="deleteStudent('${course}', '${s.dni}')">­ƒùæ´©Å</button>
                     </div>
                 </td>
             `;
@@ -330,7 +312,7 @@ async function showTable(course) {
     } catch (err) { console.error(err); }
 }
 
-// GESTIÓN MANUAL DE ALUMNOS
+// GESTI├ôN MANUAL DE ALUMNOS
 let editingDni = null;
 async function openStudentModal(dni = null) {
     editingDni = dni;
@@ -369,7 +351,7 @@ function closeStudentModal() {
 async function saveStudent() {
     const name = document.getElementById('stu-name').value.trim();
     const dni = document.getElementById('stu-dni').value.trim();
-    // Normalizamos email a minúsculas para evitar errores en login
+    // Normalizamos email a min├║sculas para evitar errores en login
     const email = document.getElementById('stu-email').value.trim().toLowerCase();
     const tel = document.getElementById('stu-tel').value.trim();
     const age = document.getElementById('stu-age').value.trim();
@@ -389,13 +371,13 @@ async function saveStudent() {
 
         if (editingDni) {
             await db.collection(coll).doc(dni).update(data);
-            cfpAlert("ÉXITO", "✅ Alumno actualizado.");
+            cfpAlert("├ëXITO", "Ô£à Alumno actualizado.");
         } else {
             const check = await db.collection(coll).doc(dni).get();
             if (check.exists) return cfpAlert("ERROR", "El alumno con ese DNI ya existe.");
 
             await db.collection(coll).doc(dni).set(data);
-            cfpAlert("SISTEMA", "🚀 Alumno agregado con éxito.");
+            cfpAlert("SISTEMA", "­ƒÜÇ Alumno agregado con ├®xito.");
         }
 
         closeStudentModal();
@@ -406,10 +388,10 @@ async function saveStudent() {
 }
 
 async function deleteStudent(course, dni) {
-    if (!confirm(`¿Estás seguro de eliminar permanentemente al alumno con DNI ${dni}?`)) return;
+    if (!confirm(`┬┐Est├ís seguro de eliminar permanentemente al alumno con DNI ${dni}?`)) return;
     try {
         await db.collection(`alumnos_${course}`).doc(dni).delete();
-        cfpAlert("ÉXITO", "Alumno eliminado correctamente.");
+        cfpAlert("├ëXITO", "Alumno eliminado correctamente.");
         loadStudentsFromFirebase();
     } catch (err) {
         cfpAlert("ERROR", "Error al eliminar alumno: " + err.message);
@@ -417,7 +399,7 @@ async function deleteStudent(course, dni) {
 }
 
 async function deleteCourseData() {
-    if (!confirm(`🚨 ¿ESTÁS ABSOLUTAMENTE SEGURO de vaciar TODA la lista de alumnos inscriptos en este curso?\n\n¡Esta acción no se puede deshacer!`)) return;
+    if (!confirm(`­ƒÜ¿ ┬┐EST├üS ABSOLUTAMENTE SEGURO de vaciar TODA la lista de alumnos inscriptos en este curso?\n\n┬íEsta acci├│n no se puede deshacer!`)) return;
     try {
         const coll = `alumnos_${currentViewedCourse}`;
         const snap = await db.collection(coll).get();
@@ -429,7 +411,7 @@ async function deleteCourseData() {
             batchCount++;
         });
 
-        if (batchCount === 0) return cfpAlert("AVISO", "La lista ya se encuentra vacía.");
+        if (batchCount === 0) return cfpAlert("AVISO", "La lista ya se encuentra vac├¡a.");
 
         await batch.commit();
         cfpAlert("SISTEMA", "Lista de alumnos vaciada de manera definitiva.");
@@ -438,7 +420,7 @@ async function deleteCourseData() {
 }
 
 async function resetDeliveriesOnly() {
-    if (!confirm(`🚨 ¿Estás seguro de ELIMINAR TODAS LAS ENTREGAS y comentarios de los alumnos de este curso?`)) return;
+    if (!confirm(`­ƒÜ¿ ┬┐Est├ís seguro de ELIMINAR TODAS LAS ENTREGAS y comentarios de los alumnos de este curso?`)) return;
     try {
         const snap = await db.collection("entregas").where("curso", "==", currentViewedCourse).get();
         if (snap.empty) return cfpAlert("AVISO", "No hay entregas para reiniciar en este curso.");
@@ -461,7 +443,7 @@ async function resetDeliveriesOnly() {
 
         for (let b of chunks) await b.commit();
 
-        cfpAlert("ÉXITO", `Se reiniciaron las entregas con éxito.`);
+        cfpAlert("├ëXITO", `Se reiniciaron las entregas con ├®xito.`);
         loadStudentsFromFirebase();
     } catch (e) {
         cfpAlert("ERROR", "Hubo un fallo al tratar de limpiar las tareas: " + e.message);
@@ -489,7 +471,7 @@ async function downloadCourseExcel() {
                 "ALUMNO": s.full_name,
                 "DNI": s.dni,
                 "EMAIL": s.email,
-                "TELÉFONO": s.telefono || '---',
+                "TEL├ëFONO": s.telefono || '---',
                 "EDAD": s.edad,
                 "ENTREGAS": `${corr.length} / ${weeksCount}`,
                 "PROMEDIO": prom
@@ -533,17 +515,17 @@ async function openCorrectionView(dni, name) {
             .get();
 
         const docs = snap.docs.sort((a, b) => b.data().semana - a.data().semana);
-        listCont.innerHTML = docs.length === 0 ? '<p style="font-size:0.8rem; color:#64748b;">Sin entregas aún.</p>' : '';
+        listCont.innerHTML = docs.length === 0 ? '<p style="font-size:0.8rem; color:#64748b;">Sin entregas a├║n.</p>' : '';
 
         docs.forEach(doc => {
             const data = doc.data();
             const btn = document.createElement('button');
             btn.className = 'btn-activity';
 
-            let statusText = '⌛ Pendiente';
+            let statusText = 'Ôîø Pendiente';
             if (data.estado === 'Calificado') {
                 const notaNum = parseFloat(data.nota);
-                statusText = `Calificado: ${notaNum} ${notaNum >= 70 ? '✅' : '❌'}`;
+                statusText = `Calificado: ${notaNum} ${notaNum >= 70 ? 'Ô£à' : 'ÔØî'}`;
             }
 
             btn.innerHTML = `
@@ -591,7 +573,7 @@ async function saveCorrectionGrade() {
     const grade = parseInt(gradeVal);
 
     if (isNaN(grade) || grade < 0 || grade > 100) {
-        return cfpAlert("ERROR", "Por favor, ingresa una nota válida entre 0 y 100.");
+        return cfpAlert("ERROR", "Por favor, ingresa una nota v├ílida entre 0 y 100.");
     }
 
     try {
@@ -602,7 +584,7 @@ async function saveCorrectionGrade() {
             fecha_calificacion: new Date().toISOString()
         });
 
-        cfpAlert("ÉXITO", grade >= 70 ? "🚀 Actividad Aprobada (" + grade + ")" : "⚠️ Nota guardada (" + grade + ").");
+        cfpAlert("├ëXITO", grade >= 70 ? "­ƒÜÇ Actividad Aprobada (" + grade + ")" : "ÔÜá´©Å Nota guardada (" + grade + ").");
 
         const studentName = document.getElementById('correction-student-name').innerText;
         openCorrectionView(currentCorrectionData.dni || '', studentName);
@@ -618,13 +600,13 @@ function backToTable() {
 }
 
 async function deleteStudent(course, dni) {
-    if (!confirm("¿Eliminar alumno?")) return;
+    if (!confirm("┬┐Eliminar alumno?")) return;
     const coll = `alumnos_${course}`;
     await db.collection(coll).doc(dni).delete();
     await loadStudentsFromFirebase();
 }
 
-// GESTIÓN DE CLASES
+// GESTI├ôN DE CLASES
 function loadClasesAdmin() {
     renderClaseTabs();
     if (!currentClaseTab && activeCourses.length > 0) {
@@ -640,7 +622,7 @@ function loadClasesAdmin() {
 async function loadClaseConfig(courseId) {
     const cont = document.getElementById('clases-list-container');
     if (!cont) return;
-    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">⌛ Sincronizando materiales...</p>';
+    cont.innerHTML = '<p class="loader" style="text-align:center; padding:20px;">Ôîø Sincronizando materiales...</p>';
 
     try {
         const doc = await db.collection('config_cursos').doc(courseId).get();
@@ -653,7 +635,7 @@ async function loadClaseConfig(courseId) {
         cont.innerHTML = `<h3 style="margin-bottom:15px; text-align:center; font-size:1.1rem;">Cronograma: <span style="color:var(--primary-color);">${courseObj?.nombre || 'CURSO'}</span></h3>`;
 
         const addBtn = document.createElement('button');
-        addBtn.innerText = "➕ Agregar Nueva Semana";
+        addBtn.innerText = "Ô×ò Agregar Nueva Semana";
         addBtn.className = "btn-secondary";
         addBtn.style = "width:100%; margin-bottom:20px; padding:10px; border:2px dashed var(--primary-color); color:var(--primary-color); font-weight:700;";
         addBtn.onclick = async () => {
@@ -682,20 +664,20 @@ async function loadClaseConfig(courseId) {
                     <strong style="font-size:1rem;">Semana ${i}</strong>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <input type="date" id="date-sem-${i}" value="${mat.fecha || ''}" class="input-premium" style="width:140px;">
-                        <button class="btn-icon" onclick="deleteWeek(${i})" style="color:#ef4444;">🗑️</button>
+                        <button class="btn-icon" onclick="deleteWeek(${i})" style="color:#ef4444;">­ƒùæ´©Å</button>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div>
-                        <label>📖 Link Clase</label>
+                        <label>­ƒôû Link Clase</label>
                         <input type="text" id="link-clase-${i}" value="${mat.clase || ''}" class="input-premium" style="width:100%;">
                     </div>
                     <div>
-                        <label>🛠️ Link Actividad</label>
+                        <label>­ƒøá´©Å Link Actividad</label>
                         <input type="text" id="link-act-${i}" value="${mat.actividad || ''}" class="input-premium" style="width:100%;">
                     </div>
                 </div>
-                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:15px; width:100%;">💾 GUARDAR SEMANA ${i}</button>
+                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:15px; width:100%;">­ƒÆ¥ GUARDAR SEMANA ${i}</button>
             `;
             cont.appendChild(div);
         });
@@ -706,19 +688,19 @@ async function loadClaseConfig(courseId) {
         divInicio.className = 'clase-item-row card';
         divInicio.style = "margin-top:30px; border:2px solid #10b981;";
         divInicio.innerHTML = `
-            <strong style="color:#059669; font-size:1rem;">📚 Materiales de Inicio (Bienvenidos)</strong>
-            <p style="font-size:0.8rem; color:#64748b; margin-top:5px;">Configura aquí los links principales que los alumnos verán al entrar al curso.</p>
+            <strong style="color:#059669; font-size:1rem;">­ƒôÜ Materiales de Inicio (Bienvenidos)</strong>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:5px;">Configura aqu├¡ los links principales que los alumnos ver├ín al entrar al curso.</p>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:15px;">
                 <div>
-                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">👋 Mensaje de Bienvenida (Video/Doc)</label>
+                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">­ƒæï Mensaje de Bienvenida (Video/Doc)</label>
                     <input type="text" id="link-welcome" value="${matInicio.welcome || ''}" placeholder="URL Bienvenida" class="input-premium" style="width:100%;">
                 </div>
                 <div>
-                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">📋 Programa del Curso (Contenidos)</label>
+                    <label style="font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">­ƒôï Programa del Curso (Contenidos)</label>
                     <input type="text" id="link-syllabus" value="${matInicio.syllabus || ''}" placeholder="URL Programa" class="input-premium" style="width:100%;">
                 </div>
             </div>
-            <button class="btn-primary" onclick="saveInicioManual()" style="margin-top:15px; width:100%; background:#10b981;">💾 GUARDAR INICIO</button>
+            <button class="btn-primary" onclick="saveInicioManual()" style="margin-top:15px; width:100%; background:#10b981;">­ƒÆ¥ GUARDAR INICIO</button>
         `;
         cont.appendChild(divInicio);
 
@@ -735,7 +717,7 @@ async function saveInicioManual() {
                 inicio: { welcome: welcome, syllabus: syllabus } 
             } 
         }, { merge: true });
-        cfpAlert("ÉXITO", "✅ Datos de inicio guardados.");
+        cfpAlert("├ëXITO", "Ô£à Datos de inicio guardados.");
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
 }
@@ -753,13 +735,13 @@ async function saveLinksManual(sem) {
         data.materiales[`sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
         
         await ref.set(data, { merge: true });
-        cfpAlert("ÉXITO", `✅ Semana ${sem} guardada.`);
+        cfpAlert("├ëXITO", `Ô£à Semana ${sem} guardada.`);
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
 }
 
 async function deleteWeek(num) {
-    if (!confirm(`¿Borrar Semana ${num}?`)) return;
+    if (!confirm(`┬┐Borrar Semana ${num}?`)) return;
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
         const doc = await ref.get();
@@ -782,7 +764,7 @@ function initNotifications() {
     });
 }
 
-// BÚSQUEDA Y PROCESO EXCEL
+// B├ÜSQUEDA Y PROCESO EXCEL
 async function processExcel(file, type) {
     if (!file) return;
     const reader = new FileReader();
@@ -814,31 +796,31 @@ async function processExcel(file, type) {
                     dni: dni,
                     email: String(getVal(['EMAIL', 'CORREO']) || '').trim().toLowerCase(),
                     full_name: full_name,
-                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                    telefono: String(getVal(['TEL├ëFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
                     nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
-                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACI├ôN']) || '').trim(),
                     busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
-                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
-                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                    sexo: String(getVal(['SEXO', 'G├ëNERO']) || '').trim(),
+                    edad: String(getVal(['EDAD', 'A├æOS']) || '').trim(),
                     nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
                     password: dni.slice(-4)
                 };
             }).filter(s => s.dni.length > 5);
 
-            if (trans.length === 0) return cfpAlert("ERROR", "No se encontraron datos válidos.");
+            if (trans.length === 0) return cfpAlert("ERROR", "No se encontraron datos v├ílidos.");
 
             const batch = db.batch();
             const coll = `alumnos_${type}`;
             trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
             await batch.commit();
-            cfpAlert("ÉXITO", "✅ Importación exitosa de " + trans.length + " alumnos.");
+            cfpAlert("├ëXITO", "Ô£à Importaci├│n exitosa de " + trans.length + " alumnos.");
             loadStudentsFromFirebase();
         } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
     };
     reader.readAsArrayBuffer(file);
 }
 
-// GESTIÓN DE CURSOS Y USUARIOS
+// GESTI├ôN DE CURSOS Y USUARIOS
 async function saveAdminUser() {
     const email = document.getElementById('adm-email').value.trim().toLowerCase();
     const nombre = document.getElementById('adm-name').value.trim();
@@ -869,17 +851,14 @@ async function saveAdminUser() {
             }
         }
 
-        const backendRole = 'super-admin';
         await db.collection('usuarios_auth').doc(email).set({ 
             nombre, 
-            role: backendRole, 
-            is_admin: true,
+            role, 
             cursos: cursos_seleccionados,
-            password_init: dni_pass,
-            ui_role: role 
+            password_init: dni_pass 
         });
         
-        cfpAlert("ÉXITO", "✅ Usuario/Docente creado y registrado correctamente.");
+        cfpAlert("├ëXITO", "Ô£à Usuario/Docente creado y registrado correctamente.");
         closeUserModal();
         loadUsersManager();
     } catch (e) { cfpAlert("ERROR", e.message); }
@@ -898,7 +877,7 @@ async function saveNewCourse() {
         // 2. Inicializar el cronograma de contenidos para este curso
         await db.collection('config_cursos').doc(id).set({ materiales: {} }, { merge: true });
 
-        cfpAlert("ÉXITO", "✅ Curso creado e inicializado.");
+        cfpAlert("├ëXITO", "Ô£à Curso creado e inicializado.");
         closeCourseModal();
         loadStudentsFromFirebase();
     } catch (e) { cfpAlert("ERROR", e.message); }
@@ -1000,7 +979,7 @@ async function loadPendingDeliveries(courseId = currentViewedCourse) {
 
         let allDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // FILTRADO DE DUPLICADOS: Si un alumno envió varias veces la misma semana, nos quedamos con la ÚLTIMA (timestamp más reciente)
+        // FILTRADO DE DUPLICADOS: Si un alumno envi├│ varias veces la misma semana, nos quedamos con la ├ÜLTIMA (timestamp m├ís reciente)
         const filteredDocsMap = new Map();
         allDocs.forEach(d => {
             const key = `${d.alumno_dni}_${d.semana}`;
@@ -1062,12 +1041,12 @@ function loadForoAdmin() {
         .onSnapshot(snap => {
             container.innerHTML = '';
             if (snap.empty) {
-                container.innerHTML = '<p style="text-align:center; padding:20px;">El muro está vacío por ahora.</p>';
+                container.innerHTML = '<p style="text-align:center; padding:20px;">El muro est├í vac├¡o por ahora.</p>';
                 return;
             }
             
             let msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Ordenamos por fecha ya que en Firestore 'where' + 'orderBy' suele requerir índices compuestos
+            // Ordenamos por fecha ya que en Firestore 'where' + 'orderBy' suele requerir ├¡ndices compuestos
             msgs.sort((a, b) => new Date(a.fecha || a.timestamp) - new Date(b.fecha || b.timestamp));
 
             msgs.forEach(data => {
@@ -1082,14 +1061,14 @@ function loadForoAdmin() {
 
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <strong style="color:${isProf ? '#0ea5e9' : '#1e293b'}">${senderName} ${isProf ? '👨‍🏫' : ''}</strong>
+                        <strong style="color:${isProf ? '#0ea5e9' : '#1e293b'}">${senderName} ${isProf ? '­ƒæ¿ÔÇì­ƒÅ½' : ''}</strong>
                         <span style="font-size:0.8rem; color:#64748b;">${new Date(msgDate).toLocaleString()}</span>
                     </div>
                     ${data.respuesta_a ? `<div style="font-size:0.8rem; color:#64748b; margin-bottom:8px; border-left:3px solid #bae6fd; padding-left:10px;">Respondiendo a: <strong>${data.respuesta_a.name || data.respuesta_a.nombre}</strong></div>` : ''}
                     <p style="margin-bottom:15px; line-height:1.5;">${data.mensaje}</p>
                     <div style="display:flex; justify-content:flex-end; gap:10px;">
-                        <button class="btn-primary-sm" onclick="prepareReplyAdmin('${senderName}')" style="background:#fff; color:#3b82f6; border-color:#3b82f6;">↩️ Responder</button>
-                        <button class="btn-icon" onclick="deleteMessageAdmin('${data.id}')" style="background:#fff; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">🗑️</button>
+                        <button class="btn-primary-sm" onclick="prepareReplyAdmin('${senderName}')" style="background:#fff; color:#3b82f6; border-color:#3b82f6;">Ôå®´©Å Responder</button>
+                        <button class="btn-icon" onclick="deleteMessageAdmin('${data.id}')" style="background:#fff; border:1px solid #ef4444; color:#ef4444; border-radius:8px;">­ƒùæ´©Å</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -1141,14 +1120,14 @@ async function sendMessageAdmin() {
 }
 
 async function deleteMessageAdmin(msgId) {
-    if (!confirm("¿Seguro que deseas ELIMINAR permanentemente este comentario del muro?")) return;
+    if (!confirm("┬┐Seguro que deseas ELIMINAR permanentemente este comentario del muro?")) return;
     try {
         await db.collection('foro_mensajes').doc(msgId).delete();
     } catch (e) { cfpAlert("ERROR", "No autorizado: " + e.message); }
 }
 
 
-// 3. GESTIÓN DE USUARIOS
+// 3. GESTI├ôN DE USUARIOS
 function openCreateUserModal() {
     document.getElementById('adm-name').value = '';
     document.getElementById('adm-email').value = '';
@@ -1190,15 +1169,14 @@ async function loadUsersManager() {
         tbody.innerHTML = '';
         snap.forEach(doc => {
             const u = doc.data();
-            const r = u.ui_role || 'super-admin';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${u.nombre}</strong></td>
                 <td>${doc.id}</td>
-                <td style="text-align:center;"><span style="background:${r === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${r.toUpperCase()}</span></td>
+                <td style="text-align:center;"><span style="background:${u.role === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
                 <td><small>${Array.isArray(u.cursos) ? u.cursos.join(', ') : (u.cursos || '')}</small></td>
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>
+                    <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">­ƒùæ´©Å</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1206,16 +1184,16 @@ async function loadUsersManager() {
     } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${e.message}</td></tr>`; }
 }
 async function deleteUser(email) {
-    if (!confirm(`¿Estás seguro de quitar el acceso al profesor ${email}?`)) return;
+    if (!confirm(`┬┐Est├ís seguro de quitar el acceso al profesor ${email}?`)) return;
     try {
         await db.collection('usuarios_auth').doc(email).delete();
         loadUsersManager();
-        cfpAlert("ÉXITO", "Acceso revocado correctamente.");
+        cfpAlert("├ëXITO", "Acceso revocado correctamente.");
     } catch (e) { cfpAlert("ERROR", e.message); }
 }
 
 
-// 4. GESTIÓN DE CURSOS
+// 4. GESTI├ôN DE CURSOS
 function openCreateCourseModal() {
     document.getElementById('crs-id').value = '';
     document.getElementById('crs-name').value = '';
@@ -1226,7 +1204,7 @@ function closeCourseModal() { document.getElementById('course-modal').classList.
 async function loadCoursesManager() {
     const tbody = document.getElementById('courses-manager-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando estructura académica...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando estructura acad├®mica...</td></tr>';
     try {
         const snap = await db.collection('cursos').get();
         tbody.innerHTML = '';
@@ -1236,10 +1214,10 @@ async function loadCoursesManager() {
             tr.innerHTML = `
                 <td><strong style="color:var(--primary-color);">#${doc.id}</strong></td>
                 <td><strong>${c.nombre}</strong></td>
-                <td><small>${c.materia || 'Genérica'}</small></td>
+                <td><small>${c.materia || 'Gen├®rica'}</small></td>
                 <td style="text-align:center;"><span style="background:#10b981; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">ACTIVO</span></td>
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="deleteCourse('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">💥 Borrar</button>
+                    <button class="btn-icon" onclick="deleteCourse('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">­ƒÆÑ Borrar</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1248,7 +1226,7 @@ async function loadCoursesManager() {
 }
 
 async function deleteCourse(id) {
-    if (!confirm(`🚨 ¡PELIGRO! ¿Borrar el curso ${id.toUpperCase()} y la capacidad de dictarlo?`)) return;
+    if (!confirm(`­ƒÜ¿ ┬íPELIGRO! ┬┐Borrar el curso ${id.toUpperCase()} y la capacidad de dictarlo?`)) return;
     try {
         await db.collection('cursos').doc(id).delete();
         loadCoursesManager();
@@ -1256,11 +1234,11 @@ async function deleteCourse(id) {
     } catch (e) { cfpAlert("ERROR", e.message); }
 }
 
-// 5. HERRAMIENTAS DE MANTENIMIENTO ACADÉMICO v9.18.32
+// 5. HERRAMIENTAS DE MANTENIMIENTO ACAD├ëMICO v9.18.32
 async function checkDuplicates() {
     const originalText = "BUSCAR DUPLICADOS (HABILIDADES)";
     const btn = event.target;
-    btn.innerText = "⌛ Analizando padrones...";
+    btn.innerText = "Ôîø Analizando padrones...";
     btn.disabled = true;
 
     try {
@@ -1293,9 +1271,9 @@ async function checkDuplicates() {
         }
 
         if (report.length === 0) {
-            cfpAlert("ÉXITO", "✅ No se encontraron alumnos duplicados entre los cursos de Habilidades.");
+            cfpAlert("├ëXITO", "Ô£à No se encontraron alumnos duplicados entre los cursos de Habilidades.");
         } else {
-            let listHtml = report.map(r => `<li style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;"><strong>${r.nombre}</strong><br><small>${r.email}</small><br><span style="color:#6366f1; font-size:0.75rem;">${r.cursoA}</span> ↔️ <span style="color:#10b981; font-size:0.75rem;">${r.cursoB}</span></li>`).join('');
+            let listHtml = report.map(r => `<li style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;"><strong>${r.nombre}</strong><br><small>${r.email}</small><br><span style="color:#6366f1; font-size:0.75rem;">${r.cursoA}</span> Ôåö´©Å <span style="color:#10b981; font-size:0.75rem;">${r.cursoB}</span></li>`).join('');
             cfpAlert("DUPLICADOS ENCONTRADOS", `<p>Se detectaron <strong>${report.length}</strong> alumnos repetidos:</p><ul style="text-align:left; max-height:300px; overflow-y:auto; font-size:0.9rem; margin-top:15px; padding-left:20px; line-height:1.4;">${listHtml}</ul>`);
         }
     } catch (e) {
@@ -1307,11 +1285,11 @@ async function checkDuplicates() {
 }
 
 async function cleanupDisenoStudents() {
-    if (!confirm("⚠️ ATENCIÓN: Esta acción removerá a los alumnos de 'Diseño y Marketing' que estén en el curso de 'Habilidades Digitales' genérico para dejarlos únicamente en el específico de Diseño. ¿Deseas continuar?")) return;
+    if (!confirm("ÔÜá´©Å ATENCI├ôN: Esta acci├│n remover├í a los alumnos de 'Dise├▒o y Marketing' que est├®n en el curso de 'Habilidades Digitales' gen├®rico para dejarlos ├║nicamente en el espec├¡fico de Dise├▒o. ┬┐Deseas continuar?")) return;
     
-    const originalText = "REORGANIZAR ALUMNOS DISEÑO/MARKETING";
+    const originalText = "REORGANIZAR ALUMNOS DISE├æO/MARKETING";
     const btn = event.target;
-    btn.innerText = "⌛ Limpiando padrón...";
+    btn.innerText = "Ôîø Limpiando padr├│n...";
     btn.disabled = true;
 
     try {
@@ -1319,9 +1297,9 @@ async function cleanupDisenoStudents() {
         const crs = cursosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         // Identificamos los cursos por nombre (basado en lo reportado por el usuario)
-        const cursoMarketing = crs.find(c => c.nombre.toUpperCase().includes("DISEÑO Y MARKETING"));
+        const cursoMarketing = crs.find(c => c.nombre.toUpperCase().includes("DISE├æO Y MARKETING"));
         const cursoHabilidadesGeneric = crs.find(c => c.nombre === "Habilidades Digitales & IA" || c.id === 'habilidades'); 
-        const cursoHabilidadesDiseno = crs.find(c => c.nombre.toUpperCase().includes("HABILIDADES DIGITALES") && c.nombre.toUpperCase().includes("DISEÑO"));
+        const cursoHabilidadesDiseno = crs.find(c => c.nombre.toUpperCase().includes("HABILIDADES DIGITALES") && c.nombre.toUpperCase().includes("DISE├æO"));
 
         if (!cursoMarketing || !cursoHabilidadesGeneric || !cursoHabilidadesDiseno) {
             console.log("Cursos identificados:", { marketing: cursoMarketing?.id, hbGeneric: cursoHabilidadesGeneric?.id, hbDiseno: cursoHabilidadesDiseno?.id });
@@ -1336,7 +1314,7 @@ async function cleanupDisenoStudents() {
             const alu = aluDoc.data();
             const dni = alu.dni;
 
-            // 1. Quitar del genérico si existe
+            // 1. Quitar del gen├®rico si existe
             const genericAluRef = db.collection(`alumnos_${cursoHabilidadesGeneric.id}`).doc(dni);
             const existsInGeneric = (await genericAluRef.get()).exists;
             if (existsInGeneric) {
@@ -1344,7 +1322,7 @@ async function cleanupDisenoStudents() {
                 removidos++;
             }
 
-            // 2. Asegurar que estén en el de Diseño (B)
+            // 2. Asegurar que est├®n en el de Dise├▒o (B)
             const disenoAluRef = db.collection(`alumnos_${cursoHabilidadesDiseno.id}`).doc(dni);
             const existsInDisenoHab = (await disenoAluRef.get()).exists;
             if (!existsInDisenoHab) {
@@ -1353,10 +1331,10 @@ async function cleanupDisenoStudents() {
             }
         }
 
-        cfpAlert("MANTENIMIENTO FINALIZADO", `✅ Se removieron ${removidos} alumnos del curso genérico y se aseguraron ${asegurados} ingresos al curso de Habilidades-Diseño.`);
+        cfpAlert("MANTENIMIENTO FINALIZADO", `Ô£à Se removieron ${removidos} alumnos del curso gen├®rico y se aseguraron ${asegurados} ingresos al curso de Habilidades-Dise├▒o.`);
         loadStudentsFromFirebase();
     } catch (e) {
-        cfpAlert("ERROR DE LIMPIEZA", "Ocurrió un problema: " + e.message);
+        cfpAlert("ERROR DE LIMPIEZA", "Ocurri├│ un problema: " + e.message);
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;

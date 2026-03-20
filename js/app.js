@@ -58,9 +58,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             const adminDoc = await db.collection('usuarios_auth').doc(email).get();
             if (adminDoc.exists) {
                 const adminData = adminDoc.data();
-                const userRole = adminData.real_role || adminData.role; // Respetar rol real visual
+                const userRole = adminData.ui_role || (adminData.role === 'super-admin' && adminData.cursos === 'all' ? 'super-admin' : 'profesor');
                 localStorage.setItem('admin_session', JSON.stringify({
-                    email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.real_cursos || adminData.cursos || []
+                    email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
                 }));
                 window.location.href = 'admin.html';
                 return;
@@ -85,9 +85,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                         const aDataCurrent = await db.collection('usuarios_auth').doc(email).get();
                         const finalAData = aDataCurrent.exists ? aDataCurrent.data() : aData;
                         
-                        const userRole = finalAData.real_role || finalAData.role;
+                        const userRole = finalAData.ui_role || (finalAData.role === 'super-admin' && finalAData.cursos === 'all' ? 'super-admin' : 'profesor');
                         localStorage.setItem('admin_session', JSON.stringify({
-                            email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.real_cursos || finalAData.cursos || []
+                            email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.cursos || []
                         }));
                         window.location.href = 'admin.html';
                         return;
