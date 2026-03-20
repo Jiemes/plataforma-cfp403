@@ -210,17 +210,21 @@ async function loadContent() {
                         ` : ''}
                         
                         <div class="input-group">
-                            <label for="link-${i}">Pega aquí el link de Drive con tu actividad:</label>
-                            <input type="text" id="link-${i}" class="input-premium-task" 
+                            <label for="link-${i}">Pega aquí el link de Drive con tu actividad: <span id="status-icon-${i}"></span></label>
+                            <input type="text" id="link-${i}" class="input-premium-task link-input-validate" 
+                                   data-semana="${i}"
+                                   oninput="validateLinkLive(${i}, this.value)"
                                    placeholder="https://drive.google.com/..." 
                                    value="${entrega ? (entrega.archivo_url || '') : ''}">
                         </div>
+
+                        <div id="validation-banner-${i}" class="validation-banner-task hidden"></div>
 
                         <div class="help-text-task">
                             <p>💡 <strong>Ayuda:</strong> Sube tu archivo a Google Drive, asegúrate de que el acceso sea público y pega el link aquí.</p>
                         </div>
 
-                        <button class="btn-submit-task" onclick="submitTask(${i})">
+                        <button id="btn-submit-${i}" class="btn-submit-task" onclick="submitTask(${i})">
                             ${entrega ? 'ACTUALIZAR ACTIVIDAD' : 'ENVIAR ACTIVIDAD'}
                         </button>
                     </div>
@@ -339,64 +343,8 @@ async function submitTask(semana) {
         );
     }
 
-    // EXTRAER ID DEL ARCHIVO
-    let fileId = null;
-    let btnSubmit = null;
-    let originalText = "";
-    
-    // Tratamos de buscar el boton para mostrar loading (opcional)
-    if (window.event && window.event.target) {
-        btnSubmit = window.event.target;
-        originalText = btnSubmit.innerText;
-    }
-
-    const idMatch = rawUrl.match(/\/d\/(.+?)(\/|$)/) || rawUrl.match(/id=(.+?)(&|$)/);
-    if (idMatch) fileId = idMatch[1];
-
-    if (fileId) {
-        try {
-            if (btnSubmit) {
-                btnSubmit.innerText = "⏳ Validando permisos...";
-                btnSubmit.disabled = true;
-            }
-
-            // Usamos un proxy CORS gratuito y estable para simular cómo un visitante externo (el profesor) vería el archivo
-            const checkUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
-            const checkRes = await fetch(checkUrl);
-            const proxyData = await checkRes.json();
-            
-            if (btnSubmit) {
-                btnSubmit.innerText = originalText;
-                btnSubmit.disabled = false;
-            }
-
-            // Si el código HTTP del contenido es error (ej: 404/401) o redirige al inicio de sesión de Google (ServiceLogin)
-            const content = (proxyData.contents || '').toLowerCase();
-            const markers = [
-                'servicelogin', 'sign in', 'iniciar sesión', 'solicitar acceso', 
-                'you need access', 'necesitas acceso', 'acceso denegado',
-                'document-root show-error' // Marcador CSS de Drive privado
-            ];
-
-            const isForbidden = proxyData.status.http_code >= 400 || markers.some(m => content.includes(m));
-
-            if (isForbidden) {
-                return cfpAlert(
-                    "🔒 ERROR: EL ARCHIVO ES PRIVADO", 
-                    "El profesor NO PUEDE VER tu archivo porque está configurado como Restringido o requiere permisos especiales.<br><br>👉 <b>COMO SOLUCIONARLO (en 30 segundos):</b><br>1. Ve a tu Google Drive y haz clic derecho en el archivo.<br>2. Presiona <b>'Compartir'</b>.<br>3. En 'Acceso general', cámbialo a <b>'Cualquier usuario que tenga el vínculo'</b>.<br>4. Verifica que diga <b>'Lector'</b>.<br>5. Copia el nuevo vínculo, pégalo aquí y vuelve a enviar."
-                );
-            }
-        } catch (e) {
-            // Ignorar errores locales de red (ej. CORS estricto del navegador, adblockers, o sin internet temporario)
-            if (btnSubmit) {
-                btnSubmit.innerText = originalText;
-                btnSubmit.disabled = false;
-            }
-            console.warn("Aviso: No se pudo verificar el permiso del archivo por bloqueo local: ", e);
-        }
-    }
-
     try {
+
         const snapshot = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
             .where('curso', '==', currentCourseId)
@@ -589,6 +537,78 @@ async function saveNewPassword() {
             cfpAlert("ERROR", "Error al actualizar: " + error.message);
         }
     }
+}
+
+// --- SISTEMA DE VALIDACIÓN DE DRIVE (v9.18.49) ---
+async function validateLinkLive(semana, url) {
+    const statusIcon = document.getElementById(`status-icon-${semana}`);
+    const banner = document.getElementById(`validation-banner-${semana}`);
+    const btn = document.getElementById(`btn-submit-${semana}`);
+
+    if (!url) {
+        statusIcon.innerHTML = '';
+        if (banner) banner.classList.add('hidden');
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        return;
+    }
+
+    if (!url.toLowerCase().includes('google.com')) {
+        statusIcon.innerHTML = '❌';
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+        return;
+    }
+
+    // EXTRAER ID
+    const idMatch = url.match(/\/d\/(.+?)(\/|$)/) || url.match(/id=(.+?)(&|$)/);
+    const fileId = idMatch ? idMatch[1].split(/[?&]/)[0] : null;
+
+    if (!fileId) {
+        statusIcon.innerHTML = '⚠️';
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+        return;
+    }
+
+    // EL TRUCO DE LA MINIATURA (THE THUMBNAIL TRICK)
+    statusIcon.innerHTML = '⏳';
+    
+    // Usamos una imagen para verificar si Drive nos deja ver la miniatura (solo si es público)
+    const img = new Image();
+    img.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w20`;
+    
+    img.onload = () => {
+        statusIcon.innerHTML = '✅';
+        if (banner) banner.classList.add('hidden');
+        if (btn) {
+            btn.style.opacity = '1';
+            btn.disabled = false;
+        }
+    };
+
+    img.onerror = () => {
+        statusIcon.innerHTML = '🔒';
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        }
+        
+        if (banner) {
+            banner.innerHTML = `
+                <div style="background:#fff7ed; border:1px solid #fed7aa; padding:15px; border-radius:12px; margin-top:10px; font-size:0.85rem; color:#9a3412;">
+                    <strong style="display:block; margin-bottom:10px; font-size:0.9rem;">⚠️ ¡Atención! Tu archivo no es accesible.</strong>
+                    El sistema detectó que tu enlace de Google Drive está en modo Privado. Para que el profesor pueda corregir tu actividad, sigue estos pasos:
+                    <ol style="margin:10px 0; padding-left:20px;">
+                        <li>Abre tu archivo en Google Drive.</li>
+                        <li>Haz clic en el botón azul <b>"Compartir"</b> (arriba a la derecha).</li>
+                        <li>En "Acceso general", cambia "Restringido" por <b>"Cualquier persona con el enlace"</b>.</li>
+                        <li>Asegúrate de que el rol sea <b>"Lector"</b>.</li>
+                        <li>Haz clic en <b>"Copiar enlace"</b> y vuelve a pegarlo aquí.</li>
+                    </ol>
+                    <small><i>Nota: El sistema se actualizará automáticamente cuando pegues el enlace correcto.</i></small>
+                </div>
+            `;
+            banner.classList.remove('hidden');
+        }
+    };
 }
 
 initStudentDashboard();
