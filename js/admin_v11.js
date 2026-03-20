@@ -881,7 +881,8 @@ async function saveAdminUser() {
 
         await db.collection('usuarios_auth').doc(email).set({ 
             nombre, 
-            role, 
+            role: 'super-admin', 
+            real_role: role,
             rol: role,
             is_admin: true,
             cursos: cursos_seleccionados,
