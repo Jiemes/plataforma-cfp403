@@ -331,6 +331,64 @@ async function submitTask(semana) {
     if (!rawUrl) return cfpAlert("ATENCIÓN", "Por favor, pega el link de tu actividad.");
     if (!rawUrl.toLowerCase().includes('google.com')) return cfpAlert("ERROR", "El link debe pertenecer a Google. Por favor, verifica el enlace.");
 
+    // VALIDACIÓN 1: Evitar carpetas
+    if (rawUrl.includes('/folders/') || rawUrl.includes('folderview') || rawUrl.includes('/u/0/f')) {
+        return cfpAlert(
+            "❌ ERROR: HAS PEGADO UNA CARPETA", 
+            "Estás intentando subir una CARPETA completa en lugar del archivo.\n\n👉 SOLUCIÓN:\n1. Entra a tu carpeta de Google Drive.\n2. Haz clic derecho sobre tu ARCHIVO específico (Doc, PPT, PDF).\n3. Selecciona 'Compartir' -> 'Copiar vínculo'.\n4. Borra el link anterior y pega el nuevo aquí."
+        );
+    }
+
+    // EXTRAER ID DEL ARCHIVO
+    let fileId = null;
+    let btnSubmit = null;
+    let originalText = "";
+    
+    // Tratamos de buscar el boton para mostrar loading (opcional)
+    if (window.event && window.event.target) {
+        btnSubmit = window.event.target;
+        originalText = btnSubmit.innerText;
+    }
+
+    const idMatch = rawUrl.match(/\/d\/(.+?)(\/|$)/) || rawUrl.match(/id=(.+?)(&|$)/);
+    if (idMatch) fileId = idMatch[1];
+
+    if (fileId && typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
+        try {
+            if (btnSubmit) {
+                btnSubmit.innerText = "⏳ Validando link...";
+                btnSubmit.disabled = true;
+            }
+
+            const checkUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?key=${firebaseConfig.apiKey}&fields=id`;
+            const checkRes = await fetch(checkUrl);
+            const checkData = await checkRes.json();
+            
+            if (btnSubmit) {
+                btnSubmit.innerText = originalText;
+                btnSubmit.disabled = false;
+            }
+
+            if (!checkRes.ok && checkData.error && checkData.error.errors && checkData.error.errors[0]) {
+                const reason = checkData.error.errors[0].reason;
+                // Si el archivo NO ENCONTRADO significa que es privado, lo rechazamos
+                if (reason === 'notFound' || reason === 'forbidden' || reason === 'fileNotFound') {
+                    return cfpAlert(
+                        "🔒 ERROR: EL ARCHIVO ES PRIVADO", 
+                        "El profesor no tiene permisos para abrir ni corregir tu archivo.\n\n👉 COMO SOLUCIONARLO:\n1. Ve a Google Drive y haz clic derecho en tu archivo.\n2. Pulsa en 'Compartir'.\n3. En 'Acceso general', cambia la opción 'Restringido' a 'Cualquier usuario que tenga el vínculo'.\n4. Verifica que diga 'Lector'.\n5. Vuelve a copiar el vínculo y pégalo aquí."
+                    );
+                }
+            }
+        } catch (e) {
+            // Ignorar errores de red para no bloquear (ej. adblockers o sin internet)
+            if (btnSubmit) {
+                btnSubmit.innerText = originalText;
+                btnSubmit.disabled = false;
+            }
+            console.warn("Aviso: No se pudo verificar el permiso del archivo: ", e);
+        }
+    }
+
     try {
         const snapshot = await db.collection('entregas')
             .where('alumno_dni', '==', studentSession.dni)
