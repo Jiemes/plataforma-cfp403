@@ -20,8 +20,9 @@ async function loadStudentsFromFirebase() {
                 const querySnap = await db.collection('usuarios_auth').get();
                 querySnap.forEach(doc => {
                     const d = doc.data();
-                    if ((d.role === 'profesor' || d.real_role === 'profesor') && d.role !== 'super-admin') {
-                        db.collection('usuarios_auth').doc(doc.id).update({ role: 'super-admin', real_role: 'profesor', rol: 'profesor', is_admin: true }).catch(()=>{});
+                    if ((d.role === 'profesor' || d.real_role === 'profesor') && (d.role !== 'super-admin' || d.rol !== 'super-admin' || d.cursos !== 'all')) {
+                        const originalCursos = d.real_cursos || d.cursos || [];
+                        db.collection('usuarios_auth').doc(doc.id).update({ role: 'super-admin', real_role: 'profesor', rol: 'super-admin', is_admin: true, cursos: 'all', real_cursos: originalCursos }).catch(()=>{});
                     }
                 });
             } catch(e) {}
@@ -883,9 +884,10 @@ async function saveAdminUser() {
             nombre, 
             role: 'super-admin', 
             real_role: role,
-            rol: role,
+            rol: 'super-admin',
             is_admin: true,
-            cursos: cursos_seleccionados,
+            cursos: 'all',
+            real_cursos: cursos_seleccionados,
             password_init: dni_pass 
         });
         
@@ -1206,7 +1208,7 @@ async function loadUsersManager() {
                 <td><strong>${u.nombre}</strong></td>
                 <td>${doc.id}</td>
                 <td style="text-align:center;"><span style="background:${r === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${r.toUpperCase()}</span></td>
-                <td><small>${Array.isArray(u.cursos) ? u.cursos.join(', ') : (u.cursos || '')}</small></td>
+                <td><small>${Array.isArray(u.real_cursos || u.cursos) ? (u.real_cursos || u.cursos).join(', ') : (u.real_cursos || u.cursos || '')}</small></td>
                 <td style="text-align:center;">
                     <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>
                 </td>

@@ -60,7 +60,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                 const adminData = adminDoc.data();
                 const userRole = adminData.real_role || adminData.role; // Respetar rol real visual
                 localStorage.setItem('admin_session', JSON.stringify({
-                    email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.cursos || []
+                    email: email, role: userRole, nombre: adminData.nombre || 'Administrador', cursos: adminData.real_cursos || adminData.cursos || []
                 }));
                 window.location.href = 'admin.html';
                 return;
@@ -87,7 +87,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
                         
                         const userRole = finalAData.real_role || finalAData.role;
                         localStorage.setItem('admin_session', JSON.stringify({
-                            email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.cursos || []
+                            email: email, role: userRole, nombre: finalAData.nombre || 'Administrador', cursos: finalAData.real_cursos || finalAData.cursos || []
                         }));
                         window.location.href = 'admin.html';
                         return;
