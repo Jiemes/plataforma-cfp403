@@ -15,6 +15,9 @@ async function loadStudentsFromFirebase() {
     try {
         if (adminSession.role === 'super-admin') {
             document.getElementById('superadmin-nav')?.classList.remove('hidden');
+            document.getElementById('btn-update-data')?.classList.remove('hidden');
+            document.getElementById('btn-reset-deliveries')?.classList.remove('hidden');
+            document.getElementById('btn-empty-list')?.classList.remove('hidden');
         }
 
         let coursesSnap = null;
@@ -655,7 +658,7 @@ async function loadClaseConfig(courseId) {
         cont.innerHTML = `<h3 style="margin-bottom:15px; text-align:center; font-size:1.1rem;">Cronograma: <span style="color:var(--primary-color);">${courseObj?.nombre || 'CURSO'}</span></h3>`;
 
         const addBtn = document.createElement('button');
-        addBtn.innerText = "➕ Agregar Nueva Semana";
+        addBtn.innerText = "➕ Agregar Nueva Clase";
         addBtn.className = "btn-secondary";
         addBtn.style = "width:100%; margin-bottom:20px; padding:10px; border:2px dashed var(--primary-color); color:var(--primary-color); font-weight:700;";
         addBtn.onclick = async () => {
@@ -681,7 +684,7 @@ async function loadClaseConfig(courseId) {
             div.className = 'clase-item-row card';
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
-                    <strong style="font-size:1rem;">Semana ${i}</strong>
+                    <strong style="font-size:1rem;">Clase ${i}</strong>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <input type="date" id="date-sem-${i}" value="${mat.fecha || ''}" class="input-premium" style="width:140px;">
                         <button class="btn-icon" onclick="deleteWeek(${i})" style="color:#ef4444;">🗑️</button>
@@ -697,7 +700,7 @@ async function loadClaseConfig(courseId) {
                         <input type="text" id="link-act-${i}" value="${mat.actividad || ''}" class="input-premium" style="width:100%;">
                     </div>
                 </div>
-                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:15px; width:100%;">💾 GUARDAR SEMANA ${i}</button>
+                <button class="btn-primary" onclick="saveLinksManual(${i})" style="margin-top:15px; width:100%;">💾 GUARDAR CLASE ${i}</button>
             `;
             cont.appendChild(div);
         });
@@ -755,13 +758,13 @@ async function saveLinksManual(sem) {
         data.materiales[`sem_${sem}`] = { clase: claseLink, actividad: actLink, fecha: fecha };
         
         await ref.set(data, { merge: true });
-        cfpAlert("ÉXITO", `✅ Semana ${sem} guardada.`);
+        cfpAlert("ÉXITO", `✅ Clase ${sem} guardada.`);
         loadClaseConfig(currentClaseTab);
     } catch (err) { cfpAlert("ERROR", "Error: " + err.message); }
 }
 
 async function deleteWeek(num) {
-    if (!confirm(`¿Borrar Semana ${num}?`)) return;
+    if (!confirm(`¿Borrar Clase ${num}?`)) return;
     try {
         const ref = db.collection('config_cursos').doc(currentClaseTab);
         const doc = await ref.get();

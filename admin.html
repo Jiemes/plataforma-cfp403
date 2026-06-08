@@ -180,7 +180,7 @@
             <header class="content-header">
                 <h2>Administración CFP 403</h2>
                 <div class="header-right">
-                    <button class="btn-secondary" onclick="loadStudentsFromFirebase()"
+                    <button id="btn-update-data" class="btn-secondary hidden" onclick="loadStudentsFromFirebase()"
                         style="padding:8px 15px; border-radius:12px; margin-right:15px; font-weight:700;">🔄 ACTUALIZAR
                         DATOS</button>
                     <div class="notifications">
@@ -232,9 +232,9 @@
                                 style="background:#10b981; border-color:#10b981; color:white;">📥 Descargar
                                 Listado</button>
                             <button class="btn-primary-sm" onclick="openStudentModal()">👤 Agregar Alumno</button>
-                            <button class="btn-secondary" onclick="resetDeliveriesOnly()"
+                            <button id="btn-reset-deliveries" class="btn-secondary hidden" onclick="resetDeliveriesOnly()"
                                 style="border:1px solid #cbd5e1;">🔄 Reiniciar Entregas</button>
-                            <button class="btn-danger-outline" onclick="deleteCourseData()">Vaciar Lista</button>
+                            <button id="btn-empty-list" class="btn-danger-outline hidden" onclick="deleteCourseData()">Vaciar Lista</button>
                         </div>
                     </div>
                     <div class="table-container">
@@ -507,8 +507,8 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js?v=9.18.51"></script>
-    <script src="js/admin_v11.js?v=9.18.51"></script>
+    <script src="js/firebase-config.js?v=9.18.52"></script>
+    <script src="js/admin_v11.js?v=9.18.52"></script>
 </body>
 
 </html>
