@@ -858,7 +858,9 @@ async function saveAdminUser() {
         checkboxes.forEach(chk => cursos_seleccionados.push(chk.value));
     }
 
-    if (!email || !nombre || !dni_pass) return cfpAlert("ERROR", "Completa todos los campos obligatorios (Nombre, Email y DNI).");
+    if (!email || !nombre) return cfpAlert("ERROR", "Completa los campos obligatorios (Nombre y Email).");
+    if (!editingUserEmail && !dni_pass) return cfpAlert("ERROR", "El DNI/Contraseña es obligatorio para nuevos usuarios.");
+
     try {
         if (!editingUserEmail) {
             const apiKey = "AIzaSyCf0uv7aAiPed1tvTQUIoiGihcf2r995JY"; // Usamos la API key del config para crear el Auth
@@ -876,13 +878,17 @@ async function saveAdminUser() {
             }
         }
 
-        await db.collection('usuarios_auth').doc(email).set({ 
+        const userData = { 
             nombre, 
             role: role, 
             is_admin: true,
-            cursos: cursos_seleccionados,
-            password_init: dni_pass
-        }, { merge: true });
+            cursos: cursos_seleccionados
+        };
+        if (dni_pass) {
+            userData.password_init = dni_pass;
+        }
+
+        await db.collection('usuarios_auth').doc(email).set(userData, { merge: true });
         
         cfpAlert("ÉXITO", "✅ Usuario/Docente guardado correctamente.");
         closeUserModal();
@@ -1428,4 +1434,44 @@ async function cleanupDisenoStudents() {
 }
 
 loadStudentsFromFirebase();
+
+// ====== CAMBIO DE CONTRASEÑA DE DOCENTE (v9.18.52) ======
+function openConfigModal() {
+    document.getElementById('new-password').value = '';
+    document.getElementById('repeat-password').value = '';
+    document.getElementById('config-modal').classList.remove('hidden');
+}
+
+function closeConfigModal() {
+    document.getElementById('config-modal').classList.add('hidden');
+}
+
+async function saveNewPassword() {
+    const newPass = document.getElementById('new-password').value.trim();
+    const repeatPass = document.getElementById('repeat-password').value.trim();
+
+    if (newPass.length < 6) {
+        return cfpAlert("ERROR", "La contraseña debe tener al menos 6 caracteres por seguridad.");
+    }
+
+    if (newPass !== repeatPass) {
+        return cfpAlert("ERROR", "Las contraseñas no coinciden. Por favor, verifica.");
+    }
+
+    try {
+        const user = authFirebase.currentUser;
+        if (!user) return cfpAlert("ERROR", "Error de sesión. Por favor, vuelve a ingresar.");
+
+        await user.updatePassword(newPass);
+
+        cfpAlert("ÉXITO", "✅ Contraseña actualizada con éxito. Úsala en tu próximo ingreso.");
+        closeConfigModal();
+    } catch (error) {
+        if (error.code === 'auth/requires-recent-login') {
+            cfpAlert("SEGURIDAD", "⚠️ Por seguridad, esta acción requiere haber iniciado sesión recientemente. Por favor, sal y vuelve a entrar para cambiar tu contraseña.");
+        } else {
+            cfpAlert("ERROR", "Error al actualizar: " + error.message);
+        }
+    }
+}
 
