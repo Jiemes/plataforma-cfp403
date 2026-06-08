@@ -857,17 +857,19 @@ async function saveAdminUser() {
 
     if (!email || !nombre || !dni_pass) return cfpAlert("ERROR", "Completa todos los campos obligatorios (Nombre, Email y DNI).");
     try {
-        const apiKey = "AIzaSyCf0uv7aAiPed1tvTQUIoiGihcf2r995JY"; // Usamos la API key del config para crear el Auth
-        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, password: dni_pass, returnSecureToken: false })
-        });
-        
-        if (!res.ok) {
-            const errData = await res.json();
-            if (errData.error && errData.error.message !== 'EMAIL_EXISTS') {
-                throw new Error("No se pudo registrar la clave en Auth: " + errData.error.message);
+        if (!editingUserEmail) {
+            const apiKey = "AIzaSyCf0uv7aAiPed1tvTQUIoiGihcf2r995JY"; // Usamos la API key del config para crear el Auth
+            const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: dni_pass, returnSecureToken: false })
+            });
+            
+            if (!res.ok) {
+                const errData = await res.json();
+                if (errData.error && errData.error.message !== 'EMAIL_EXISTS') {
+                    throw new Error("No se pudo registrar la clave en Auth: " + errData.error.message);
+                }
             }
         }
 
@@ -877,9 +879,9 @@ async function saveAdminUser() {
             is_admin: true,
             cursos: cursos_seleccionados,
             password_init: dni_pass
-        });
+        }, { merge: true });
         
-        cfpAlert("ÉXITO", "✅ Usuario/Docente creado y registrado correctamente.");
+        cfpAlert("ÉXITO", "✅ Usuario/Docente guardado correctamente.");
         closeUserModal();
         loadUsersManager();
     } catch (e) { cfpAlert("ERROR", e.message); }
@@ -892,14 +894,19 @@ async function saveNewCourse() {
 
     if (!id || !nombre) return cfpAlert("ERROR", "Completa los campos.");
     try {
-        // 1. Crear el curso en la lista maestra
-        await db.collection('cursos').doc(id).set({ nombre, materia: base, activo: true });
-        
-        // 2. Inicializar el cronograma de contenidos para este curso
-        await db.collection('config_cursos').doc(id).set({ materiales: {} }, { merge: true });
-
-        cfpAlert("ÉXITO", "✅ Curso creado e inicializado.");
+        if (editingCourseId) {
+            await db.collection('cursos').doc(editingCourseId).update({ nombre, materia: base });
+            cfpAlert("ÉXITO", "✅ Curso modificado correctamente.");
+        } else {
+            // 1. Crear el curso en la lista maestra
+            await db.collection('cursos').doc(id).set({ nombre, materia: base, activo: true });
+            
+            // 2. Inicializar el cronograma de contenidos para este curso
+            await db.collection('config_cursos').doc(id).set({ materiales: {} }, { merge: true });
+            cfpAlert("ÉXITO", "✅ Curso creado e inicializado.");
+        }
         closeCourseModal();
+        loadCoursesManager();
         loadStudentsFromFirebase();
     } catch (e) { cfpAlert("ERROR", e.message); }
 }
@@ -1149,9 +1156,13 @@ async function deleteMessageAdmin(msgId) {
 
 
 // 3. GESTIÓN DE USUARIOS
+let editingUserEmail = null;
+
 function openCreateUserModal() {
+    editingUserEmail = null;
     document.getElementById('adm-name').value = '';
     document.getElementById('adm-email').value = '';
+    document.getElementById('adm-email').disabled = false;
     document.getElementById('adm-dni').value = '';
     document.getElementById('adm-role').value = 'profesor';
     
@@ -1168,6 +1179,35 @@ function openCreateUserModal() {
 
     toggleCursosAdmin();
     document.getElementById('user-modal').classList.remove('hidden');
+}
+
+function editUser(email) {
+    editingUserEmail = email;
+    db.collection('usuarios_auth').doc(email).get().then(doc => {
+        if(doc.exists){
+            const u = doc.data();
+            document.getElementById('adm-email').value = email;
+            document.getElementById('adm-email').disabled = true;
+            document.getElementById('adm-name').value = u.nombre || '';
+            document.getElementById('adm-dni').value = u.password_init || '';
+            document.getElementById('adm-role').value = u.role || 'profesor';
+            
+            const chkBoxDiv = document.getElementById('adm-cursos-checkboxes');
+            chkBoxDiv.innerHTML = '';
+            db.collection('cursos').get().then(snap => {
+                snap.forEach(cdoc => {
+                    const course = cdoc.data();
+                    const isChecked = u.cursos === 'all' || (Array.isArray(u.cursos) && u.cursos.includes(cdoc.id)) ? 'checked' : '';
+                    const div = document.createElement('div');
+                    div.innerHTML = `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${cdoc.id}" class="adm-curso-chk" ${isChecked}> <span style="font-weight:600; font-size:0.9rem;">${course.nombre}</span> <small style="color:#64748b;">(${cdoc.id})</small></label>`;
+                    chkBoxDiv.appendChild(div);
+                });
+            });
+
+            toggleCursosAdmin();
+            document.getElementById('user-modal').classList.remove('hidden');
+        }
+    });
 }
 
 function toggleCursosAdmin() {
@@ -1197,7 +1237,8 @@ async function loadUsersManager() {
                 <td>${doc.id}</td>
                 <td style="text-align:center;"><span style="background:${r === 'super-admin' ? '#ef4444' : '#3b82f6'}; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">${r.toUpperCase()}</span></td>
                 <td><small>${Array.isArray(u.cursos) ? u.cursos.join(', ') : (u.cursos || '')}</small></td>
-                <td style="text-align:center;">
+                <td style="text-align:center; display:flex; justify-content:center; gap:5px;">
+                    <button class="btn-icon" onclick="editUser('${doc.id}')" style="color:#10b981; background:#d1fae5; border-radius:8px;">✏️</button>
                     <button class="btn-icon" onclick="deleteUser('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">🗑️</button>
                 </td>
             `;
@@ -1216,11 +1257,30 @@ async function deleteUser(email) {
 
 
 // 4. GESTIÓN DE CURSOS
+let editingCourseId = null;
+
 function openCreateCourseModal() {
+    editingCourseId = null;
     document.getElementById('crs-id').value = '';
+    document.getElementById('crs-id').disabled = false;
     document.getElementById('crs-name').value = '';
     document.getElementById('course-modal').classList.remove('hidden');
 }
+
+function editCourse(id) {
+    editingCourseId = id;
+    db.collection('cursos').doc(id).get().then(doc => {
+        if(doc.exists){
+            const c = doc.data();
+            document.getElementById('crs-id').value = id;
+            document.getElementById('crs-id').disabled = true;
+            document.getElementById('crs-name').value = c.nombre || '';
+            document.getElementById('crs-base').value = c.materia || 'habilidades';
+            document.getElementById('course-modal').classList.remove('hidden');
+        }
+    });
+}
+
 function closeCourseModal() { document.getElementById('course-modal').classList.add('hidden'); }
 
 async function loadCoursesManager() {
@@ -1238,7 +1298,8 @@ async function loadCoursesManager() {
                 <td><strong>${c.nombre}</strong></td>
                 <td><small>${c.materia || 'Genérica'}</small></td>
                 <td style="text-align:center;"><span style="background:#10b981; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem; font-weight:700;">ACTIVO</span></td>
-                <td style="text-align:center;">
+                <td style="text-align:center; display:flex; justify-content:center; gap:5px;">
+                    <button class="btn-icon" onclick="editCourse('${doc.id}')" style="color:#10b981; background:#d1fae5; border-radius:8px;">✏️ Editar</button>
                     <button class="btn-icon" onclick="deleteCourse('${doc.id}')" style="color:#ef4444; background:#fee2e2; border-radius:8px;">💥 Borrar</button>
                 </td>
             `;
