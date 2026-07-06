@@ -1476,7 +1476,34 @@ async function cleanupDisenoStudents() {
             }
         }
 
-        cfpAlert("MANTENIMIENTO FINALIZADO", `✅ Se removieron ${removidos} alumnos del curso genérico y se aseguraron ${asegurados} ingresos al curso de Habilidades-Diseño.`);
+        // --- NUEVA LÓGICA: RECUPERAR ENTREGAS ---
+        const entregasSnap = await db.collection('entregas').where('curso', '==', cursoHabilidadesGeneric.id).get();
+        const alumnosDiseno = studentData[cursoHabilidadesDiseno.id] || [];
+        let entregasRecuperadas = 0;
+
+        for (const doc of entregasSnap.docs) {
+            const data = doc.data();
+            const aluDniSearch = String(data.alumno_dni || "").trim().toLowerCase();
+            const aluNomSearch = String(data.alumno_nombre || "").trim().toLowerCase();
+            
+            const isDisenoStudent = alumnosDiseno.find(s => {
+                const sDni = String(s.dni || "").trim().toLowerCase();
+                const sId = String(s.id || "").trim().toLowerCase();
+                const sEmail = String(s.email || "").trim().toLowerCase();
+                const sNom = String(s.full_name || "").trim().toLowerCase();
+                return (aluDniSearch !== "" && (aluDniSearch === sDni || aluDniSearch === sId || aluDniSearch === sEmail)) ||
+                       (aluNomSearch !== "" && (aluNomSearch === sNom || aluNomSearch.includes(sNom) || sNom.includes(aluNomSearch)));
+            });
+
+            if (isDisenoStudent) {
+                await db.collection('entregas').doc(doc.id).update({
+                    curso: cursoHabilidadesDiseno.id
+                });
+                entregasRecuperadas++;
+            }
+        }
+
+        cfpAlert("MANTENIMIENTO FINALIZADO", `✅ Se removieron ${removidos} alumnos del curso genérico y se aseguraron ${asegurados} ingresos al curso de Habilidades-Diseño.<br><br><b>🎯 Además, se recuperaron y movieron ${entregasRecuperadas} entregas de esos alumnos al nuevo curso.</b>`);
         loadStudentsFromFirebase();
     } catch (e) {
         cfpAlert("ERROR DE LIMPIEZA", "Ocurrió un problema: " + e.message);
