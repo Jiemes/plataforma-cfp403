@@ -306,7 +306,7 @@ async function showTable(course) {
         tbody.innerHTML = '';
 
         studentData[course].forEach(s => {
-            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim());
+            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim() || (e.alumno_nombre && s.full_name && String(e.alumno_nombre).trim().toLowerCase() === String(s.full_name).trim().toLowerCase()));
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const pend = eAlu.filter(e => e.estado === 'Pendiente');
             const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '-';
@@ -486,7 +486,7 @@ async function downloadCourseExcel() {
         const entregas = snapEnt.docs.map(doc => doc.data());
 
         const excelData = studentData[currentViewedCourse].map(s => {
-            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim());
+            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim() || (e.alumno_nombre && s.full_name && String(e.alumno_nombre).trim().toLowerCase() === String(s.full_name).trim().toLowerCase()));
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '---';
 
