@@ -23,10 +23,10 @@ async function loadStudentsFromFirebase() {
         let coursesSnap = null;
         try {
             if (adminSession.role === 'super-admin') {
-                coursesSnap = await db.collection('cursos').get();
+                coursesSnap = await db.collection('cursos').where('platformId', '==', PLATFORM_ID).get();
                 if (coursesSnap.empty) {
-                    await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true });
-                    await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true });
+                    await db.collection('cursos').doc('habilidades').set({ nombre: "Habilidades Digitales & IA", materia: "Habilidades", activo: true, platformId: PLATFORM_ID });
+                    await db.collection('cursos').doc('programacion').set({ nombre: "Software & Videojuegos", materia: "Programacion", activo: true, platformId: PLATFORM_ID });
                     return loadStudentsFromFirebase();
                 }
                 activeCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -306,7 +306,7 @@ async function showTable(course) {
         tbody.innerHTML = '';
 
         studentData[course].forEach(s => {
-            const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
+            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim());
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const pend = eAlu.filter(e => e.estado === 'Pendiente');
             const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '-';
@@ -486,7 +486,7 @@ async function downloadCourseExcel() {
         const entregas = snapEnt.docs.map(doc => doc.data());
 
         const excelData = studentData[currentViewedCourse].map(s => {
-            const eAlu = entregas.filter(e => e.alumno_dni === s.dni);
+            const eAlu = entregas.filter(e => String(e.alumno_dni).trim() === String(s.dni).trim());
             const corr = eAlu.filter(e => e.estado === 'Calificado');
             const prom = corr.length > 0 ? (corr.reduce((a, b) => a + parseFloat(b.nota || 0), 0) / corr.length).toFixed(1) : '---';
 
@@ -908,7 +908,7 @@ async function saveNewCourse() {
             cfpAlert("ÉXITO", "✅ Curso modificado correctamente.");
         } else {
             // 1. Crear el curso en la lista maestra
-            await db.collection('cursos').doc(id).set({ nombre, materia: base, activo: true });
+            await db.collection('cursos').doc(id).set({ nombre, materia: base, activo: true, platformId: PLATFORM_ID });
             
             // 2. Inicializar el cronograma de contenidos para este curso
             await db.collection('config_cursos').doc(id).set({ materiales: {} }, { merge: true });
@@ -1177,7 +1177,7 @@ function openCreateUserModal() {
     
     const chkBoxDiv = document.getElementById('adm-cursos-checkboxes');
     chkBoxDiv.innerHTML = '';
-    db.collection('cursos').get().then(snap => {
+    db.collection('cursos').where('platformId', '==', PLATFORM_ID).get().then(snap => {
         snap.forEach(doc => {
             const course = doc.data();
             const div = document.createElement('div');
@@ -1203,7 +1203,7 @@ function editUser(email) {
             
             const chkBoxDiv = document.getElementById('adm-cursos-checkboxes');
             chkBoxDiv.innerHTML = '';
-            db.collection('cursos').get().then(snap => {
+            db.collection('cursos').where('platformId', '==', PLATFORM_ID).get().then(snap => {
                 snap.forEach(cdoc => {
                     const course = cdoc.data();
                     const isChecked = u.cursos === 'all' || (Array.isArray(u.cursos) && u.cursos.includes(cdoc.id)) ? 'checked' : '';
@@ -1297,7 +1297,7 @@ async function loadCoursesManager() {
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando estructura académica...</td></tr>';
     try {
-        const snap = await db.collection('cursos').get();
+        const snap = await db.collection('cursos').where('platformId', '==', PLATFORM_ID).get();
         tbody.innerHTML = '';
         snap.forEach(doc => {
             const c = doc.data();
