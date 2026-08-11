@@ -99,7 +99,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
             let info_alumno = null;
             let currentCourses = ['habilidades', 'programacion'];
             try {
-                const coursesSnap = await db.collection('cursos').get();
+                const coursesSnap = await db.collection('cursos').where('platformId', '==', PLATFORM_ID).get();
                 if (!coursesSnap.empty) currentCourses = coursesSnap.docs.map(d => d.id);
             } catch (e) { }
 
@@ -135,7 +135,7 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         let info_final = null;
         let coursesDocs = [];
         try {
-            const coursesList = await db.collection('cursos').get();
+            const coursesList = await db.collection('cursos').where('platformId', '==', PLATFORM_ID).get();
             coursesDocs = coursesList.docs.map(d => ({ id: d.id, nombre: d.data().nombre }));
         } catch (e) {
             coursesDocs = [ { id: 'habilidades', nombre: 'Habilidades Digitales' }, { id: 'programacion', nombre: 'Software & Videojuegos' } ];

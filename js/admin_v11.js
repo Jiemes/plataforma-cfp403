@@ -836,7 +836,14 @@ async function processExcel(file, type) {
             const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
             const trans = json.map(r => {
                 const getVal = (patterns) => {
-                    const key = Object.keys(r).find(k => patterns.some(p => k.toUpperCase().includes(p.toUpperCase())));
+                    const key = Object.keys(r).find(k => {
+                        if (!k) return false;
+                        const cleanK = String(k).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        return patterns.some(p => {
+                            const cleanP = String(p).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                            return cleanK.includes(cleanP);
+                        });
+                    });
                     return key ? r[key] : '';
                 };
                 
@@ -853,13 +860,29 @@ async function processExcel(file, type) {
                     full_name = String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO', 'ESTUDIANTE']) || '').toUpperCase().trim();
                 }
 
+                // Extracción robusta de Email:
+                let email = String(getVal(['EMAIL', 'CORREO', 'MAIL', 'E-MAIL', 'DIRECCION DE CORREO', 'DIRECCIÓN DE CORREO']) || '').trim().toLowerCase();
+
+                // Fallback inteligente: Buscar cualquier valor en la fila que contenga un formato de email (@ y .)
+                if (!email || !email.includes('@')) {
+                    const rowValues = Object.values(r);
+                    for (const val of rowValues) {
+                        if (!val) continue;
+                        const valStr = String(val).trim().toLowerCase();
+                        if (valStr.includes('@') && valStr.includes('.')) {
+                            email = valStr;
+                            break;
+                        }
+                    }
+                }
+
                 return {
                     dni: dni,
-                    email: String(getVal(['EMAIL', 'CORREO']) || '').trim().toLowerCase(),
+                    email: email,
                     full_name: full_name,
                     telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
                     nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
-                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN']) || '').trim(),
+                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN', 'TRABAJO']) || '').trim(),
                     busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
                     sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
                     edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
@@ -872,7 +895,7 @@ async function processExcel(file, type) {
 
             const batch = db.batch();
             const coll = `alumnos_${type}`;
-            trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s));
+            trans.forEach(s => batch.set(db.collection(coll).doc(s.dni), s, { merge: true }));
             await batch.commit();
             cfpAlert("ÉXITO", "✅ Importación exitosa de " + trans.length + " alumnos.");
             loadStudentsFromFirebase();
