@@ -833,63 +833,159 @@ async function processExcel(file, type) {
         try {
             const data = new Uint8Array(e.target.result);
             const wb = XLSX.read(data, { type: 'array' });
-            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            const trans = json.map(r => {
-                const getVal = (patterns) => {
-                    const key = Object.keys(r).find(k => {
-                        if (!k) return false;
-                        const cleanK = String(k).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                        return patterns.some(p => {
-                            const cleanP = String(p).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                            return cleanK.includes(cleanP);
-                        });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+
+            // 1. Obtener la matriz de filas (2D array)
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            if (!rows || rows.length === 0) return cfpAlert("ERROR", "El archivo está vacío.");
+
+            const cleanStr = (val) => {
+                if (val === null || val === undefined) return "";
+                return String(val).trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            };
+
+            // 2. Auto-detectar en las primeras 15 filas cuál contiene las cabeceras verdaderas
+            let headerIdx = -1;
+            const colMap = {};
+
+            for (let r = 0; r < Math.min(rows.length, 15); r++) {
+                const row = rows[r];
+                if (!Array.isArray(row)) continue;
+                const rowClean = row.map(cleanStr);
+                
+                const hasDni = rowClean.some(c => c.includes('DOCUMENTO') || c.includes('DNI'));
+                const hasName = rowClean.some(c => c.includes('APELLIDO') || c.includes('NOMBRE'));
+                
+                if (hasDni || hasName) {
+                    headerIdx = r;
+                    rowClean.forEach((cellText, colIdx) => {
+                        if (cellText.includes('DOCUMENTO') || cellText.includes('DNI')) colMap.dni = colIdx;
+                        else if (cellText.includes('EMAIL') || cellText.includes('CORREO') || cellText.includes('MAIL')) colMap.email = colIdx;
+                        else if (cellText.includes('APELLIDO')) colMap.apellido = colIdx;
+                        else if (cellText.includes('NOMBRE')) colMap.nombre = colIdx;
+                        else if (cellText.includes('TELEFONO') || cellText.includes('CELULAR')) colMap.telefono = colIdx;
+                        else if (cellText.includes('NIVEL') || cellText.includes('ESTUDIO')) colMap.nivel_educativo = colIdx;
+                        else if (cellText.includes('TRABAJO') || cellText.includes('OCUPACION')) colMap.trabajo_actual = colIdx;
+                        else if (cellText.includes('BUSCA')) colMap.busca_trabajo = colIdx;
+                        else if (cellText.includes('SEXO') || cellText.includes('GENERO')) colMap.sexo = colIdx;
+                        else if (cellText.includes('EDAD')) colMap.edad = colIdx;
+                        else if (cellText.includes('NACIMIENTO')) colMap.nacimiento = colIdx;
                     });
-                    return key ? r[key] : '';
-                };
-                
-                const dniRaw = String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim();
-                const dni = dniRaw.replace(/\D/g, '');
-                
-                let rawApellido = String(getVal(['APELLIDO']) || '').trim();
-                let rawNombre = String(getVal(['NOMBRE']) || '').trim();
-                let full_name = '';
-
-                if (rawApellido || rawNombre) {
-                    full_name = `${rawApellido}, ${rawNombre}`.toUpperCase().replace(/^, |, $/g, '').trim();
-                } else {
-                    full_name = String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO', 'ESTUDIANTE']) || '').toUpperCase().trim();
+                    break;
                 }
+            }
 
-                // Extracción robusta de Email:
-                let email = String(getVal(['EMAIL', 'CORREO', 'MAIL', 'E-MAIL', 'DIRECCION DE CORREO', 'DIRECCIÓN DE CORREO']) || '').trim().toLowerCase();
+            let trans = [];
 
-                // Fallback inteligente: Buscar cualquier valor en la fila que contenga un formato de email (@ y .)
-                if (!email || !email.includes('@')) {
-                    const rowValues = Object.values(r);
-                    for (const val of rowValues) {
-                        if (!val) continue;
-                        const valStr = String(val).trim().toLowerCase();
-                        if (valStr.includes('@') && valStr.includes('.')) {
-                            email = valStr;
-                            break;
+            if (headerIdx !== -1 && colMap.dni !== undefined) {
+                // Extraer filas partiendo de la cabecera detectada
+                for (let r = headerIdx + 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    if (!Array.isArray(row)) continue;
+
+                    const dniRaw = String(row[colMap.dni] || '').trim();
+                    const dni = dniRaw.replace(/\D/g, '');
+                    if (dni.length <= 5) continue;
+
+                    let email = '';
+                    if (colMap.email !== undefined && row[colMap.email]) {
+                        const cellVal = String(row[colMap.email]).trim().toLowerCase();
+                        if (cellVal.includes('@')) email = cellVal;
+                    }
+
+                    // Fallback email en toda la fila si no se extrajo del mapa
+                    if (!email || !email.includes('@')) {
+                        for (const cell of row) {
+                            if (!cell) continue;
+                            const cellStr = String(cell).trim().toLowerCase();
+                            if (cellStr.includes('@') && cellStr.includes('.')) {
+                                email = cellStr;
+                                break;
+                            }
                         }
                     }
-                }
 
-                return {
-                    dni: dni,
-                    email: email,
-                    full_name: full_name,
-                    telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
-                    nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
-                    trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN', 'TRABAJO']) || '').trim(),
-                    busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
-                    sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
-                    edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
-                    nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
-                    password: dni.slice(-4)
-                };
-            }).filter(s => s.dni.length > 5);
+                    let rawApellido = colMap.apellido !== undefined ? String(row[colMap.apellido] || '').trim() : '';
+                    let rawNombre = colMap.nombre !== undefined ? String(row[colMap.nombre] || '').trim() : '';
+                    let full_name = '';
+                    if (rawApellido || rawNombre) {
+                        full_name = `${rawApellido}, ${rawNombre}`.toUpperCase().replace(/^, |, $/g, '').trim();
+                    } else {
+                        full_name = 'ALUMNO S/N';
+                    }
+
+                    trans.push({
+                        dni: dni,
+                        email: email,
+                        full_name: full_name,
+                        telefono: colMap.telefono !== undefined ? String(row[colMap.telefono] || '').trim() : '',
+                        nivel_educativo: colMap.nivel_educativo !== undefined ? String(row[colMap.nivel_educativo] || '').trim() : '',
+                        trabajo_actual: colMap.trabajo_actual !== undefined ? String(row[colMap.trabajo_actual] || '').trim() : '',
+                        busca_trabajo: colMap.busca_trabajo !== undefined ? String(row[colMap.busca_trabajo] || '').trim() : '',
+                        sexo: colMap.sexo !== undefined ? String(row[colMap.sexo] || '').trim() : '',
+                        edad: colMap.edad !== undefined ? String(row[colMap.edad] || '').trim() : '',
+                        nacimiento: colMap.nacimiento !== undefined ? String(row[colMap.nacimiento] || '').trim() : '',
+                        password: dni.slice(-4)
+                    });
+                }
+            } else {
+                // Mantiene fallback a parseo directo si no se detectó mapa
+                const json = XLSX.utils.sheet_to_json(sheet);
+                trans = json.map(r => {
+                    const getVal = (patterns) => {
+                        const key = Object.keys(r).find(k => {
+                            if (!k) return false;
+                            const cleanK = String(k).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                            return patterns.some(p => {
+                                const cleanP = String(p).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                                return cleanK.includes(cleanP);
+                            });
+                        });
+                        return key ? r[key] : '';
+                    };
+                    
+                    const dniRaw = String(getVal(['DOCUMENTO', 'DNI', 'D.N.I']) || '').trim();
+                    const dni = dniRaw.replace(/\D/g, '');
+                    
+                    let rawApellido = String(getVal(['APELLIDO']) || '').trim();
+                    let rawNombre = String(getVal(['NOMBRE']) || '').trim();
+                    let full_name = '';
+
+                    if (rawApellido || rawNombre) {
+                        full_name = `${rawApellido}, ${rawNombre}`.toUpperCase().replace(/^, |, $/g, '').trim();
+                    } else {
+                        full_name = String(getVal(['NOMBRE Y APELLIDO', 'ALUMNO', 'ESTUDIANTE']) || '').toUpperCase().trim();
+                    }
+
+                    let email = String(getVal(['EMAIL', 'CORREO', 'MAIL', 'E-MAIL', 'DIRECCION DE CORREO', 'DIRECCIÓN DE CORREO']) || '').trim().toLowerCase();
+
+                    if (!email || !email.includes('@')) {
+                        const rowValues = Object.values(r);
+                        for (const val of rowValues) {
+                            if (!val) continue;
+                            const valStr = String(val).trim().toLowerCase();
+                            if (valStr.includes('@') && valStr.includes('.')) {
+                                email = valStr;
+                                break;
+                            }
+                        }
+                    }
+
+                    return {
+                        dni: dni,
+                        email: email,
+                        full_name: full_name,
+                        telefono: String(getVal(['TELÉFONO', 'CELULAR', 'TELEFONO']) || '').trim(),
+                        nivel_educativo: String(getVal(['NIVEL EDUCATIVO', 'ESTUDIOS']) || '').trim(),
+                        trabajo_actual: String(getVal(['TRABAJO ACTUAL', 'OCUPACIÓN', 'TRABAJO']) || '').trim(),
+                        busca_trabajo: String(getVal(['BUSCA TRABAJO']) || '').trim(),
+                        sexo: String(getVal(['SEXO', 'GÉNERO']) || '').trim(),
+                        edad: String(getVal(['EDAD', 'AÑOS']) || '').trim(),
+                        nacimiento: String(getVal(['NACIMIENTO', 'FECHA DE NACIMIENTO']) || '').trim(),
+                        password: dni.slice(-4)
+                    };
+                }).filter(s => s.dni.length > 5);
+            }
 
             if (trans.length === 0) return cfpAlert("ERROR", "No se encontraron datos válidos.");
 
